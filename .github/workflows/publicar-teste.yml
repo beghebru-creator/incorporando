@@ -10,10 +10,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Preparar chave
+        id: chave
+        env:
+          RAW: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TESTE_INCORP }}
+        run: |
+          python3 - <<'PY'
+          import os, json, sys
+          raw = os.environ.get("RAW", "")
+          i, j = raw.find("{"), raw.rfind("}")
+          if i < 0 or j < i:
+              sys.exit("A chave guardada no GitHub nao contem o JSON (falta o { ... }). Cole de novo so o conteudo do chave.json.")
+          txt = raw[i:j+1]
+          try:
+              data = json.loads(txt)
+          except Exception:
+              data = json.loads(txt.replace("\r", "").replace("\n", ""))
+          if data.get("type") != "service_account":
+              sys.exit("O texto guardado nao e uma chave de conta de servico.")
+          s = json.dumps(data, separators=(",", ":"))
+          print("::add-mask::" + s)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("json=" + s + "\n")
+          print("Chave OK:", data.get("client_email"))
+          PY
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TESTE_INCORP }}
+          firebaseServiceAccount: ${{ steps.chave.outputs.json }}
           projectId: teste-incorp
           channelId: teste
           expires: 30d
