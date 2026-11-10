@@ -17,16 +17,23 @@ jobs:
           python3 - <<'PY'
           import os, json, sys
           raw = os.environ.get("RAW", "")
-          i, j = raw.find("{"), raw.rfind("}")
-          if i < 0 or j < i:
-              sys.exit("A chave guardada no GitHub nao contem o JSON (falta o { ... }). Cole de novo so o conteudo do chave.json.")
-          txt = raw[i:j+1]
-          try:
-              data = json.loads(txt)
-          except Exception:
-              data = json.loads(txt.replace("\r", "").replace("\n", ""))
-          if data.get("type") != "service_account":
-              sys.exit("O texto guardado nao e uma chave de conta de servico.")
+          dec = json.JSONDecoder()
+          data = None
+          for txt in (raw, raw.replace("\r", "").replace("\n", "")):
+              for k, ch in enumerate(txt):
+                  if ch != "{":
+                      continue
+                  try:
+                      obj, _ = dec.raw_decode(txt[k:])
+                  except Exception:
+                      continue
+                  if isinstance(obj, dict) and obj.get("type") == "service_account":
+                      data = obj
+                      break
+              if data:
+                  break
+          if not data:
+              sys.exit("Nao achei uma chave valida no texto guardado no GitHub (tamanho %d caracteres). Cole de novo so o conteudo do chave.json." % len(raw))
           s = json.dumps(data, separators=(",", ":"))
           print("::add-mask::" + s)
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
