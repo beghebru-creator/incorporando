@@ -1,0 +1,75 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "firestore.rules",
+      "**/.*",
+      "**/node_modules/**",
+      "COMO_PUBLICAR.md",
+      "COMO_ATIVAR_EMAIL.md",
+      "**/*.bat",
+      "**/*.ps1",
+      "**/*.txt",
+      "**/*.md",
+      "**/*.tmp",
+      "**/*.gs",
+      "**/*.exe",
+      "**/*.zip",
+      "functions/**",
+      "index.backup-*.html",
+      "node-v*/**",
+      "_ferramentas/**",
+      "_historico/**",
+      "_apps-script/**",
+      "_referencia-conecta-winter/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(html)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/version.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}

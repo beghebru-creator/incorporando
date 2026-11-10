@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isCompanyUser() {
+      // CONECTA: somente este e-mail tem acesso ao banco.
+      return request.auth != null
+        && request.auth.token.email == 'beghebru@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    match /fluxoapp_projects/{docId} {
+      // A exclusao no app e "suave" (marca deleted:true, que e um update),
+      // entao NAO e preciso permitir delete de documento. Mantemos o delete
+      // de documento bloqueado por seguranca (evita que qualquer cliente
+      // apague empreendimentos do banco); ler/criar/atualizar liberados.
+      allow read, create, update: if isCompanyUser();
+      allow delete: if false;
+    }
+
+    match /fluxoapp_activity/{docId} {
+      allow read, write: if isCompanyUser();
+    }
+
+    match /fluxoapp_meta/{docId} {
+      allow read, write: if isCompanyUser();
+    }
+
+    // Notas Fiscais anexadas na baixa das parcelas (Controle Financeiro).
+    // O app grava aqui (base64); o Apps Script lê, envia por e-mail e apaga.
+    match /fluxoapp_nfs/{docId} {
+      allow read, write: if isCompanyUser();
+    }
+
+    // Preferencias por usuario (favoritos, rascunhos). Cada pessoa so le/escreve
+    // o proprio documento, cujo id e o uid do login.
+    match /fluxoapp_userprefs/{uid} {
+      allow read, write: if isCompanyUser() && request.auth.uid == uid;
+    }
+
+    // Portal PCP — Acompanhamento de Pedido (um doc por pedido de compra).
+    // Sem papéis por enquanto: qualquer usuário do domínio lê e escreve
+    // (igual ao restante do app). Se um dia ligar a camada de papéis, o
+    // controle fino fica na aplicação (e o /acl protegido só para ADM).
+    match /fluxoapp_pedidos/{id} {
+      allow read, write: if isCompanyUser();
+    }
+
+    // Mapas/terrenos (landParcels) por empreendimento — documento separado,
+    // criado para não estourar o limite de 1 MB do doc do empreendimento.
+    // Mesma política do empreendimento: exclusão de documento bloqueada.
+    match /fluxoapp_projects_geo/{id} {
+      allow read, create, update: if isCompanyUser();
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

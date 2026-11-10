@@ -1,0 +1,19 @@
+# Publica a versão de TESTE do Incorporando a cada envio para o ramo "teste".
+# Endereço fixo do teste: canal "teste" do Firebase Hosting (teste-incorp--teste-....web.app).
+# Usa o MESMO banco Firestore do app oficial — só o código muda.
+name: Publicar TESTE
+on:
+  push:
+    branches: [teste]
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TESTE_INCORP }}
+          projectId: teste-incorp
+          channelId: teste
+          expires: 30d

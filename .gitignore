@@ -1,0 +1,10 @@
+# Nunca enviar chaves de conta de serviço nem backups
+*-key*.json
+*service-account*.json
+origem.json
+destino.json
+index.backup-*.html
+node-v*/
+node_modules/
+.firebase/
+*.log

@@ -1,0 +1,17 @@
+# Publica o app OFICIAL do Incorporando a cada envio para o ramo "main".
+# Troca apenas o código (hosting). Banco Firestore e regras NÃO são tocados.
+name: Publicar OFICIAL
+on:
+  push:
+    branches: [main]
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TESTE_INCORP }}
+          projectId: teste-incorp
+          channelId: live
