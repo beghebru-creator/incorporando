@@ -1715,6 +1715,8 @@
   /* Alças de dobra da linha (edição manual da rota) — só aparecem com a
      linha selecionada em modo edição; arrastam sempre perpendicular ao
      próprio segmento, então a linha nunca vira diagonal. */
+  .edge-mid-handle{fill:var(--accent);stroke:var(--surface);stroke-width:1.5px;pointer-events:all;}
+  .edge-mid-handle:hover{fill:var(--edge-sel);}
   .edge-bend-handle{fill:var(--accent);stroke:var(--surface);stroke-width:1.5px;cursor:grab;pointer-events:all;}
   .edge-bend-handle:hover{fill:var(--edge-sel);}
   .edge-bend-handle:active{cursor:grabbing;}
@@ -3011,83 +3013,214 @@ function applyBendDrag(pts, segIndex, dx, dy){
   return rtSimplify(out);
 }
 
-/* Aresta única: contorna TODAS as tarefas (origem/destino excluídas), a
-   menos que a rota já tenha sido ajustada manualmente (data.manualPts). */
-function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,markerEnd,selected,data}){
+/* ════════════════════════════════════════════════════════════════════════════
+   MOTOR DE LINHAS "EW" (nov/2026) — trazido do Fluxograma de Projetos EW.
+   Toda linha tem no máximo 3 trechos: sai da caixa (toco), percorre um
+   corredor e entra na outra caixa. O trecho do meio é deslocado de 10 em 10px
+   até ficar livre de tarefas (ewPickMid). Se mesmo assim a rota raspar em
+   alguma tarefa, cai no roteador completo (routeOrthogonal) — híbrido, pra
+   manter a regra "linha nunca passa atrás de tarefa".
+   O ajuste manual é guardado só como a POSIÇÃO do trecho do meio
+   (data.mid + data.midAx), nunca como lista de pontos → a linha nunca fica
+   diagonal, mesmo movendo as tarefas.
+   Lados: escolhidos pela geometria (ewAutoSides) ou fixados (data.sa/data.ta
+   = 'N'|'S'|'E'|'W'). Várias linhas no mesmo lado da mesma tarefa se
+   espalham pelos pontos 1/(k+1)… em vez de saírem todas do centro.
+   ════════════════════════════════════════════════════════════════════════════ */
+const EW_DV={N:[0,-1],S:[0,1],E:[1,0],W:[-1,0]};
+const EW_POS={N:'top',S:'bottom',E:'right',W:'left'};
+function ewRectOf(n){
+  if(!n) return null;
+  const p=(n.internals&&n.internals.positionAbsolute)||n.position||{x:0,y:0};
+  const d=nodeDims(n);
+  return {id:n.id,x:p.x,y:p.y,w:(n.measured&&n.measured.width)||d.w,h:(n.measured&&n.measured.height)||d.h};
+}
+const ewCenter=r=>({x:r.x+r.w/2,y:r.y+r.h/2});
+function ewAutoSides(a,b){
+  const ac=ewCenter(a), bc=ewCenter(b), dx=bc.x-ac.x, dy=bc.y-ac.y;
+  /* volta para trás (destino bem à esquerda, mesma faixa): passa por cima */
+  if(dx < -40 && Math.abs(dy) < Math.min(a.h,b.h)*0.6) return ['N','N'];
+  if(Math.abs(dx) >= Math.abs(dy)*0.9) return dx>=0?['E','W']:['W','E'];
+  return dy>=0?['S','N']:['N','S'];
+}
+function ewAnchor(r,sd,t){
+  if(t==null) t=.5;
+  return sd==='N'?{x:r.x+r.w*t,y:r.y}: sd==='S'?{x:r.x+r.w*t,y:r.y+r.h}: sd==='E'?{x:r.x+r.w,y:r.y+r.h*t}:{x:r.x,y:r.y+r.h*t};
+}
+function ewBlocked(ax,v,a1,a2,obst){
+  const lo=Math.min(a1,a2), hi=Math.max(a1,a2);
+  return obst.some(n=> ax==='x'
+    ? (v>n.x-12 && v<n.x+n.w+12 && hi>n.y-6 && lo<n.y+n.h+6)
+    : (v>n.y-12 && v<n.y+n.h+12 && hi>n.x-6 && lo<n.x+n.w+6));
+}
+function ewPickMid(ax,def,lo,hi,a1,a2,obst){
+  const cl=v=>Math.max(lo,Math.min(hi,v));
+  def=cl(def);
+  if(!ewBlocked(ax,def,a1,a2,obst)) return def;
+  for(let k=1;k<=80;k++) for(const sg of [1,-1]){ const v=def+sg*k*10; if(v<lo||v>hi) continue; if(!ewBlocked(ax,v,a1,a2,obst)) return v; }
+  return def;
+}
+/* Caminho limpo? (nenhum trecho cruza tarefa — origem/destino já excluídas) */
+function ewPathClear(pts,obst){
+  for(let i=1;i<pts.length;i++){
+    const A=pts[i-1],B=pts[i];
+    for(const o of obst){
+      const x1=o.x-2,y1=o.y-2,x2=o.x+o.w+2,y2=o.y+o.h+2;
+      if(Math.abs(A.x-B.x)<.5){ if(A.x<=x1||A.x>=x2) continue; if(Math.min(A.y,B.y)<y2&&Math.max(A.y,B.y)>y1) return false; }
+      else { if(A.y<=y1||A.y>=y2) continue; if(Math.min(A.x,B.x)<x2&&Math.max(A.x,B.x)>x1) return false; }
+    }
+  }
+  return true;
+}
+function ewClean(pts){
+  const Q=[pts[0]];
+  for(let i=1;i<pts.length;i++){
+    const c=pts[i], pr=Q[Q.length-1];
+    if(Math.abs(c.x-pr.x)<.01&&Math.abs(c.y-pr.y)<.01) continue;
+    if(Q.length>=2){ const pp=Q[Q.length-2];
+      const colX=Math.abs(pp.x-pr.x)<.01&&Math.abs(pr.x-c.x)<.01&&(pr.y-pp.y)*(c.y-pr.y)>=0;
+      const colY=Math.abs(pp.y-pr.y)<.01&&Math.abs(pr.y-c.y)<.01&&(pr.x-pp.x)*(c.x-pr.x)>=0;
+      if(colX||colY){ Q[Q.length-1]=c; continue; } }
+    Q.push(c);
+  }
+  return Q;
+}
+/* a, b = retângulos; s1/s2 = lados; t1/t2 = posição no lado; mid = ajuste manual */
+function ewRoute(a,b,s1,s2,t1,t2,obst,manualMid,manualAx){
+  const p1=ewAnchor(a,s1,t1), p2=ewAnchor(b,s2,t2);
+  let L=18;
+  const facing={S:'N',N:'S',E:'W',W:'E'}[s1]===s2;
+  if(facing){ const gap=s1==='S'?p2.y-p1.y:s1==='N'?p1.y-p2.y:s1==='E'?p2.x-p1.x:p1.x-p2.x; if(gap>0) L=Math.min(18,gap/2); }
+  const q1={x:p1.x+EW_DV[s1][0]*L,y:p1.y+EW_DV[s1][1]*L}, q2={x:p2.x+EW_DV[s2][0]*L,y:p2.y+EW_DV[s2][1]*L};
+  const h1=s1==='E'||s1==='W', h2=s2==='E'||s2==='W';
+  const um=ax=>(manualAx===ax&&typeof manualMid==='number')?manualMid:null;
+  const BIG=1e9;
+  let pts, mid=null;
+  if(h1===h2){
+    const A=h1?'x':'y', B=h1?'y':'x';
+    const plus=h1?'E':'S';
+    let lo=-BIG, hi=BIG;
+    if(s1===plus) lo=Math.max(lo,q1[A]); else hi=Math.min(hi,q1[A]);
+    if(s2===plus) lo=Math.max(lo,q2[A]); else hi=Math.min(hi,q2[A]);
+    const P=(av,bv)=>A==='x'?{x:av,y:bv}:{x:bv,y:av};
+    if(lo<=hi){
+      const u=um(A), m=u!=null?Math.max(lo,Math.min(hi,u)):ewPickMid(A,(q1[A]+q2[A])/2,lo,hi,q1[B],q2[B],obst);
+      pts=[p1,q1,P(m,q1[B]),P(m,q2[B]),q2,p2]; mid={ax:A,v:m,i:2};
+    } else {
+      const overlap=A==='x'?!(a.y+a.h<b.y||b.y+b.h<a.y):!(a.x+a.w<b.x||b.x+b.w<a.x);
+      const def=overlap?(A==='x'?Math.min(a.y,b.y)-34:Math.max(a.x+a.w,b.x+b.w)+34):(q1[B]+q2[B])/2;
+      const u=um(B), m=u!=null?u:ewPickMid(B,def,-BIG,BIG,q1[A],q2[A],obst);
+      pts=[p1,q1,P(q1[A],m),P(q2[A],m),q2,p2]; mid={ax:B,v:m,i:2};
+    }
+  } else if(h1){
+    const ok=(s1==='E'?p2.x>=p1.x+12:p2.x<=p1.x-12)&&(s2==='N'?p1.y<=p2.y-12:p1.y>=p2.y+12);
+    pts=ok?[p1,{x:p2.x,y:p1.y},p2]:[p1,q1,{x:q1.x,y:q2.y},q2,p2];
+  } else {
+    const ok=(s1==='S'?p2.y>=p1.y+12:p2.y<=p1.y-12)&&(s2==='W'?p1.x<=p2.x-12:p1.x>=p2.x+12);
+    pts=ok?[p1,{x:p1.x,y:p2.y},p2]:[p1,q1,{x:q2.x,y:q1.y},q2,p2];
+  }
+  let midPt=null;
+  if(mid){ const m1=pts[2],m2=pts[3]; midPt={x:(m1.x+m2.x)/2,y:(m1.y+m2.y)/2}; }
+  return {pts:ewClean(pts),raw:pts,mid,midPt,p1,p2};
+}
+/* Lado + posição no lado de cada ponta, espalhando várias linhas no mesmo lado. */
+function ewSidesFor(edges,nodeLookup){
+  const out=new Map(), slots=new Map();
+  edges.forEach(e=>{
+    const a=ewRectOf(nodeLookup.get(e.source)), b=ewRectOf(nodeLookup.get(e.target));
+    if(!a||!b) return;
+    const au=ewAutoSides(a,b), d=e.data||{};
+    const s1=d.sa||au[0], s2=d.ta||au[1];
+    out.set(e.id,{s1,s2,t1:.5,t2:.5});
+    const push=(nid,sd,eid,end,other)=>{ const k=nid+'|'+sd; if(!slots.has(k)) slots.set(k,[]); slots.get(k).push({eid,end,sd,o:ewCenter(other)}); };
+    push(e.source,s1,e.id,'1',b); push(e.target,s2,e.id,'2',a);
+  });
+  slots.forEach(list=>{
+    if(list.length<2) return;
+    const horiz=list[0].sd==='N'||list[0].sd==='S';
+    list.sort((p,q)=>horiz?p.o.x-q.o.x:p.o.y-q.o.y);
+    const k=list.length;
+    list.forEach((it,i)=>{ const r=out.get(it.eid); if(r) r['t'+it.end]=(i+1)/(k+1); });
+  });
+  return out;
+}
+
+/* Aresta única (todas as linhas do fluxograma usam esta). */
+function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,markerEnd,selected,data,style}){
   const nodeLookup = useStore(s=>s.nodeLookup);
+  const allEdges = useStore(s=>s.edges);
   const {zoom} = useViewport();
   const edgeEdit = React.useContext(EdgeEditContext);
   const zoomRef = useRef(zoom);
   useEffect(()=>{ zoomRef.current=zoom; },[zoom]);
   const dragRef = useRef(null);
+  const d = data||{};
 
   const obstacles = React.useMemo(()=>{
     const arr=[];
     nodeLookup.forEach(n=>{
       if(n.id===source||n.id===target) return;
       if(n.type && n.type!=='task') return;
-      const p = (n.internals&&n.internals.positionAbsolute) || n.position || {x:0,y:0};
-      const dims = nodeDims(n);
-      const w = (n.measured&&n.measured.width)  || dims.w;
-      const h = (n.measured&&n.measured.height) || dims.h;
-      arr.push({x:p.x, y:p.y, w, h});
+      if(n.hidden) return;
+      arr.push(ewRectOf(n));
     });
     return arr;
   },[nodeLookup,source,target]);
 
-  const manualPts = data&&data.manualPts;
-  const pts = React.useMemo(()=>{
-    if(manualPts && manualPts.length>=2){
-      const arr=manualPts.map(p=>({x:p.x,y:p.y}));
-      arr[0]={x:sourceX,y:sourceY};
-      arr[arr.length-1]={x:targetX,y:targetY};
-      return arr;
-    }
-    return routeOrthogonal(sourceX,sourceY,sourcePosition, targetX,targetY,targetPosition, obstacles);
-  },[manualPts,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,obstacles]);
+  const sides = React.useMemo(()=>ewSidesFor(allEdges,nodeLookup),[allEdges,nodeLookup]);
 
-  const path = pts.reduce((a,p,i)=> i===0?('M '+p.x+','+p.y):(a+' L '+p.x+','+p.y),'');
+  const R = React.useMemo(()=>{
+    const a=ewRectOf(nodeLookup.get(source)), b=ewRectOf(nodeLookup.get(target));
+    if(!a||!b) return {pts:[{x:sourceX,y:sourceY},{x:targetX,y:targetY}],mid:null,midPt:null};
+    const sd=sides.get(id)||{s1:'E',s2:'W',t1:.5,t2:.5};
+    const manual=typeof d.mid==='number';
+    const r=ewRoute(a,b,sd.s1,sd.s2,sd.t1,sd.t2,obstacles,d.mid,d.midAx);
+    if(manual||ewPathClear(r.pts,obstacles)) return r;
+    /* Reserva: roteador completo que contorna todas as tarefas. */
+    const alt=routeOrthogonal(r.p1.x,r.p1.y,EW_POS[sd.s1], r.p2.x,r.p2.y,EW_POS[sd.s2], obstacles);
+    return {pts:alt,mid:null,midPt:null,auto:true};
+  },[nodeLookup,sides,obstacles,id,source,target,d.mid,d.midAx,sourceX,sourceY,targetX,targetY]);
 
-  const onBendPointerDown=(segIndex)=>(e)=>{
-    if(!edgeEdit||!edgeEdit.isEditMode) return;
+  const pts=R.pts;
+  const path = pts.reduce((acc,p,i)=> i===0?('M '+p.x+','+p.y):(acc+' L '+p.x+','+p.y),'');
+
+  const onMidPointerDown=(e)=>{
+    if(!edgeEdit||!edgeEdit.isEditMode||!R.mid) return;
     e.stopPropagation(); e.preventDefault();
-    const snapshot=pts.map(p=>({...p}));
-    dragRef.current={startX:e.clientX,startY:e.clientY,snapshot,segIndex};
+    dragRef.current={startX:e.clientX,startY:e.clientY,ax:R.mid.ax,v0:R.mid.v};
+    edgeEdit.beginEdgeEdit&&edgeEdit.beginEdgeEdit();
     const move=(ev)=>{
       const st=dragRef.current; if(!st) return;
-      const dx=(ev.clientX-st.startX)/(zoomRef.current||1);
-      const dy=(ev.clientY-st.startY)/(zoomRef.current||1);
-      const newPts=applyBendDrag(st.snapshot, st.segIndex, dx, dy);
-      edgeEdit.setManualPts(id,newPts);
+      const z=zoomRef.current||1;
+      const delta=st.ax==='x'?(ev.clientX-st.startX)/z:(ev.clientY-st.startY)/z;
+      edgeEdit.setEdgeData(id,{mid:Math.round((st.v0+delta)/5)*5,midAx:st.ax});
     };
-    const up=()=>{
-      window.removeEventListener('pointermove',move);
-      window.removeEventListener('pointerup',up);
-      dragRef.current=null;
-    };
+    const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); dragRef.current=null; };
     window.addEventListener('pointermove',move);
     window.addEventListener('pointerup',up);
   };
 
-  const showBends = edgeEdit&&edgeEdit.isEditMode&&selected;
-  const midIdx = Math.floor((pts.length-1)/2);
-  const midPt = pts[midIdx]&&pts[midIdx+1] ? {x:(pts[midIdx].x+pts[midIdx+1].x)/2, y:(pts[midIdx].y+pts[midIdx+1].y)/2} : pts[0];
+  const editando = edgeEdit&&edgeEdit.isEditMode&&selected;
+  const ajustada = typeof d.mid==='number'||!!d.sa||!!d.ta;
+  /* ponto para o botão "Rota automática": meio do maior trecho */
+  let lab=pts[0]; { let best=-1; for(let i=1;i<pts.length;i++){ const L=Math.abs(pts[i].x-pts[i-1].x)+Math.abs(pts[i].y-pts[i-1].y); if(L>best){best=L; lab={x:(pts[i].x+pts[i-1].x)/2,y:(pts[i].y+pts[i-1].y)/2};} } }
+  const cor = selected?'var(--edge-sel)':((style&&style.stroke)||'var(--edge)');
 
   return (
     <>
       <BaseEdge id={id} path={path} markerEnd={markerEnd}
-        style={{stroke:selected?'var(--edge-sel)':'var(--edge)',strokeWidth:selected?2.5:2,pointerEvents:'none'}}/>
-      {showBends&&pts.slice(0,-1).map((p,i)=>{
-        const q=pts[i+1];
-        const mx=(p.x+q.x)/2, my=(p.y+q.y)/2;
-        return <circle key={i} cx={mx} cy={my} r={5} className="edge-bend-handle"
-          onPointerDown={onBendPointerDown(i)}/>;
-      })}
-      {showBends&&manualPts&&manualPts.length>=2&&(
-        <foreignObject x={midPt.x-11} y={midPt.y-26} width={22} height={22} style={{overflow:'visible'}}>
-          <div className="edge-reset-btn" title="Redefinir linha (voltar ao roteamento automático)"
+        style={{stroke:cor,strokeWidth:selected?2.5:2,strokeDasharray:style&&style.strokeDasharray,strokeLinejoin:'round',pointerEvents:'none'}}/>
+      {editando&&R.midPt&&(
+        <rect x={R.midPt.x-7} y={R.midPt.y-7} width={14} height={14} rx={3} className="edge-mid-handle"
+          style={{cursor:R.mid.ax==='x'?'ew-resize':'ns-resize'}} onPointerDown={onMidPointerDown}>
+          <title>Arraste para deslocar o trecho do meio</title>
+        </rect>
+      )}
+      {editando&&ajustada&&(
+        <foreignObject x={(R.midPt||lab).x-11} y={(R.midPt||lab).y-34} width={22} height={22} style={{overflow:'visible'}}>
+          <div className="edge-reset-btn" title="Rota automática (desfaz o ajuste manual desta linha)"
             onPointerDown={e=>e.stopPropagation()}
-            onClick={e=>{e.stopPropagation();edgeEdit.clearManualPts(id);}}>
+            onClick={e=>{e.stopPropagation();edgeEdit.setEdgeData(id,{mid:undefined,midAx:undefined,sa:undefined,ta:undefined});}}>
             <i className="ti ti-arrow-back-up"/>
           </div>
         </foreignObject>
@@ -3374,7 +3507,10 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
         const lane=laneById[src.data&&src.data.phase];
         data={safeY:lane?(lane.position.y+LANE_PAD/2):undefined};
       }
-      if(c.manualPts&&c.manualPts.length>=2) data.manualPts=c.manualPts.map(p=>({x:p.x,y:p.y}));
+      /* Motor EW: rotas manuais antigas (lista de pontos) não são mais usadas —
+         a linha volta à rota automática. Carrega o ajuste novo (mid/sa/ta). */
+      if(typeof c.mid==='number'&&(c.midAx==='x'||c.midAx==='y')){ data.mid=c.mid; data.midAx=c.midAx; }
+      if(c.sa) data.sa=c.sa; if(c.ta) data.ta=c.ta;
       const proposto=c.status==='proposto';
       if(proposto) data={...data,proposto:true,propostoPor:c.propostoPor||''};
       finalEdges.push({id:`e-${c.from}-${c.to}`, source:c.from, target:c.to,
@@ -3507,8 +3643,10 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
           from:e.source, to:e.target, ...((e.data&&e.data.proposto)?{status:'proposto',propostoPor:e.data.propostoPor||''}:{}),
           sourceHandle:e.sourceHandle||null, targetHandle:e.targetHandle||null,
           type:e.type||null,
-          manualPts:(e.data&&e.data.manualPts&&e.data.manualPts.length>=2)
-            ? e.data.manualPts.map(p=>({x:p.x,y:p.y})) : null,
+          manualPts:null,
+          mid:(e.data&&typeof e.data.mid==='number')?e.data.mid:null,
+          midAx:(e.data&&typeof e.data.mid==='number')?(e.data.midAx||null):null,
+          sa:(e.data&&e.data.sa)||null, ta:(e.data&&e.data.ta)||null,
         })), nodesRef.current);
         return{tasks,connections};
       },
@@ -3537,7 +3675,7 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
                  source:e.target, target:e.source,
                  sourceHandle:toSource(e.targetHandle), targetHandle:toTarget(e.sourceHandle),
                  markerEnd:MARKER, style:{...EDGE_STYLE,zIndex:0},
-                 data:{...e.data, manualPts:mp}};
+                 data:{...e.data, manualPts:mp, sa:e.data&&e.data.ta, ta:e.data&&e.data.sa}};
         }));
         setSelEdges([]);
       },
@@ -3670,8 +3808,9 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
           const dX=Math.abs(ncx-cx); if(dX<=thr){ const s=dX-bonus; if(s<bestXs){bestXs=s;bestX=ncx;} }
           const dY=Math.abs(ncy-cy); if(dY<=thr){ const s=dY-bonus; if(s<bestYs){bestYs=s;bestY=ncy;} }
         });
-        const nx = bestX!==null ? bestX-dd.w/2 : only.position.x;
-        const ny = bestY!==null ? bestY-dd.h/2 : only.position.y;
+        /* Grade de 10px (motor EW): sem ímã de alinhamento, a tarefa encaixa na grade. */
+        const nx = bestX!==null ? bestX-dd.w/2 : Math.round(only.position.x/10)*10;
+        const ny = bestY!==null ? bestY-dd.h/2 : Math.round(only.position.y/10)*10;
         only.position={x:nx,y:ny};
         if(only.positionAbsolute) only.positionAbsolute={x:nx,y:ny};
         alignInfoRef.current={x:bestX,y:bestY};
@@ -3750,7 +3889,7 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
      (ela foi desenhada pensando no destino anterior) — volta a recalcular
      automaticamente a partir da nova ligação. */
   const onReconnect=useCallback((oldEdge,newConn)=>{
-    setEdges(eds=>reconnectEdge({...oldEdge,data:{...oldEdge.data,manualPts:undefined}},newConn,eds));
+    setEdges(eds=>reconnectEdge({...oldEdge,data:{...oldEdge.data,manualPts:undefined,mid:undefined,midAx:undefined,sa:undefined,ta:undefined}},newConn,eds));
   },[setEdges]);
 
   /* ── Edição manual da rota da linha (arrastar dobras) ── */
@@ -3760,7 +3899,12 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
   const clearManualPts=useCallback((edgeId)=>{
     setEdges(eds=>eds.map(e=>e.id===edgeId?{...e,data:{...e.data,manualPts:undefined}}:e));
   },[setEdges]);
-  const edgeEditValue=React.useMemo(()=>({isEditMode,setManualPts,clearManualPts}),[isEditMode,setManualPts,clearManualPts]);
+  /* Motor EW: grava ajuste do trecho do meio (mid/midAx) e lados fixos (sa/ta). */
+  const setEdgeData=useCallback((edgeId,patch)=>{
+    setEdges(eds=>eds.map(e=>e.id===edgeId?{...e,data:{...e.data,...patch}}:e));
+  },[setEdges]);
+  const beginEdgeEdit=useCallback(()=>{ try{ pushHistory(); }catch(e){} },[pushHistory]);
+  const edgeEditValue=React.useMemo(()=>({isEditMode,setManualPts,clearManualPts,setEdgeData,beginEdgeEdit}),[isEditMode,setManualPts,clearManualPts,setEdgeData,beginEdgeEdit]);
 
   const onSelectionChange=useCallback(({nodes:ns,edges:es})=>{
     setSelNodes(ns.map(n=>n.id));
