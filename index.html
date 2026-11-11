@@ -295,6 +295,25 @@
   .app-nav-box .app-nav-grp{margin-bottom:0;}
   .app-nav-box.aberto .app-nav-grp{color:var(--text);font-weight:600;}
   .app-nav-grp.grp-ativo{color:var(--text);font-weight:600;}
+  /* Menu lateral: letras sempre do mesmo tamanho (celular não "aumenta" sozinho),
+     largura ajustável pela alça da direita e modo só-ícones (nov/2026). */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  .app-nav{position:relative;transition:width .15s ease;}
+  .app-nav.arrastando{transition:none;user-select:none;}
+  .app-nav-item,.app-nav-subitem,.app-nav-sec{white-space:nowrap;overflow:hidden;}
+  .app-nav-item i{flex-shrink:0;}
+  .app-nav-grip{position:absolute;top:0;right:-4px;width:10px;height:100%;cursor:col-resize;z-index:5;touch-action:none;}
+  .app-nav-grip::after{content:'';position:absolute;top:0;bottom:0;left:4px;width:2px;background:transparent;transition:background .15s;}
+  .app-nav-grip:hover::after,.app-nav.arrastando .app-nav-grip::after{background:var(--accent);}
+  .app-nav.mini{padding-left:8px;padding-right:8px;}
+  .app-nav.mini .app-nav-logo{justify-content:center;padding:0;margin-bottom:18px;}
+  .app-nav-recolher{color:var(--text3);}
+  .app-nav.mini .app-brand,.app-nav.mini .app-nav-portal,.app-nav.mini .app-nav-sec,.app-nav.mini .app-nav-chev,
+  .app-nav.mini .app-nav-subs,.app-nav.mini .app-nav-user-txt,.app-nav.mini .app-nav-grip{display:none !important;}
+  .app-nav.mini .app-nav-item{font-size:0;justify-content:center;gap:0;padding:10px 0;}
+  .app-nav.mini .app-nav-item.sub{padding-left:0;}
+  .app-nav.mini .app-nav-box,.app-nav.mini .app-nav-box.aberto,.app-nav.mini .app-nav-box.sub{margin:0 0 2px;padding:0;}
+  .app-nav.mini .app-nav-user{justify-content:center;padding:12px 0 0 !important;}
   .app-nav-chev{margin-left:auto;font-size:13px !important;opacity:.6;transition:transform .15s;transform:rotate(-90deg);}
   .app-nav-chev.aberto{transform:rotate(0deg);}
   .app-nav-subs{margin:0 0 0 20px;padding-left:8px;border-left:2px solid var(--border2);display:flex;flex-direction:column;gap:1px;}
@@ -16083,6 +16102,23 @@ function App({currentUser}){
      do DI vê Acompanhamento / Controle / Unidades direto); os demais portais que a
      pessoa pode ver aparecem com o título do portal. Administração geral, Diretoria
      e master veem todos os portais, cada um com o seu título. */
+  /* Largura do menu lateral (arrastável) e modo só-ícones — lembrados no aparelho. */
+  const NAV_W_MIN=170, NAV_W_MAX=380, NAV_W_PADRAO=220;
+  const[navW,setNavW]=useState(()=>{ const v=Number(localStorage.getItem('inc_nav_w')); return v>=NAV_W_MIN&&v<=NAV_W_MAX?v:NAV_W_PADRAO; });
+  const[navMini,setNavMini]=useState(()=>localStorage.getItem('inc_nav_mini')==='1');
+  const[navArrastando,setNavArrastando]=useState(false);
+  const navRef=useRef(null);
+  const trocarNavMini=(v)=>{ const n=typeof v==='boolean'?v:!navMini; setNavMini(n); try{ localStorage.setItem('inc_nav_mini',n?'1':'0'); }catch(e){} };
+  const iniciarArrasteNav=(e)=>{
+    e.preventDefault(); const el=navRef.current; if(!el) return;
+    const escala=(el.getBoundingClientRect().width/el.offsetWidth)||1; /* compensa o zoom do app */
+    const x0=e.clientX, w0=navW; let wAtual=w0;
+    setNavArrastando(true);
+    const mover=ev=>{ wAtual=Math.round(Math.min(NAV_W_MAX,Math.max(NAV_W_MIN,w0+(ev.clientX-x0)/escala))); setNavW(wAtual); };
+    const soltar=()=>{ window.removeEventListener('pointermove',mover); window.removeEventListener('pointerup',soltar); window.removeEventListener('pointercancel',soltar);
+      setNavArrastando(false); try{ localStorage.setItem('inc_nav_w',String(wAtual)); }catch(e){} };
+    window.addEventListener('pointermove',mover); window.addEventListener('pointerup',soltar); window.addEventListener('pointercancel',soltar);
+  };
   const[navAbertos,setNavAbertos]=useState(()=>{ try{ const v=JSON.parse(localStorage.getItem('inc_nav_abertos')||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; } });
   const toggleNav=(k)=>setNavAbertos(a=>{ const n=a.includes(k)?a.filter(x=>x!==k):a.concat(k); try{ localStorage.setItem('inc_nav_abertos',JSON.stringify(n)); }catch(e){} return n; });
   const portalViewDe=(pid)=>pid==='portaldi'?portalView:pid==='portalprj'?prjView:portalXView;
@@ -16098,7 +16134,7 @@ function App({currentUser}){
     /* Grupo aberto = uma "caixa": cabeçalho + lista de sub-opções com linha-guia à
        esquerda, para não confundir as sub-opções com o próximo item do menu. */
     return (<div key={key} className={'app-nav-box'+(aberto?' aberto':'')+(recuo?' sub':'')}>
-      <div className={'app-nav-item app-nav-grp'+(temAtivo?' grp-ativo':'')} onClick={()=>toggleNav(key)} title={aberto?'Recolher':'Abrir opções'}>
+      <div className={'app-nav-item app-nav-grp'+(temAtivo?' grp-ativo':'')} onClick={()=>{ if(navMini){ trocarNavMini(false); if(!aberto) toggleNav(key); } else toggleNav(key); }} title={navMini?nome:(aberto?'Recolher':'Abrir opções')}>
         <i className={'ti '+icone}/> {nome}<i className={'ti ti-chevron-down app-nav-chev'+(aberto?' aberto':'')}/>
       </div>
       {aberto && <div className="app-nav-subs">
@@ -16294,10 +16330,11 @@ function App({currentUser}){
 
   return(
     <div className="app-shell">
-      <div className="app-nav">
+      <div ref={navRef} className={'app-nav'+(navMini?' mini':'')+(navArrastando?' arrastando':'')} style={{width:navMini?64:navW}}>
         <div className="app-nav-logo" title="Incorporando">
           <ConectaMark size={30}/><span className="app-brand">incorporando</span>
         </div>
+        <div className="app-nav-grip" onPointerDown={iniciarArrasteNav} onDoubleClick={()=>{ setNavW(NAV_W_PADRAO); try{ localStorage.setItem('inc_nav_w',String(NAV_W_PADRAO)); }catch(e){} }} title="Arraste para mudar a largura do menu (duplo clique volta ao padrão)"/>
         {/* Rótulo de quem está logado (ex.: "Portal DI"), embaixo do logo. */}
         {acessoResolvido && PERM.ativo && (()=>{ const ss=(!PERM.isMaster&&(PERM.isAdmin||PERM.isRestrito))?(PERM.setores||[]):[];
           let txt;
@@ -16307,9 +16344,9 @@ function App({currentUser}){
           else txt='Somente visualização';
           return <div className={'app-nav-portal'+(ss.length?'':' neutro')} title={txt}>{txt}</div>; })()}
         <div className={'app-nav-item'+(navActive==='inicio'?' active':'')} onClick={()=>setScreen('inicio')} title="Suas atividades, tarefas, empreendimentos e avisos"><i className="ti ti-home"/> Início</div>
-        <div className={'app-nav-item'+(navActive==='dashboard'?' active':'')} onClick={()=>setScreen('dashboard')}><i className="ti ti-layout-dashboard"/> Dashboard</div>
+        <div className={'app-nav-item'+(navActive==='dashboard'?' active':'')} onClick={()=>setScreen('dashboard')} title="Dashboard"><i className="ti ti-layout-dashboard"/> Dashboard</div>
         <div className={'app-nav-item'+(navActive==='projects'?' active':'')} onClick={goToProjectsSection}
-          onDoubleClick={()=>{setScreen('projects');setLastProjectScreen('projects');}}><i className="ti ti-building"/> Projetos</div>
+          onDoubleClick={()=>{setScreen('projects');setLastProjectScreen('projects');}} title="Projetos"><i className="ti ti-building"/> Projetos</div>
 
         <div className={'app-nav-item'+(navActive==='dados'?' active':'')} onClick={()=>setScreen('dados')}
           title="Cadastro central de dados dos empreendimentos — alimenta ofícios e contratos"><i className="ti ti-database"/> Dados</div>
@@ -16318,17 +16355,19 @@ function App({currentUser}){
         {navPortaisVis.filter(p=>p!==navPortalProprio).map(p=>navPortal(p,true))}
         {acessoResolvido && permVerTudo() && <div className={'app-nav-item'+(navActive==='portaldiretoria'?' active':'')} onClick={()=>setScreen('portaldiretoria')}
           title="Portal Diretoria"><i className="ti ti-crown"/> Portal Diretoria</div>}
-        <div className={'app-nav-item'+(navActive==='map'?' active':'')} onClick={()=>setScreen('map')}><i className="ti ti-map-2"/> Mapa</div>
+        <div className={'app-nav-item'+(navActive==='map'?' active':'')} onClick={()=>setScreen('map')} title="Mapa"><i className="ti ti-map-2"/> Mapa</div>
         <div style={{marginTop:'auto'}}>
-          <div className={'app-nav-item'+(navActive==='settings'?' active':'')} onClick={()=>{setCfgTab(null);setScreen('settings');}}><i className="ti ti-settings"/> Configurações</div>
-          <div style={{borderTop:'1px solid var(--border)',marginTop:8,paddingTop:12,display:'flex',alignItems:'center',gap:10,padding:'12px 6px 0'}}>
+          <div className="app-nav-item app-nav-recolher" onClick={()=>trocarNavMini()} title={navMini?'Mostrar o menu completo':'Deixar só os ícones'}>
+            <i className={'ti '+(navMini?'ti-layout-sidebar-left-expand':'ti-layout-sidebar-left-collapse')}/> Recolher menu</div>
+          <div className={'app-nav-item'+(navActive==='settings'?' active':'')} onClick={()=>{setCfgTab(null);setScreen('settings');}} title="Configurações"><i className="ti ti-settings"/> Configurações</div>
+          <div className="app-nav-user" style={{borderTop:'1px solid var(--border)',marginTop:8,paddingTop:12,display:'flex',alignItems:'center',gap:10,padding:'12px 6px 0'}}>
             <div className="user-avatar" title="Sair da conta" style={{cursor:'pointer',overflow:'hidden'}}
               onClick={()=>{ if(window.confirm('Sair da conta?')) auth.signOut(); }}>
               {currentUser.photoURL
                 ? <img src={currentUser.photoURL} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                 : <i className="ti ti-user"/>}
             </div>
-            <div style={{flex:1,minWidth:0}}>
+            <div className="app-nav-user-txt" style={{flex:1,minWidth:0}}>
               <div style={{fontSize:12,fontWeight:600,color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{currentUser.displayName||currentUser.email}</div>
               <div style={{fontSize:11,color:'var(--text2)',cursor:'pointer'}}
                 onClick={()=>{ if(window.confirm('Sair da conta?')) auth.signOut(); }}>Sair da conta</div>
