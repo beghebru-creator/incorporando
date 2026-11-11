@@ -31,6 +31,10 @@
   #root { zoom: 0.8; }
   html { background: var(--bg); }
   .app-shell, .app-main { height: 125vh !important; }
+  /* Celular/tablet (Safari/Chrome móveis): 100vh inclui a área atrás das
+     barras do navegador, então o rodapé do menu (Configurações) ficava
+     escondido e sem rolagem. dvh = altura realmente visível. */
+  @supports (height: 100dvh) { .app-shell, .app-main { height: 125dvh !important; } }
   html, body { overflow: hidden; }
   /* O fluxograma (React Flow) nao pode ser afetado pelo zoom, senao as
      linhas saem tortas. Anulamos o zoom so nele (0.8 x 1.25 = 1). */
@@ -259,7 +263,7 @@
   ::-webkit-scrollbar-corner{background:transparent;}
   /* ── CASCA DO APP: menu lateral fixo (Dashboard/Projetos/Mapa/Config) + área principal ── */
   .app-shell{display:flex;height:100vh;}
-  .app-nav{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 14px;overflow-y:auto;}
+  .app-nav{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 14px;padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
   .app-nav-logo{display:flex;align-items:center;gap:10px;margin-bottom:26px;padding:0 6px;}
   /* Marca "incorporando" — Outfit Medium em minúsculas; o símbolo (ConectaMark) leva as curvas na cor da marca e o centro laranja. */
   .app-brand{font-family:var(--font-display);font-weight:500;font-size:23px;line-height:1;letter-spacing:-.03em;color:var(--brand);white-space:nowrap;}
@@ -12458,7 +12462,10 @@ function normalizarPortais(raw, setoresCfg){
   const legado=(pid)=>(Array.isArray(setoresCfg)?setoresCfg:[]).filter(s=>s&&s.code&&Array.isArray(s.portais)&&s.portais.includes(pid)).map(s=>s.code);
   const fixo=(pid)=>{ const d=PORTAIS_FIXOS[pid]; const salvo=lista.find(x=>x.id===pid);
     const base={id:pid,fixo:true,nome:'',icone:d.icone,abas:d.abas.slice(),setores:[...new Set([d.setorBase,...legado(pid)])]};
-    return salvo?{...base,...salvo,fixo:true,removido:false,abas:Array.isArray(salvo.abas)?portalAbasLimpa(salvo.abas):base.abas,setores:Array.isArray(salvo.setores)?salvo.setores:base.setores}:base; };
+    let abasS=salvo&&Array.isArray(salvo.abas)?portalAbasLimpa(salvo.abas):base.abas;
+    /* Aba nova (Atas, nov/2026): entra sozinha no Portal DI já configurado. */
+    if(pid==='portaldi'&&salvo&&Array.isArray(salvo.abas)&&!salvo.abas.includes('atas')){ abasS=abasS.slice(); const i=abasS.indexOf('painel'); abasS.splice(i>=0?i+1:0,0,'atas'); }
+    return salvo?{...base,...salvo,fixo:true,removido:false,abas:abasS,setores:Array.isArray(salvo.setores)?salvo.setores:base.setores}:base; };
   const outros=lista.filter(x=>!PORTAIS_FIXOS[x.id]).map(x=>({...x,fixo:false,abas:portalAbasLimpa(x.abas),setores:Array.isArray(x.setores)?x.setores:[]}));
   return [fixo('portaldi'),fixo('portalprj'),...outros];
 }
