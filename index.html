@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* Mede a altura realmente visível da tela (desconta as barras do navegador
+   do celular) e compensa o zoom 0.8 do app. Ver .app-h-js no CSS. */
+(function(){
+  var r=document.documentElement;
+  function medir(){ var h=window.innerHeight||r.clientHeight; if(h>0){ r.style.setProperty('--app-h',(h/0.8)+'px'); r.classList.add('app-h-js'); } }
+  medir();
+  window.addEventListener('resize',medir);
+  window.addEventListener('orientationchange',function(){ setTimeout(medir,250); });
+  window.addEventListener('pageshow',medir);
+})();
+</script>
 <title>Incorporando</title>
 <!-- build: demo-mode-v2 -->
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -35,6 +47,11 @@
      barras do navegador, então o rodapé do menu (Configurações) ficava
      escondido e sem rolagem. dvh = altura realmente visível. */
   @supports (height: 100dvh) { .app-shell, .app-main { height: 125dvh !important; } }
+  /* Altura medida por JavaScript (window.innerHeight) — é o jeito que funciona
+     em todos os celulares (Safari do iPhone inclusive), onde vh/dvh com o zoom
+     de 0.8 não batem com a área visível e o rodapé do menu (Configurações)
+     ficava fora da tela. --app-h = altura visível ÷ 0.8 (por causa do zoom). */
+  html.app-h-js .app-shell, html.app-h-js .app-main { height: var(--app-h) !important; }
   html, body { overflow: hidden; }
   /* O fluxograma (React Flow) nao pode ser afetado pelo zoom, senao as
      linhas saem tortas. Anulamos o zoom so nele (0.8 x 1.25 = 1). */
