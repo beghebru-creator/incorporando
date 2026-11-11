@@ -1880,6 +1880,39 @@
   .fin-bar{width:38px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:6px 6px 0 0;}
   .fin-bar-val{font-size:12px;color:var(--text2);font-weight:600;white-space:nowrap;}
   .fin-bar-lbl{font-size:11px;color:var(--text3);white-space:nowrap;text-transform:capitalize;}
+  /* Atas de Reunião */
+  .ata-modal{width:720px;}
+  .ata-modal-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  .ata-aviso{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12.5px;color:var(--text2);margin-bottom:12px;}
+  .ata-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border:1px solid var(--border2);border-radius:20px;padding:2px 9px;color:var(--text2);background:var(--surface);white-space:nowrap;}
+  .ata-badge.gemini{color:#1a73e8;border-color:rgba(26,115,232,.35);background:rgba(26,115,232,.08);}
+  .ata-badge.revisar{color:var(--amber,#b45309);border-color:var(--amber,#f59e0b);background:var(--amber-bg,rgba(245,158,11,.1));}
+  .ata-ta{min-height:70px;resize:vertical;font-family:inherit;}
+  .ata-ta.grande{min-height:260px;font-size:12.5px;line-height:1.5;margin-top:6px;}
+  .ata-vazio{font-size:12.5px;color:var(--text3);font-style:italic;padding:4px 0;}
+  .ata-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
+  .ata-chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:3px 4px 3px 9px;max-width:100%;}
+  .ata-chip.so-emp{border-style:dashed;}
+  .ata-chip-t{cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ata-chip button{border:none;background:none;color:var(--text3);cursor:pointer;padding:0 3px;}
+  .ata-vinc-add{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .ata-vinc-add select{flex:1;min-width:150px;}
+  .ata-meta{font-size:11.5px;color:var(--text3);margin:6px 0;}
+  .ata-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
+  .ata-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:border-color .15s;}
+  .ata-card:hover{border-color:var(--accent);}
+  .ata-card.revisar{border-left:4px solid var(--amber,#f59e0b);}
+  .ata-card-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+  .ata-data{font-weight:700;font-size:12.5px;margin-right:2px;}
+  .ata-card-t{font-weight:700;font-size:14px;margin-bottom:4px;}
+  .ata-card-o{font-size:12px;color:var(--text2);margin-bottom:4px;}
+  .ata-card-r{font-size:12.5px;color:var(--text2);white-space:pre-line;margin-bottom:6px;}
+  .ata-fonte{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+  .ata-passos{font-size:12.5px;color:var(--text2);padding-left:18px;margin:0 0 10px;line-height:1.7;}
+  .ata-passos a{color:var(--accent);}
+  .ata-codigo{margin-bottom:12px;font-size:12px;}
+  .ata-codigo pre{max-height:220px;overflow:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;white-space:pre;}
+  @keyframes ataGira{to{transform:rotate(360deg);}} .ata-gira{display:inline-block;animation:ataGira 1s linear infinite;}
 </style>
 </head>
 <body>
@@ -3838,7 +3871,7 @@ function ComentariosTarefa({lista,notaAntiga,onChange}){
     </div>
   );
 }
-function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contratosVinc,onOpenContrato,onComentarios,pedidosTarefa}){
+function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contratosVinc,onOpenContrato,onComentarios,pedidosTarefa,projId,projects}){
   const[label,setLabel]=useState(node.data.label);
   const[status,setStatus]=useState(node.data.status);
   const[sector,setSector]=useState(node.data.sector);
@@ -3949,6 +3982,7 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
           <ComentariosTarefa lista={comentarios} notaAntiga={notes} onChange={mudarComentarios}/>
         </div>
         <label className="chk-inflow"><input type="checkbox" checked={inFlow} disabled={!pEstrutura} onChange={e=>setInFlow(e.target.checked)}/> <span>Mostrar esta tarefa também no <b>Fluxograma</b></span></label>
+        {!DEMO_MODE&&<AtasDaTarefa projId={projId} taskId={node.id} taskLabel={node.data.label} projects={projects}/>}
         {Array.isArray(contratosVinc)&&contratosVinc.length>0&&(
           <div className="fin-vinc-box">
             <div className="modal-field-label" style={{marginBottom:6}}><i className="ti ti-file-dollar"/> Contratos vinculados ({contratosVinc.length})</div>
@@ -11917,6 +11951,468 @@ function rpPdfHtml(p,imgs,logoUrl){
   return h;
 }
 
+/* ═══════════ ATAS DE REUNIÃO ═══════════
+   Registro das reuniões (online, presenciais, ligações) vinculadas às tarefas.
+   Cada ata é um documento fluxoapp_meta/ata_<id> {tipo:'ata', ...} — leve, só
+   com os campos de resumo. O TEXTO COMPLETO (ata/transcrição inteira) fica em
+   pedaços separados fluxoapp_meta/atatxt_<id>_<n> {tipo:'ataTxt'}, carregados
+   só quando a ata é aberta (não estoura o limite de 1 MB por documento).
+   Integração Google Meet (Gemini "Fazer anotações"): cada pessoa instala um
+   Apps Script na PRÓPRIA conta Google (grátis, sem servidor e sem verificação
+   do Google). O script lê a pasta escolhida e devolve os documentos novos;
+   o app (logado) busca e grava aqui. Fontes em fluxoapp_meta/atas_config. */
+const ATA_DOC=(id)=>db.collection('fluxoapp_meta').doc('ata_'+id);
+const ATA_TXT_DOC=(id,n)=>db.collection('fluxoapp_meta').doc('atatxt_'+id+'_'+n);
+const ATAS_CFG_DOC=db.collection('fluxoapp_meta').doc('atas_config');
+const ATA_TXT_PEDACO=300000; /* caracteres por pedaço (bem abaixo de 1 MB) */
+const ATA_TIPOS=[['online','Reunião online'],['presencial','Presencial'],['ligacao','Ligação'],['visita','Visita técnica'],['outro','Outro']];
+function ataTipoNome(k){ const t=ATA_TIPOS.find(x=>x[0]===k); return t?t[1]:'Reunião'; }
+function ataHojeISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function ataNovoId(){ return 'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+/* Uma assinatura só para o app inteiro (aba Atas + janela da tarefa). */
+let ATAS_CACHE=[]; const ATAS_OUVINTES=new Set(); let ATAS_UNSUB=null;
+function useAtas(){
+  const[lista,setLista]=useState(ATAS_CACHE);
+  useEffect(()=>{
+    ATAS_OUVINTES.add(setLista); setLista(ATAS_CACHE);
+    if(!ATAS_UNSUB&&!DEMO_MODE){
+      ATAS_UNSUB=db.collection('fluxoapp_meta').where('tipo','==','ata').onSnapshot(snap=>{
+        ATAS_CACHE=snap.docs.map(d=>({...d.data(),_docId:d.id})).filter(a=>!a.removido);
+        ATAS_OUVINTES.forEach(f=>f(ATAS_CACHE));
+      },err=>console.error('Erro ao ler atas:',err));
+    }
+    return ()=>{ ATAS_OUVINTES.delete(setLista); };
+  },[]);
+  return lista;
+}
+/* Texto completo: junta os pedaços. */
+async function ataCarregarTexto(ata){
+  const n=Number(ata&&ata.txtPedacos)||0; if(!n||DEMO_MODE) return '';
+  const docs=await Promise.all(Array.from({length:n},(_,i)=>ATA_TXT_DOC(ata.id,i).get()));
+  return docs.map(d=>d.exists?(d.data().texto||''):'').join('');
+}
+/* Grava a ata (campos leves) e, se veio texto, os pedaços do texto completo. */
+async function ataSalvar(ata,textoCompleto){
+  if(DEMO_MODE) return;
+  const dados={...ata}; delete dados._docId;
+  if(typeof textoCompleto==='string'){
+    const partes=[]; for(let i=0;i<textoCompleto.length;i+=ATA_TXT_PEDACO) partes.push(textoCompleto.slice(i,i+ATA_TXT_PEDACO));
+    const antigos=Number(ata.txtPedacos)||0;
+    await Promise.all(partes.map((t,i)=>ATA_TXT_DOC(ata.id,i).set({tipo:'ataTxt',ataId:ata.id,n:i,texto:t})));
+    for(let i=partes.length;i<antigos;i++) await ATA_TXT_DOC(ata.id,i).set({tipo:'ataTxt',ataId:ata.id,n:i,texto:''});
+    dados.txtPedacos=partes.length; dados.txtTamanho=textoCompleto.length;
+  }
+  dados.tipo='ata';
+  dados.atualizadoEm=Date.now(); dados.atualizadoPor=EU.nome||EU.email||'';
+  await ATA_DOC(ata.id).set(dados,{merge:true});
+}
+
+/* Lê o documento do Gemini e separa as seções (Resumo, Detalhes, Próximas
+   etapas, Transcrição). Não usa IA: só os títulos que o Gemini já escreve. */
+function ataSepararSecoes(texto){
+  const linhas=String(texto||'').replace(/\r/g,'').split('\n');
+  const tipos=[
+    ['resumo',/^(#+\s*)?(resumo|summary)\s*:?$/i],
+    ['detalhes',/^(#+\s*)?(detalhes|details)\s*:?$/i],
+    ['proximos',/^(#+\s*)?(pr[óo]ximas etapas( sugeridas)?|pr[óo]ximos passos|suggested next steps|next steps|action items)\s*:?$/i],
+    ['transcricao',/^(#+\s*)?(transcri[çc][ãa]o|transcript)\s*:?$/i],
+  ];
+  const out={resumo:'',detalhes:'',proximos:'',transcricao:''}; let atual=null;
+  linhas.forEach(l=>{
+    const t=l.trim(); const hit=tipos.find(([,re])=>re.test(t));
+    if(hit){ atual=hit[0]; return; }
+    if(/^###\s/.test(t)){ atual=null; return; } /* título de aba gravado pelo script */
+    if(atual) out[atual]+=l+'\n';
+  });
+  Object.keys(out).forEach(k=>out[k]=out[k].trim());
+  return out;
+}
+/* "Reunião X - 2026/11/10 14:00 GMT-03:00 - Anotações do Gemini" → título e data. */
+function ataInfoDoNome(nome,criadoMs){
+  const s=String(nome||''); const m=s.match(/(\d{4})[\/-](\d{2})[\/-](\d{2})/);
+  let data=m?`${m[1]}-${m[2]}-${m[3]}`:'';
+  if(!data&&criadoMs){ const d=new Date(criadoMs); data=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  let titulo=m?s.slice(0,m.index).replace(/[\s\-–]+$/,''):s.replace(/\s*[-–]\s*(anota[çc][õo]es do gemini|notes by gemini)\s*$/i,'');
+  return {titulo:titulo.trim()||s,data};
+}
+/* Sugere vínculos: empreendimentos cujo nome aparece no título/resumo. */
+function ataSugerirVinculos(projects,texto){
+  const low=String(texto||'').toLowerCase(); const out=[];
+  (projects||[]).filter(p=>p&&!p.deleted&&p.name&&p.name.length>=4).forEach(p=>{ if(low.includes(String(p.name).toLowerCase())) out.push({projId:p.id,projNome:p.name,taskId:'',taskLabel:''}); });
+  return out;
+}
+
+/* Código do Apps Script que a pessoa cola na própria conta Google. */
+function ataScriptCodigo(token){
+  return `/* Incorporando — leitor de atas do Google Meet (Gemini)
+   Instale na SUA conta Google. Ele só lê a pasta que você escolher no app. */
+const CODIGO = '${token}';
+
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  if (p.codigo !== CODIGO) return saida({ ok: false, erro: 'Código de conexão inválido.' });
+  try {
+    const pasta = DriveApp.getFolderById(p.pasta);
+    if (p.acao === 'teste') return saida({ ok: true, pasta: pasta.getName() });
+    const desde = Number(p.desde || 0);
+    const limite = Math.min(Number(p.limite || 5), 10);
+    const filtro = String(p.filtro || '').toLowerCase();
+    const it = pasta.getFilesByType(MimeType.GOOGLE_DOCS);
+    const lista = [];
+    while (it.hasNext()) {
+      const f = it.next();
+      const t = f.getLastUpdated().getTime();
+      if (t <= desde) continue;
+      if (filtro && f.getName().toLowerCase().indexOf(filtro) < 0) continue;
+      lista.push({ f: f, t: t });
+    }
+    lista.sort(function (a, b) { return a.t - b.t; });
+    const itens = lista.slice(0, limite).map(function (x) {
+      return { id: x.f.getId(), nome: x.f.getName(), url: x.f.getUrl(),
+               criado: x.f.getDateCreated().getTime(), atualizado: x.t, texto: lerTexto(x.f.getId()) };
+    });
+    return saida({ ok: true, itens: itens, restantes: Math.max(0, lista.length - itens.length) });
+  } catch (err) {
+    return saida({ ok: false, erro: String(err) });
+  }
+}
+
+/* Lê o documento inteiro, inclusive as abas (Anotações e Transcrição). */
+function lerTexto(id) {
+  const doc = DocumentApp.openById(id);
+  try {
+    const partes = [];
+    const visitar = function (abas) {
+      abas.forEach(function (aba) {
+        partes.push('### ' + aba.getTitle());
+        partes.push(aba.asDocumentTab().getBody().getText());
+        visitar(aba.getChildTabs());
+      });
+    };
+    visitar(doc.getTabs());
+    return partes.join('\\n\\n');
+  } catch (e) {
+    return doc.getBody().getText();
+  }
+}
+
+function saida(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+`;
+}
+function ataPastaId(txt){ const s=String(txt||'').trim(); const m=s.match(/folders\/([A-Za-z0-9_-]{10,})/)||s.match(/[?&]id=([A-Za-z0-9_-]{10,})/); return m?m[1]:(/^[A-Za-z0-9_-]{10,}$/.test(s)?s:''); }
+async function ataChamarScript(fonte,params){
+  const q=new URLSearchParams({codigo:fonte.codigo,pasta:fonte.pastaId,...params}).toString();
+  const r=await fetch(fonte.url+(fonte.url.includes('?')?'&':'?')+q,{method:'GET',redirect:'follow'});
+  const txt=await r.text(); let j=null; try{ j=JSON.parse(txt); }catch(e){ throw new Error('O script não respondeu como esperado. Confira se ele foi implantado como "App da Web" com acesso para "Qualquer pessoa".'); }
+  if(!j.ok) throw new Error(j.erro||'Erro no script.');
+  return j;
+}
+/* Busca as atas novas de UMA fonte e grava. Devolve quantas entraram. */
+async function ataSincronizarFonte(fonte,projects,atasExistentes,salvarFonte){
+  const jaTem=new Set((atasExistentes||[]).map(a=>a.driveFileId).filter(Boolean));
+  let desde=Number(fonte.ultimaSync)||0, novas=0, rodadas=0, restantes=1;
+  while(restantes>0&&rodadas<12){
+    rodadas++;
+    const j=await ataChamarScript(fonte,{desde:String(desde),limite:'5',filtro:fonte.filtro||''});
+    for(const it of (j.itens||[])){
+      desde=Math.max(desde,Number(it.atualizado)||0);
+      if(jaTem.has(it.id)) continue;
+      const sec=ataSepararSecoes(it.texto); const info=ataInfoDoNome(it.nome,it.criado);
+      const ata={id:ataNovoId(),titulo:info.titulo,data:info.data,tipoReuniao:'online',orgao:'',participantes:'',
+        resumo:sec.resumo||sec.detalhes.slice(0,1500),decisoes:'',proximos:sec.proximos,
+        vinculos:ataSugerirVinculos(projects,info.titulo+' '+sec.resumo),
+        origem:'gemini',fonteId:fonte.id,fonteNome:fonte.nome||'',driveFileId:it.id,driveUrl:it.url,driveNome:it.nome,
+        status:'revisar',criadoEm:Date.now(),criadoPor:'Google Meet ('+(fonte.nome||'integração')+')'};
+      await ataSalvar(ata,String(it.texto||''));
+      jaTem.add(it.id); novas++;
+    }
+    restantes=Number(j.restantes)||0;
+    if(!(j.itens||[]).length) break;
+  }
+  await salvarFonte({...fonte,ultimaSync:desde,ultimaTentativa:Date.now(),ultimoErro:''});
+  return novas;
+}
+function useAtasConfig(){
+  const[cfg,setCfg]=useState({fontes:[]});
+  useEffect(()=>{ if(DEMO_MODE) return; return ATAS_CFG_DOC.onSnapshot(s=>{ const d=s.exists?s.data():{}; setCfg({fontes:Array.isArray(d.fontes)?d.fontes:[]}); },err=>console.error('Erro ao ler config. das atas:',err)); },[]);
+  const salvarFontes=async(fontes)=>{ setCfg({fontes}); if(!DEMO_MODE) await ATAS_CFG_DOC.set({fontes},{merge:true}); };
+  return [cfg,salvarFontes];
+}
+
+/* ─── Janela da ata: ver, editar, vincular tarefas, texto completo ─── */
+function AtaModal({inicial,projects,onClose,onAbrirTarefa}){
+  const nova=!inicial||!inicial.id;
+  const[a,setA]=useState(()=>({titulo:'',data:ataHojeISO(),tipoReuniao:'presencial',orgao:'',participantes:'',resumo:'',decisoes:'',proximos:'',vinculos:[],origem:'manual',status:'ok',...(inicial||{})}));
+  const[texto,setTexto]=useState(''); const[textoCarregado,setTextoCarregado]=useState(nova); const[textoMudou,setTextoMudou]=useState(false);
+  const[verTexto,setVerTexto]=useState(nova);
+  const[salvando,setSalvando]=useState(false);
+  const[pSel,setPSel]=useState(''); const[tSel,setTSel]=useState('');
+  const pode=permEditarNotas();
+  const up=(k,v)=>setA(x=>({...x,[k]:v}));
+  useEffect(()=>{ if(nova||!inicial.txtPedacos){ setTextoCarregado(true); return; } let vivo=true; ataCarregarTexto(inicial).then(t=>{ if(vivo){ setTexto(t); setTextoCarregado(true); } }).catch(e=>{ console.error(e); if(vivo) setTextoCarregado(true); }); return ()=>{vivo=false;}; },[]);
+  const ativos=(projects||[]).filter(p=>p&&!p.deleted).sort((x,y)=>String(x.name||'').localeCompare(String(y.name||''),'pt'));
+  const projSel=ativos.find(p=>String(p.id)===String(pSel));
+  const tarefas=projSel?(projSel.tasks||[]).filter(t=>t&&t.label).slice().sort((x,y)=>String(x.label).localeCompare(String(y.label),'pt')):[];
+  const addVinc=()=>{ if(!projSel) return; const t=tarefas.find(x=>String(x.id)===String(tSel));
+    const v={projId:projSel.id,projNome:projSel.name,taskId:t?t.id:'',taskLabel:t?t.label:''};
+    const vs=(a.vinculos||[]).filter(x=>!(String(x.projId)===String(v.projId)&&String(x.taskId||'')==='')); /* troca a sugestão só-empreendimento */
+    if(vs.some(x=>String(x.projId)===String(v.projId)&&String(x.taskId||'')===String(v.taskId||''))) return;
+    up('vinculos',vs.concat(v)); setTSel(''); };
+  const remVinc=(i)=>up('vinculos',(a.vinculos||[]).filter((_,j)=>j!==i));
+  const salvar=async(marcarRevisada)=>{
+    if(!String(a.titulo||'').trim()){ alert('Dê um título para a ata.'); return; }
+    setSalvando(true);
+    try{
+      const ata={...a,id:a.id||ataNovoId(),titulo:a.titulo.trim()};
+      if(nova){ ata.criadoEm=Date.now(); ata.criadoPor=EU.nome||EU.email||''; }
+      if(marcarRevisada) ata.status='ok';
+      await ataSalvar(ata,(nova||textoMudou)?texto:undefined);
+      onClose();
+    }catch(e){ console.error(e); alert('Não consegui salvar a ata: '+(e.message||e)); }
+    setSalvando(false);
+  };
+  const excluir=async()=>{ if(!window.confirm('Excluir esta ata?')) return; try{ await ATA_DOC(a.id).set({removido:true,atualizadoEm:Date.now(),atualizadoPor:EU.nome||EU.email||''},{merge:true}); onClose(); }catch(e){ alert('Não consegui excluir: '+(e.message||e)); } };
+  const copiar=()=>{ try{ navigator.clipboard.writeText(texto); }catch(e){} };
+  return (
+    <div className="modal-overlay" onClick={e=>{if(e.target.classList.contains('modal-overlay'))onClose();}}>
+      <div className="modal ata-modal">
+        <div className="ata-modal-h">
+          <div style={{fontWeight:700,fontSize:16}}><i className="ti ti-notes"/> {nova?'Nova ata':'Ata da reunião'}</div>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {a.origem==='gemini'&&<span className="ata-badge gemini"><i className="ti ti-sparkles"/> Google Meet</span>}
+            {a.status==='revisar'&&<span className="ata-badge revisar">Para revisar</span>}
+          </div>
+        </div>
+        {a.status==='revisar'&&<div className="ata-aviso"><i className="ti ti-info-circle"/> Importada automaticamente. Confira os campos, vincule as tarefas e clique em <b>Salvar e marcar como revisada</b>.</div>}
+        <div className="modal-field"><label className="modal-field-label">Título / assunto</label>
+          <input className="form-input" value={a.titulo} disabled={!pode} onChange={e=>up('titulo',e.target.value)} placeholder="Ex.: Prefeitura — análise do projeto de loteamento"/></div>
+        <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          <div style={{flex:1,minWidth:140}}><label className="modal-field-label">Data</label>
+            <input type="date" className="form-input" value={a.data||''} disabled={!pode} onChange={e=>up('data',e.target.value)}/></div>
+          <div style={{flex:1,minWidth:140}}><label className="modal-field-label">Tipo</label>
+            <select className="form-input" value={a.tipoReuniao||'outro'} disabled={!pode} onChange={e=>up('tipoReuniao',e.target.value)}>{ATA_TIPOS.map(([k,n])=><option key={k} value={k}>{n}</option>)}</select></div>
+        </div>
+        <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          <div style={{flex:1,minWidth:180}}><label className="modal-field-label">Órgão / local</label>
+            <input className="form-input" value={a.orgao||''} disabled={!pode} onChange={e=>up('orgao',e.target.value)} placeholder="Ex.: Prefeitura de Itajaí — SEDUR"/></div>
+          <div style={{flex:1,minWidth:180}}><label className="modal-field-label">Participantes</label>
+            <input className="form-input" value={a.participantes||''} disabled={!pode} onChange={e=>up('participantes',e.target.value)} placeholder="Quem participou"/></div>
+        </div>
+
+        <div className="modal-field"><label className="modal-field-label"><i className="ti ti-link"/> Tarefas vinculadas</label>
+          {(a.vinculos||[]).length===0&&<div className="ata-vazio">Nenhuma tarefa vinculada ainda.</div>}
+          <div className="ata-chips">
+            {(a.vinculos||[]).map((v,i)=>(
+              <span key={i} className={'ata-chip'+(v.taskId?'':' so-emp')}>
+                <span className="ata-chip-t" onClick={()=>v.taskId&&onAbrirTarefa&&onAbrirTarefa(v.projId,v.taskId)} title={v.taskId?'Abrir a tarefa':'Escolha a tarefa deste empreendimento abaixo'}>
+                  {v.projNome||'—'}{v.taskLabel?' · '+v.taskLabel:' · (escolher tarefa)'}</span>
+                {pode&&<button type="button" onClick={()=>remVinc(i)} title="Remover vínculo"><i className="ti ti-x"/></button>}
+              </span>))}
+          </div>
+          {pode&&<div className="ata-vinc-add">
+            <select className="form-input" value={pSel} onChange={e=>{setPSel(e.target.value);setTSel('');}}>
+              <option value="">Empreendimento…</option>{ativos.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+            <select className="form-input" value={tSel} disabled={!projSel} onChange={e=>setTSel(e.target.value)}>
+              <option value="">{projSel?'Tarefa (opcional)…':'—'}</option>{tarefas.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}</select>
+            <button type="button" className="btn-modal" disabled={!projSel} onClick={addVinc}><i className="ti ti-plus"/> Vincular</button>
+          </div>}
+        </div>
+
+        <div className="modal-field"><label className="modal-field-label">Resumo</label>
+          <textarea className="form-input ata-ta" value={a.resumo||''} disabled={!pode} onChange={e=>up('resumo',e.target.value)} placeholder="O que foi tratado (dá para ditar pelo microfone do teclado do celular)"/></div>
+        <div className="modal-field"><label className="modal-field-label">Decisões</label>
+          <textarea className="form-input ata-ta" value={a.decisoes||''} disabled={!pode} onChange={e=>up('decisoes',e.target.value)} placeholder="O que ficou decidido"/></div>
+        <div className="modal-field"><label className="modal-field-label">Próximos passos / prazos</label>
+          <textarea className="form-input ata-ta" value={a.proximos||''} disabled={!pode} onChange={e=>up('proximos',e.target.value)} placeholder="Ex.: reapresentar o projeto em 15 dias — responsável: Fulano"/></div>
+
+        <div className="modal-field">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
+            <label className="modal-field-label" style={{margin:0}}><i className="ti ti-file-text"/> Ata completa{a.txtTamanho?` (${Math.round(a.txtTamanho/1000)} mil caracteres)`:''}</label>
+            <div style={{display:'flex',gap:6}}>
+              {a.driveUrl&&<a className="btn-modal ghost" style={{padding:'4px 10px',textDecoration:'none'}} href={a.driveUrl} target="_blank" rel="noopener"><i className="ti ti-brand-google-drive"/> Original</a>}
+              {!nova&&<button type="button" className="btn-modal ghost" style={{padding:'4px 10px'}} onClick={()=>setVerTexto(v=>!v)}>{verTexto?'Ocultar':'Mostrar'}</button>}
+              {verTexto&&texto&&<button type="button" className="btn-modal ghost" style={{padding:'4px 10px'}} onClick={copiar} title="Copiar texto"><i className="ti ti-copy"/></button>}
+            </div>
+          </div>
+          {verTexto&&(!textoCarregado
+            ? <div className="ata-vazio">Carregando a ata completa…</div>
+            : <textarea className="form-input ata-ta grande" value={texto} disabled={!pode} onChange={e=>{setTexto(e.target.value);setTextoMudou(true);}} placeholder="Cole ou escreva aqui a ata completa / transcrição."/>)}
+        </div>
+        {!nova&&<div className="ata-meta">Registrada por {a.criadoPor||'—'}{a.atualizadoPor?` · última edição: ${a.atualizadoPor}`:''}</div>}
+        <div className="modal-footer" style={{justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
+          {(!nova&&pode)?<button className="btn-modal ghost" onClick={excluir} style={{color:'var(--red,#c0392b)'}}><i className="ti ti-trash"/> Excluir</button>:<span/>}
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <button className="btn-modal ghost" onClick={onClose}>Fechar</button>
+            {pode&&<button className="btn-modal" disabled={salvando} onClick={()=>salvar(a.status==='revisar')}>{salvando?'Salvando…':(a.status==='revisar'?'Salvar e marcar como revisada':'Salvar')}</button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Integração Google Meet: fontes (uma por pessoa/pasta) ─── */
+function AtasIntegracaoModal({fontes,salvarFontes,onClose}){
+  const[edit,setEdit]=useState(null);
+  const nova=()=>setEdit({id:'f'+Date.now().toString(36),nome:EU.nome||EU.email||'',dono:EU.email||'',url:'',pasta:'',pastaId:'',filtro:'Gemini',codigo:Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b=>b.toString(16).padStart(2,'0')).join(''),ativo:true,ultimaSync:0});
+  const[teste,setTeste]=useState(''); const[copiado,setCopiado]=useState(false);
+  const up=(k,v)=>setEdit(x=>({...x,[k]:v}));
+  const salvar=async()=>{ const pid=ataPastaId(edit.pasta); if(!edit.url.trim()||!pid){ alert('Preencha o endereço do script e o link da pasta do Drive.'); return; }
+    const f={...edit,url:edit.url.trim(),pastaId:pid}; const lista=(fontes||[]).some(x=>x.id===f.id)?fontes.map(x=>x.id===f.id?f:x):[...(fontes||[]),f];
+    try{ await salvarFontes(lista); setEdit(null); setTeste(''); }catch(e){ alert('Não consegui salvar: '+(e.message||e)); } };
+  const testar=async()=>{ setTeste('Testando…'); try{ const j=await ataChamarScript({...edit,url:edit.url.trim(),pastaId:ataPastaId(edit.pasta)},{acao:'teste'}); setTeste('✓ Conectado. Pasta: '+j.pasta); }catch(e){ setTeste('✗ '+(e.message||e)); } };
+  const remover=async(f)=>{ if(!window.confirm('Remover a conexão "'+(f.nome||'')+'"? As atas já importadas continuam no app.')) return; await salvarFontes((fontes||[]).filter(x=>x.id!==f.id)); };
+  const copiar=()=>{ try{ navigator.clipboard.writeText(ataScriptCodigo(edit.codigo)); setCopiado(true); setTimeout(()=>setCopiado(false),2000); }catch(e){ alert('Não consegui copiar — selecione o texto e copie manualmente.'); } };
+  return (
+    <div className="modal-overlay" onClick={e=>{if(e.target.classList.contains('modal-overlay'))onClose();}}>
+      <div className="modal ata-modal">
+        <div style={{fontWeight:700,fontSize:16,marginBottom:6}}><i className="ti ti-brand-google"/> Integração com o Google Meet</div>
+        <div className="ata-aviso" style={{marginBottom:14}}>As atas do Gemini (“Fazer anotações” no Meet) são lidas da pasta do Drive que você escolher. Cada pessoa conecta a própria conta — grátis, por um script que roda na sua conta Google.</div>
+        {!edit&&<>
+          {(fontes||[]).length===0&&<div className="ata-vazio">Nenhuma conta conectada ainda.</div>}
+          {(fontes||[]).map(f=>(
+            <div key={f.id} className="ata-fonte">
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:600}}>{f.nome||'Conexão'}</div>
+                <div className="ata-meta" style={{margin:0}}>Filtro: “{f.filtro||'todos os documentos'}” · {f.ultimaTentativa?'última leitura: '+new Date(f.ultimaTentativa).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'ainda não sincronizou'}</div>
+                {f.ultimoErro&&<div className="ata-meta" style={{margin:0,color:'var(--red,#c0392b)'}}>Erro: {f.ultimoErro}</div>}
+              </div>
+              <button className="btn-modal ghost" onClick={()=>{setEdit({...f});setTeste('');}}><i className="ti ti-pencil"/></button>
+              <button className="btn-modal ghost" onClick={()=>remover(f)}><i className="ti ti-trash"/></button>
+            </div>))}
+          <div className="modal-footer" style={{justifyContent:'space-between'}}>
+            <button className="btn-modal" onClick={nova}><i className="ti ti-plus"/> Conectar minha conta</button>
+            <button className="btn-modal ghost" onClick={onClose}>Fechar</button>
+          </div>
+        </>}
+        {edit&&<>
+          <ol className="ata-passos">
+            <li>Abra <a href="https://script.google.com/home/projects/create" target="_blank" rel="noopener">script.google.com → Novo projeto</a> (logado na conta Google onde ficam as atas).</li>
+            <li>Apague o que estiver lá, cole o código abaixo e salve. <button type="button" className="btn-modal" style={{padding:'3px 10px',marginLeft:4}} onClick={copiar}><i className="ti ti-copy"/> {copiado?'Copiado!':'Copiar código'}</button></li>
+            <li>Clique em <b>Implantar → Nova implantação</b>, tipo <b>App da Web</b>. Executar como: <b>Eu</b>. Quem pode acessar: <b>Qualquer pessoa</b>. Autorize quando o Google pedir.</li>
+            <li>Copie o <b>URL do app da Web</b> e cole abaixo, junto com o link da pasta onde o Gemini salva as anotações (normalmente “Meet Recordings”).</li>
+          </ol>
+          <details className="ata-codigo"><summary>Ver o código</summary><pre>{ataScriptCodigo(edit.codigo)}</pre></details>
+          <div className="modal-field"><label className="modal-field-label">Nome da conexão</label>
+            <input className="form-input" value={edit.nome} onChange={e=>up('nome',e.target.value)} placeholder="Ex.: Brunna — Meet"/></div>
+          <div className="modal-field"><label className="modal-field-label">URL do app da Web (Apps Script)</label>
+            <input className="form-input" value={edit.url} onChange={e=>up('url',e.target.value)} placeholder="https://script.google.com/macros/s/…/exec"/></div>
+          <div className="modal-field"><label className="modal-field-label">Link da pasta do Drive</label>
+            <input className="form-input" value={edit.pasta||edit.pastaId||''} onChange={e=>up('pasta',e.target.value)} placeholder="https://drive.google.com/drive/folders/…"/></div>
+          <div className="modal-field"><label className="modal-field-label">Ler só documentos cujo nome contém</label>
+            <input className="form-input" value={edit.filtro} onChange={e=>up('filtro',e.target.value)} placeholder="Gemini (deixe vazio para ler todos)"/></div>
+          {teste&&<div className="ata-aviso" style={{marginBottom:10}}>{teste}</div>}
+          <div className="modal-footer" style={{justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
+            <button className="btn-modal ghost" onClick={testar} disabled={!edit.url||!ataPastaId(edit.pasta||edit.pastaId)}><i className="ti ti-plug-connected"/> Testar conexão</button>
+            <div style={{display:'flex',gap:8}}>
+              <button className="btn-modal ghost" onClick={()=>{setEdit(null);setTeste('');}}>Voltar</button>
+              <button className="btn-modal" onClick={salvar}>Salvar</button>
+            </div>
+          </div>
+        </>}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Aba Atas: lista geral com busca e filtros ─── */
+let ATAS_ULTIMA_AUTO=0;
+function AtasView({onBack,projects,onOpenTask}){
+  const atas=useAtas();
+  const[cfg,salvarFontes]=useAtasConfig();
+  const[busca,setBusca]=useState(''); const[fProj,setFProj]=useState(''); const[fStatus,setFStatus]=useState('');
+  const[aberta,setAberta]=useState(null); const[integ,setInteg]=useState(false);
+  const[sync,setSync]=useState(''); const[sincronizando,setSincronizando]=useState(false);
+  const minhas=(cfg.fontes||[]).filter(f=>f.ativo!==false&&(!f.dono||!EU.email||String(f.dono).toLowerCase()===String(EU.email).toLowerCase()));
+  const sincronizar=async(silencioso)=>{
+    if(sincronizando||!minhas.length) return;
+    setSincronizando(true); if(!silencioso) setSync('Buscando atas novas…'); let total=0; const erros=[];
+    let fontesAtual=cfg.fontes.slice();
+    const salvarFonte=async(f)=>{ fontesAtual=fontesAtual.map(x=>x.id===f.id?f:x); await salvarFontes(fontesAtual); };
+    for(const f of minhas){ try{ total+=await ataSincronizarFonte(f,projects,ATAS_CACHE,salvarFonte); }catch(e){ erros.push((f.nome||'conexão')+': '+(e.message||e)); try{ await salvarFonte({...f,ultimaTentativa:Date.now(),ultimoErro:String(e.message||e)}); }catch(_){} } }
+    setSincronizando(false);
+    if(erros.length) setSync('Erro: '+erros.join(' · ')); else if(total||!silencioso) setSync(total?`${total} ata(s) nova(s) importada(s) — confira em “Para revisar”.`:'Nenhuma ata nova.');
+  };
+  /* Ao abrir a aba, busca sozinho (no máx. a cada 10 min). */
+  useEffect(()=>{ if(minhas.length&&Date.now()-ATAS_ULTIMA_AUTO>600000){ ATAS_ULTIMA_AUTO=Date.now(); sincronizar(true); } },[minhas.length]);
+  const ativos=(projects||[]).filter(p=>p&&!p.deleted).sort((x,y)=>String(x.name||'').localeCompare(String(y.name||''),'pt'));
+  const filtradas=React.useMemo(()=>{
+    const q=busca.trim().toLowerCase();
+    return atas.filter(a=>{
+      if(fStatus&&a.status!==fStatus) return false;
+      if(fProj&&!(a.vinculos||[]).some(v=>String(v.projId)===String(fProj))) return false;
+      if(!q) return true;
+      return [a.titulo,a.orgao,a.participantes,a.resumo,a.decisoes,a.proximos,(a.vinculos||[]).map(v=>v.projNome+' '+v.taskLabel).join(' ')].join(' ').toLowerCase().includes(q);
+    }).sort((x,y)=>String(y.data||'').localeCompare(String(x.data||''))||((y.criadoEm||0)-(x.criadoEm||0)));
+  },[atas,busca,fProj,fStatus]);
+  const nRevisar=atas.filter(a=>a.status==='revisar').length;
+  return (
+    <div className="pdi-wrap">
+      <div style={{marginBottom:16}}><button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button></div>
+      <div className="venc-toolbar">
+        <div className="venc-search"><i className="ti ti-search"/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar em título, órgão, resumo, decisões…"/></div>
+        <select className="pdi-select" style={{maxWidth:220}} value={fProj} onChange={e=>setFProj(e.target.value)}><option value="">Todos os empreendimentos</option>{ativos.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <select className="pdi-select" style={{maxWidth:180}} value={fStatus} onChange={e=>setFStatus(e.target.value)}><option value="">Todas</option><option value="revisar">Para revisar{nRevisar?` (${nRevisar})`:''}</option><option value="ok">Revisadas</option></select>
+        <div style={{marginLeft:'auto',display:'flex',gap:8,flexWrap:'wrap'}}>
+          <button className="pdi-btn ghost" onClick={()=>setInteg(true)}><i className="ti ti-brand-google"/> Google Meet</button>
+          {minhas.length>0&&<button className="pdi-btn ghost" disabled={sincronizando} onClick={()=>sincronizar(false)}><i className={'ti ti-refresh'+(sincronizando?' ata-gira':'')}/> Sincronizar</button>}
+          {permEditarNotas()&&<button className="venc-add-btn" onClick={()=>setAberta({})}><i className="ti ti-plus"/> Nova ata</button>}
+        </div>
+      </div>
+      {sync&&<div className="ata-aviso" style={{marginBottom:12}}>{sync}</div>}
+      {filtradas.length===0&&<div className="pdi-empty">{atas.length?'Nenhuma ata encontrada com esses filtros.':'Nenhuma ata registrada ainda. Clique em “Nova ata” ou conecte o Google Meet.'}</div>}
+      <div className="ata-lista">
+        {filtradas.map(a=>(
+          <div key={a.id} className={'ata-card'+(a.status==='revisar'?' revisar':'')} onClick={()=>setAberta(a)}>
+            <div className="ata-card-h">
+              <span className="ata-data">{fmtISOBR(a.data)}</span>
+              <span className="ata-badge">{ataTipoNome(a.tipoReuniao)}</span>
+              {a.origem==='gemini'&&<span className="ata-badge gemini"><i className="ti ti-sparkles"/> Meet</span>}
+              {a.status==='revisar'&&<span className="ata-badge revisar">Para revisar</span>}
+            </div>
+            <div className="ata-card-t">{a.titulo||'(sem título)'}</div>
+            {a.orgao&&<div className="ata-card-o"><i className="ti ti-building"/> {a.orgao}</div>}
+            {a.resumo&&<div className="ata-card-r">{a.resumo.length>240?a.resumo.slice(0,240)+'…':a.resumo}</div>}
+            {(a.vinculos||[]).length>0&&<div className="ata-chips">{a.vinculos.map((v,i)=><span key={i} className={'ata-chip'+(v.taskId?'':' so-emp')}><span className="ata-chip-t">{v.projNome}{v.taskLabel?' · '+v.taskLabel:''}</span></span>)}</div>}
+          </div>))}
+      </div>
+      {aberta&&<AtaModal inicial={aberta.id?aberta:null} projects={projects} onClose={()=>setAberta(null)} onAbrirTarefa={onOpenTask?(p,t)=>{setAberta(null);onOpenTask(p,t);}:null}/>}
+      {integ&&<AtasIntegracaoModal fontes={cfg.fontes} salvarFontes={salvarFontes} onClose={()=>setInteg(false)}/>}
+    </div>
+  );
+}
+
+/* ─── Bloco "Atas de reunião" dentro da janela da tarefa ─── */
+function AtasDaTarefa({projId,taskId,taskLabel,projects}){
+  const atas=useAtas();
+  const[aberta,setAberta]=useState(null);
+  const proj=(projects||[]).find(p=>String(p.id)===String(projId));
+  const daTarefa=atas.filter(a=>(a.vinculos||[]).some(v=>String(v.taskId)===String(taskId)&&(!projId||String(v.projId)===String(projId)))).sort((x,y)=>String(y.data||'').localeCompare(String(x.data||'')));
+  const novaPre={vinculos:[{projId:projId||'',projNome:proj?proj.name:'',taskId,taskLabel:taskLabel||''}]};
+  return (
+    <div className="fin-vinc-box">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6,gap:8}}>
+        <div className="modal-field-label" style={{margin:0}}><i className="ti ti-notes"/> Atas de reunião ({daTarefa.length})</div>
+        {permEditarNotas()&&<button type="button" className="btn-modal ghost" style={{padding:'4px 10px'}} onClick={()=>setAberta(novaPre)}><i className="ti ti-plus"/> Registrar ata</button>}
+      </div>
+      {daTarefa.length===0&&<div className="ata-vazio">Nenhuma reunião registrada para esta tarefa.</div>}
+      {daTarefa.map(a=>(
+        <div key={a.id} className="fin-vinc-item" style={{cursor:'pointer'}} onClick={()=>setAberta(a)}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{fmtISOBR(a.data)} · {a.titulo||'(sem título)'}</div>
+            <div style={{fontSize:11.5,color:'var(--text2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ataTipoNome(a.tipoReuniao)}{a.orgao?' · '+a.orgao:''}{a.resumo?' — '+a.resumo:''}</div>
+          </div>
+          {a.status==='revisar'&&<span className="ata-badge revisar">Revisar</span>}
+          <i className="ti ti-chevron-right" style={{color:'var(--text3)'}}/>
+        </div>))}
+      {aberta&&<AtaModal inicial={aberta.id?aberta:{...aberta}} projects={projects} onClose={()=>setAberta(null)}/>}
+    </div>
+  );
+}
+
 /* ═══════════ PORTAIS CONFIGURÁVEIS ═══════════
    Catálogo das abas (ferramentas) que podem entrar num portal. Os portais são
    montados em Configurações → Portais (só administradores): nome, ícone,
@@ -11932,6 +12428,7 @@ const PORTAL_ABAS=[
   {key:'prazos',       nome:'Prazos de Aprovação',     ic:'ti-hourglass',        grupo:'controle', dados:'proprio',       desc:'Prazo médio por tipo de aprovação e órgão.'},
   {key:'registros',    nome:'Registros de Unidades',   ic:'ti-home-check',       grupo:'unidades', dados:'compartilhado', desc:'Unidades vendidas por empreendimento (cliente, quadra, lote), controle de registro e transferência na prefeitura, e — via robô — IPTU das não transferidas.'},
   {key:'certidoes',    nome:'Certidões negativas',     ic:'ti-certificate',      grupo:'unidades', dados:'compartilhado', desc:'CND dos imóveis, das empresas e dos sócios — situação, última consulta e vencimento de cada certidão.'},
+  {key:'atas',         nome:'Atas de Reunião',         ic:'ti-notes',            grupo:'acomp', dados:'compartilhado', desc:'Registro das reuniões (prefeitura, órgãos, parceiros) vinculado às tarefas: resumo, decisões, próximos passos e a ata completa — inclusive importada automaticamente do Google Meet (Gemini).'},
   {key:'parceiros',    nome:'Relatório dos Parceiros', ic:'ti-users-group',      grupo:'acomp', dados:'compartilhado', desc:'Relatório mensal para os parceiros por empreendimento: macrofluxo, andamento do mês, linha do tempo, desenvolvimento de projetos, fotos e andamento da obra — com PDF.'},
   {key:'oficio',       nome:'Gerador de Ofícios',      ic:'ti-file-text',        grupo:'documentos', dados:'compartilhado', desc:'Crie ofícios em papel timbrado a partir do empreendimento, representante e assunto — em PDF ou Word.'},
   {key:'contratos',    nome:'Gerador de Contratos',    ic:'ti-file-certificate', grupo:'documentos', dados:'compartilhado', desc:'Importe um modelo, marque as variáveis com {CHAVE}, preencha o formulário e exporte o contrato em PDF.'},
@@ -11947,7 +12444,7 @@ const PORTAL_GRUPOS={
 function portalGrupoDaAba(k){ const a=PORTAL_ABAS.find(x=>x.key===k); return a?a.grupo:null; }
 const PORTAL_ABAS_DADOS_TXT={proprio:'dados próprios do portal',compartilhado:'mesma base em todos os portais'};
 const PORTAL_ICONES=[['ti-layout-grid','Grade'],['ti-file-text','Documento'],['ti-folders','Pastas'],['ti-cash-banknote','Dinheiro'],['ti-report-money','Relatório financeiro'],['ti-building','Prédio'],['ti-briefcase','Maleta'],['ti-chart-bar','Gráfico'],['ti-clipboard-list','Prancheta'],['ti-map-2','Mapa'],['ti-users-group','Pessoas'],['ti-tools','Ferramentas'],['ti-home-check','Casa'],['ti-scale','Jurídico'],['ti-bulldozer','Obra']];
-const PORTAIS_FIXOS={portaldi:{icone:'ti-file-text',abas:['painel','financeiro','vencimentos','contatos','registros','certidoes','parceiros'],setorBase:'DI'},
+const PORTAIS_FIXOS={portaldi:{icone:'ti-file-text',abas:['painel','atas','financeiro','vencimentos','contatos','registros','certidoes','parceiros'],setorBase:'DI'},
                      portalprj:{icone:'ti-folders',abas:['financeiro'],setorBase:'PRJ'}};
 function portalNome(p){ if(!p) return ''; const n=String(p.nome||'').trim(); if(n) return n; if(p.id==='portaldi') return 'Portal '+setorSigla('DI'); if(p.id==='portalprj') return 'Portal '+setorSigla('PRJ'); return 'Portal'; }
 /* Lista completa e normalizada (DI e PRJ sempre presentes). Quando ainda não
@@ -12325,6 +12822,11 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
             <div className="tt">Painel Semanal</div>
             <div className="dd">Atividades da semana por analista e empreendimento, controle de prazo, cópia para a semana seguinte e dashboard de atingimento.</div>
           </div>
+          <div className="pdi-tool" onClick={()=>setView('atas')}>
+            <i className="ti ti-notes"/>
+            <div className="tt">Atas de Reunião</div>
+            <div className="dd">Registro das reuniões vinculado às tarefas, com a ata completa — inclusive importada do Google Meet.</div>
+          </div>
           <div className="pdi-tool" onClick={()=>setView('financeiro')}>
             <i className="ti ti-cash-banknote"/>
             <div className="tt">Controle Financeiro</div>
@@ -12372,6 +12874,11 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
   /* ─── Ferramenta: Painel Semanal ─── */
   if(view==='painel'){
     return <PainelSemanal tarefas={painelTarefas} setTarefas={setPainelTarefas} projects={projects} avulsos={avulsosSalvos} onBack={()=>setView('home')} uid={uid}/>;
+  }
+
+  /* ─── Ferramenta: Atas de Reunião ─── */
+  if(view==='atas'){
+    return <AtasView onBack={()=>setView('home')} projects={projects} onOpenTask={onOpenTask}/>;
   }
 
   /* ─── Ferramenta: Relatório dos Parceiros (abre o app do Apps Script) ─── */
@@ -16504,7 +17011,7 @@ function App({currentUser}){
 
       {showPedidos&&project&&<PedidosModal pedidos={project.pedidos||[]} onDecidir={(id,ok)=>decidirPedido(project.id,id,ok)} onClose={()=>setShowPedidos(false)}/>}
       {modalNode&&(
-        <NodeModal node={modalNode} metaEditable={!!modalNode.metaEditable} usuarios={usuarios} onClose={()=>setModalNode(null)}
+        <NodeModal node={modalNode} metaEditable={!!modalNode.metaEditable} usuarios={usuarios} onClose={()=>setModalNode(null)} projId={curId} projects={projects}
           pedidosTarefa={((project&&project.pedidos)||[]).filter(pd=>pd.status==='pendente'&&(String(pd.taskId)===String(modalNode.id)||String(pd.from)===String(modalNode.id)||String(pd.to)===String(modalNode.id)))}
           onComentarios={(id,lista)=>{ setProjects(ps=>ps.map(p=>p.id!==curId?p:{...p,tasks:p.tasks.map(t=>t.id===id?{...t,comentarios:lista}:t)})); if(apiRef.current&&apiRef.current.updateNode) apiRef.current.updateNode(id,{comentarios:lista}); }}
           contratosVinc={[...(finContratos||[]).map(c=>({...c,_origem:'di'})),...(prjFinContratos||[]).map(c=>({...c,_origem:'prj'}))].filter(c=>c&&c.tarefaId!=null&&c.tarefaId!==''&&String(c.tarefaId)===String(modalNode.id)&&String(c.tarefaProjId!=null&&c.tarefaProjId!==''?c.tarefaProjId:c.empId)===String(curId))}
