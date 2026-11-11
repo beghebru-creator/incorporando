@@ -13574,43 +13574,54 @@ let AG_G_CLIENT=null;
    Roda numa instância separada do Firebase ("agenda") para NÃO trocar a conta
    logada no app — a pessoa pode conectar qualquer Gmail. */
 let AG_FB_APP=null;
-async function agGoogleTokenFirebase(){
+/* Token da agenda fica no localStorage (sobrevive a fechar a aba/recarregar).
+   E-mail da conta Google conectada é lembrado para renovar SEM escolher conta
+   nem permitir de novo (login_hint + prompt:none). */
+function agGTokLer(){ try{ return JSON.parse(agLS('conecta_gcal_tok')||agSS('conecta_gcal_tok')||'null'); }catch(e){ return null; } }
+function agGTokSalvar(tok,segs){ agLS('conecta_gcal_tok',JSON.stringify({token:tok,exp:Date.now()+(Number(segs)||3300)*1000})); agSS('conecta_gcal_tok',null); agLS('conecta_gcal_on','1'); }
+function agGTokLimpar(){ agLS('conecta_gcal_tok',null); agSS('conecta_gcal_tok',null); }
+async function agGoogleTokenFirebase(silencioso){
   if(!AG_FB_APP) AG_FB_APP=firebase.initializeApp(firebaseConfig,'agenda');
   const a=AG_FB_APP.auth();
   const prov=new firebase.auth.GoogleAuthProvider();
   prov.addScope('https://www.googleapis.com/auth/calendar.readonly');
-  prov.setCustomParameters({prompt:'select_account'});
+  const email=agLS('conecta_gcal_email');
+  prov.setCustomParameters(email?(silencioso?{login_hint:email,prompt:'none'}:{login_hint:email}):{prompt:'select_account'});
   const r=await a.signInWithPopup(prov);
   const tok=r&&r.credential&&r.credential.accessToken;
+  const em=r&&r.user&&r.user.email;
   try{ await a.signOut(); }catch(e){}
   if(!tok) throw new Error('O Google não devolveu a autorização da agenda.');
-  agSS('conecta_gcal_tok',JSON.stringify({token:tok,exp:Date.now()+55*60000})); agLS('conecta_gcal_on','1');
+  if(em) agLS('conecta_gcal_email',em);
+  agGTokSalvar(tok,55*60);
   return tok;
 }
-async function agGoogleToken(interativo){
-  const salvo=JSON.parse(agSS('conecta_gcal_tok')||'null');
+async function agGoogleToken(interativo,silencioso){
+  const salvo=agGTokLer();
   if(salvo&&salvo.exp>Date.now()+60000) return salvo.token;
   if(!interativo) return null;
   if(!AGENDA_CFG.googleClientId){
-    try{ return await agGoogleTokenFirebase(); }
-    catch(e){ const c=String(e&&e.code||''); throw new Error(c.includes('popup-closed')||c.includes('cancelled')?'Janela fechada antes de autorizar.':c.includes('popup-blocked')?'O navegador bloqueou a janela do Google. Libere pop-ups para este site.':(e.message||'Não foi possível conectar ao Google.')); }
+    try{ return await agGoogleTokenFirebase(silencioso); }
+    catch(e){ if(silencioso) return null; const c=String(e&&e.code||''); throw new Error(c.includes('popup-closed')||c.includes('cancelled')?'Janela fechada antes de autorizar.':c.includes('popup-blocked')?'O navegador bloqueou a janela do Google. Libere pop-ups para este site.':(e.message||'Não foi possível conectar ao Google.')); }
   }
   const google=await agLoadScript('https://accounts.google.com/gsi/client','google');
+  const email=agLS('conecta_gcal_email');
   return await new Promise((res,rej)=>{
     AG_G_CLIENT=google.accounts.oauth2.initTokenClient({
       client_id:AGENDA_CFG.googleClientId,
       scope:'https://www.googleapis.com/auth/calendar.readonly',
-      callback:(r)=>{ if(r&&r.access_token){ agSS('conecta_gcal_tok',JSON.stringify({token:r.access_token,exp:Date.now()+(Number(r.expires_in)||3600)*1000})); agLS('conecta_gcal_on','1'); res(r.access_token); } else rej(new Error((r&&r.error)||'Autorização não concedida')); },
-      error_callback:(e)=>rej(new Error((e&&e.message)||'Janela fechada antes de autorizar')),
+      callback:(r)=>{ if(r&&r.access_token){ agGTokSalvar(r.access_token,(Number(r.expires_in)||3600)-300); res(r.access_token); } else if(silencioso) res(null); else rej(new Error((r&&r.error)||'Autorização não concedida')); },
+      error_callback:(e)=>silencioso?res(null):rej(new Error((e&&e.message)||'Janela fechada antes de autorizar')),
     });
-    AG_G_CLIENT.requestAccessToken({prompt:agLS('conecta_gcal_on')?'':'consent'});
+    const op={prompt:agLS('conecta_gcal_on')?(silencioso?'none':''):'consent'}; if(email) op.login_hint=email;
+    AG_G_CLIENT.requestAccessToken(op);
   });
 }
 async function agGoogleEventos(token,ini,fim){
   const u='https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=250'
     +'&timeMin='+encodeURIComponent(ini.toISOString())+'&timeMax='+encodeURIComponent(fim.toISOString());
   const r=await fetch(u,{headers:{Authorization:'Bearer '+token}});
-  if(r.status===401){ agSS('conecta_gcal_tok',null); throw new Error('A autorização do Google expirou. Clique em atualizar.'); }
+  if(r.status===401){ agGTokLimpar(); const e=new Error('expirou'); e.expirou=true; throw e; }
   if(!r.ok) throw new Error('Google Agenda respondeu '+r.status);
   const d=await r.json();
   return (d.items||[]).filter(e=>e.status!=='cancelled').map(e=>{
@@ -13667,23 +13678,39 @@ function AgendaWidget({dono}){
   const[gOn,setGOn]=useState(()=>!!agLS('conecta_gcal_on'));
   const[mOn,setMOn]=useState(()=>!!agLS('conecta_ms_on'));
   const{ini,fim,dias}=agIntervalo(prefs.periodo);
-  const buscar=async(interativo,quais)=>{
+  const renovRef=useRef(false); /* já tentou renovar sozinho desde a última expiração */
+  const buscar=async(interativo,quais,silencioso)=>{
     setCarregando(true); const ne={...erro};
     const alvo=quais||[gOn&&'google',mOn&&'outlook'].filter(Boolean);
     for(const f of alvo){
       try{
-        const tok=f==='google'?await agGoogleToken(interativo):await agMsToken(interativo);
+        const tok=f==='google'?await agGoogleToken(interativo,silencioso):await agMsToken(interativo);
         if(!tok){ ne[f]='expirou'; continue; }
+        if(f==='google') renovRef.current=false;
         const evs=f==='google'?await agGoogleEventos(tok,ini,fim):await agMsEventos(tok,ini,fim);
         setEventos(o=>({...o,[f]:evs})); ne[f]='';
         if(f==='google') setGOn(true); else setMOn(true);
-      }catch(e){ ne[f]=e.message||String(e); }
+      }catch(e){ ne[f]=e&&e.expirou?'expirou':(e.message||String(e)); }
     }
     setErro(ne); setCarregando(false);
   };
   useEffect(()=>{ if(gOn||mOn) buscar(false); },[prefs.periodo]); /* busca silenciosa ao abrir / trocar o período */
+  /* Google: a chave vale ~1h. Perto de vencer, marca como expirada; no próximo
+     clique da pessoa na página, renova sozinho (janela abre e fecha sozinha, sem
+     escolher conta nem permitir de novo). Só se isso falhar aparece "Reconectar". */
+  useEffect(()=>{
+    if(!gOn) return;
+    const t=setInterval(()=>{ const s=agGTokLer(); if(!s||s.exp<=Date.now()+60000) setErro(o=>o.google?o:{...o,google:'expirou'}); },60000);
+    return ()=>clearInterval(t);
+  },[gOn]);
+  useEffect(()=>{
+    if(!gOn||erro.google!=='expirou'||renovRef.current||!agLS('conecta_gcal_email')) return;
+    const h=ev=>{ if(renovRef.current) return; if(ev&&ev.target&&ev.target.closest&&ev.target.closest('.ag-aviso,.ag-cfg,.ag-btns,.pdi-icon-btn')) return; /* esses botões já reconectam por conta própria */ renovRef.current=true; buscar(true,['google'],true); };
+    document.addEventListener('pointerdown',h,true);
+    return ()=>document.removeEventListener('pointerdown',h,true);
+  },[gOn,erro.google]);
   const desconectar=f=>{
-    if(f==='google'){ const t=JSON.parse(agSS('conecta_gcal_tok')||'null'); try{ if(t&&window.google&&google.accounts) google.accounts.oauth2.revoke(t.token,()=>{}); }catch(e){} agSS('conecta_gcal_tok',null); agLS('conecta_gcal_on',null); setGOn(false); }
+    if(f==='google'){ const t=agGTokLer(); try{ if(t&&window.google&&google.accounts) google.accounts.oauth2.revoke(t.token,()=>{}); }catch(e){} agGTokLimpar(); agLS('conecta_gcal_email',null); agLS('conecta_gcal_on',null); setGOn(false); }
     else { try{ const minha=agLS('conecta_ms_conta'); if(AG_MSAL&&minha){ const a=AG_MSAL.getAllAccounts().find(x=>x.homeAccountId===minha); if(a&&AG_MSAL.clearCache) AG_MSAL.clearCache({account:a}); } }catch(e){} agLS('conecta_ms_conta',null); agLS('conecta_ms_on',null); setMOn(false); }
     setEventos(o=>({...o,[f]:null})); setErro(o=>({...o,[f]:''}));
   };
