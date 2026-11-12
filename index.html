@@ -5665,6 +5665,65 @@ function CmDonut({segments,size=168}){
     </svg>
   );
 }
+/* ── DADOS DE TESTE do Controle de Metas (só aparece no site de TESTE) ──
+   Cria 2 empreendimentos marcados com testeMetas:true, com metas em todas as
+   situações (batidas, não batidas, a validar, atrasadas, a concluir), para
+   testar o Portal Diretoria. "Apagar" remove só esses empreendimentos. */
+const EH_SITE_TESTE = /--teste/.test(location.hostname) || location.hostname==='localhost';
+function gerarProjetosMetasTeste(){
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const d=n=>{ const x=new Date(hoje); x.setDate(x.getDate()+n); return SCHED.iso(x); };
+  const setores=(SECTORS_ALL&&SECTORS_ALL.length?SECTORS_ALL:['DI','PRJ','PRD']);
+  const resp=['Ana Souza','Bruno Tavares','Carla Mendes','Diego Lima','Elisa Rocha'];
+  /* [código, nome, situação, início(dias), fim(dias), peso] */
+  const modelos={
+    'TESTE · Residencial Aurora':[
+      ['URB01','Estudo de viabilidade urbanística','batida',-120,-95,10],
+      ['TOP01','Levantamento topográfico','batida',-100,-80,5],
+      ['AMB01','Licença prévia ambiental (LAP)','naobatida',-90,-50,15],
+      ['URB02','Anteprojeto urbanístico','batida',-60,-35,10],
+      ['DRE01','Projeto de drenagem','validar',-40,-5,10],
+      ['TER01','Projeto de terraplenagem','atrasada',-30,-8,10],
+      ['IDR01','Aprovação Sanepar','atrasada',-25,-3,5],
+      ['ELE01','Projeto elétrico — Copel','aconcluir',-10,20,10],
+      ['URB03','Aprovação na prefeitura','aconcluir',5,60,15],
+      ['REG01','Registro da incorporação','aconcluir',60,120,10],
+    ],
+    'TESTE · Loteamento Vale Verde':[
+      ['URB01','Consulta de viabilidade','batida',-150,-130,5],
+      ['AMB01','Inventário florestal','naobatida',-120,-85,10],
+      ['AMB02','Supressão de vegetação','validar',-70,-2,15],
+      ['TER01','Terraplenagem — anteprojeto','batida',-80,-55,10],
+      ['PAV01','Projeto de pavimentação','atrasada',-35,-12,10],
+      ['IDR01','Projeto de água e esgoto','aconcluir',-5,30,10],
+      ['ELE01','Rede elétrica e iluminação','aconcluir',0,45,10],
+      ['C01','Contratação da construtora','aconcluir',20,50,15],
+      ['REG01','Registro do loteamento','aconcluir',70,140,15],
+    ],
+  };
+  const base=Date.now();
+  return Object.keys(modelos).map((nome,pi)=>{
+    const pid=base+pi;
+    const tasks=modelos[nome].map((m,i)=>{
+      const [code,label,sit,ini,fim,peso]=m;
+      const t={id:'tm-'+pid+'-'+i,code,label,taskType:'processo',phase:i<4?'fase1':(i<7?'fase2':'fase3'),
+        sector:setores[i%setores.length],responsavelNome:resp[(i+pi)%resp.length],responsavel:'',
+        inFlow:true,isMeta:true,metaPeso:peso,wbsOrder:i,parentId:null,
+        x:(i%4)*280,y:Math.floor(i/4)*170,w:200,h:98,
+        baselineStart:d(ini),baselineEnd:d(fim),startDate:d(ini),endDate:'',
+        status:'Não iniciado',metaConcluida:false,metaBatida:null,metaObs:''};
+      if(sit==='batida'){ t.status='Concluído'; t.endDate=d(fim-2); t.metaConcluida=true; t.metaBatida=true; t.metaObs='Entregue dentro do prazo.'; }
+      else if(sit==='naobatida'){ t.status='Concluído'; t.endDate=d(fim+12); t.metaConcluida=true; t.metaBatida=false; t.metaObs='Atrasou por pendência do órgão.'; }
+      else if(sit==='validar'){ t.status='Concluído'; t.endDate=d(fim); }
+      else if(sit==='atrasada'){ t.status='Em andamento'; }
+      else { t.status=ini<=0?'Em andamento':'Não iniciado'; }
+      return t;
+    });
+    const connections=tasks.slice(1).map((t,i)=>({from:tasks[i].id,to:t.id,sourceHandle:'sr',targetHandle:'tl',depType:'TI',lag:0}));
+    return {id:pid,name:nome,city:pi?'PR - CURITIBA':'PR - PINHAIS',status:'Planejamento',tasks,connections,milestones:[],landParcels:[],order:pid,testeMetas:true};
+  });
+}
+
 function ControleMetas({projects,onValidateMeta}){
   const [tab,setTab]=useState('validar');
   const [fEmp,setFEmp]=useState(''); const [fSetor,setFSetor]=useState(''); const [fResp,setFResp]=useState('');
@@ -17226,7 +17285,15 @@ function App({currentUser}){
           view={portalXView} setView={setPortalXView} onErro={setSyncError}/>; })()}
       {screen==='portaldiretoria'&&permVerTudo()&&(
         <div className="dash">
-          <ControleMetas projects={projects} onValidateMeta={diretoriaValidarMeta}/>
+          {EH_SITE_TESTE&&(
+            <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',padding:'10px 14px',marginBottom:14,border:'1px dashed var(--amber)',borderRadius:10,fontSize:12.5,color:'var(--text2)'}}>
+              <i className="ti ti-flask" style={{color:'var(--amber)',fontSize:16}}/>
+              <span style={{flex:1,minWidth:200}}><b style={{color:'var(--text)'}}>Site de teste:</b> gerar metas de exemplo (2 empreendimentos "TESTE · …") para testar esta aba.</span>
+              <button className="btn-modal" onClick={()=>{ if(projects.some(p=>p.testeMetas&&!p.deleted)){ window.alert('Os dados de teste já existem. Apague antes de gerar de novo.'); return; } setProjects(ps=>ps.concat(gerarProjetosMetasTeste())); }}><i className="ti ti-plus"/> Gerar metas de teste</button>
+              <button className="btn-modal ghost" onClick={()=>{ if(!window.confirm('Apagar os empreendimentos "TESTE · …" criados para teste?')) return; setProjects(ps=>ps.map(p=>p.testeMetas?{...p,deleted:true}:p)); }}><i className="ti ti-trash"/> Apagar dados de teste</button>
+            </div>
+          )}
+          <ControleMetas projects={projects.filter(p=>!p.deleted)} onValidateMeta={diretoriaValidarMeta}/>
         </div>
       )}
 
