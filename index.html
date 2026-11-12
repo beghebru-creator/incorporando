@@ -1826,6 +1826,8 @@
   .tt-sel{position:relative;}
   .tt-sel-ic{position:absolute;left:8px;top:50%;transform:translateY(-50%);display:flex;color:var(--text2);pointer-events:none;}
   .tb-select{appearance:auto;padding-right:6px;}
+  .tb-align{display:inline-flex;gap:2px;}
+  .tb-align .tb-btn{padding-left:7px;padding-right:7px;}
   .edge-mid-handle{fill:var(--accent);stroke:var(--surface);stroke-width:1.5px;pointer-events:all;}
   .edge-mid-handle:hover{fill:var(--edge-sel);}
   .edge-bend-handle{fill:var(--accent);stroke:var(--surface);stroke-width:1.5px;cursor:grab;pointer-events:all;}
@@ -3299,6 +3301,117 @@ function ewSidesFor(edges,nodeLookup){
   return out;
 }
 
+/* Rota final de uma aresta (mesma regra do desenho): estilo EW; se raspar
+   numa tarefa, testa outros lados; se nada for livre, mantém a automática. */
+function ewRouteForEdge(d,a,b,sd,obstacles){
+  d=d||{};
+  const manual=typeof d.mid==='number'||!!d.sa||!!d.ta;
+  const r=ewRoute(a,b,sd.s1,sd.s2,d.sa&&d.t1!=null?d.t1:null,d.ta&&d.t2!=null?d.t2:null,obstacles,d.mid,d.midAx);
+  if(manual||ewPathClear(r.pts,obstacles)) return r;
+  let best=null, bestScore=Infinity;
+  for(const s1 of ['E','W','N','S']) for(const s2 of ['E','W','N','S']){
+    const c=ewRoute(a,b,s1,s2,null,null,obstacles);
+    if(!ewPathClear(c.pts,obstacles)) continue;
+    let len=0; for(let k=1;k<c.pts.length;k++) len+=Math.abs(c.pts[k].x-c.pts[k-1].x)+Math.abs(c.pts[k].y-c.pts[k-1].y);
+    const sc=len+(c.pts.length-2)*90;
+    if(sc<bestScore){ bestScore=sc; best=c; }
+  }
+  return best||r;
+}
+
+/* ── Exportar o fluxograma como imagem (SVG/PNG), com legenda — como no EW.
+   Desenha a partir dos dados (tarefas, linhas e caixas de fase), com fundo
+   branco e cores próprias para impressão/compartilhamento. ── */
+function flowEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function flowWrap(txt,maxCh,maxLines){
+  const ws=String(txt||'').split(/\s+/).filter(Boolean), out=[]; let cur='';
+  ws.forEach(w=>{ const t=cur?cur+' '+w:w; if(t.length>maxCh&&cur){ out.push(cur); cur=w; } else cur=t; });
+  if(cur) out.push(cur);
+  if(out.length>maxLines){ const r=out.slice(0,maxLines); r[maxLines-1]=r[maxLines-1].replace(/.{0,2}$/,'')+'…'; return r; }
+  return out;
+}
+const FLOW_EXP_STATUS={'Concluído':'#5E8A2E','Em andamento':'#C2652A','Pendente':'#6C6496','Em revisão':'#9A7A12','Cancelado':'#B23F33','Não iniciado':'#848378'};
+function buildFlowSvg(nodes,edges,lanes,titulo){
+  const tasks=nodes.filter(n=>n.type==='task'&&!n.hidden);
+  const rects=new Map(); tasks.forEach(n=>rects.set(n.id,ewRectOf(n)));
+  const lk=new Map(nodes.map(n=>[n.id,n]));
+  let x1=Infinity,y1=Infinity,x2=-Infinity,y2=-Infinity;
+  const grow=(x,y,w,h)=>{ x1=Math.min(x1,x); y1=Math.min(y1,y); x2=Math.max(x2,x+w); y2=Math.max(y2,y+h); };
+  tasks.forEach(n=>{ const r=rects.get(n.id); grow(r.x,r.y,r.w,r.h); });
+  (lanes||[]).forEach(l=>{ if(l&&l.position&&l.style) grow(l.position.x,l.position.y,l.style.width||0,l.style.height||0); });
+  if(!isFinite(x1)){ x1=0;y1=0;x2=400;y2=200; }
+  const P=40, TOP=titulo?46:0, LEG=70;
+  const W=Math.ceil(x2-x1+P*2), H=Math.ceil(y2-y1+P*2+TOP+LEG);
+  const ox=-x1+P, oy=-y1+P+TOP;
+  const g=[];
+  g.push(`<rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"/>`);
+  if(titulo) g.push(`<text x="${P}" y="${P}" font-size="18" font-weight="700" fill="#1f2a24">${flowEsc(titulo)}</text>`);
+  (lanes||[]).forEach(l=>{ if(!l||!l.position||!l.style) return;
+    const x=l.position.x+ox, y=l.position.y+oy, w=l.style.width||0, h=l.style.height||0;
+    g.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="#f4f6f3" stroke="#d5dbd3"/>`);
+    g.push(`<text x="${x+10}" y="${y+18}" font-size="11" font-weight="700" fill="#5d6a62" letter-spacing=".4">${flowEsc((l.data&&l.data.name)||'')}</text>`);
+  });
+  /* linhas */
+  const visEdges=edges.filter(e=>rects.has(e.source)&&rects.has(e.target)&&!(e.data&&e.data.kind==='oculto'));
+  const sides=ewSidesFor(visEdges,lk);
+  g.push('<defs><marker id="fa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4c5a52"/></marker><marker id="fc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a6fc4"/></marker></defs>');
+  visEdges.forEach(e=>{
+    const a=rects.get(e.source), b=rects.get(e.target);
+    const obst=tasks.filter(n=>n.id!==e.source&&n.id!==e.target).map(n=>rects.get(n.id));
+    const sd=sides.get(e.id)||{s1:'E',s2:'W'};
+    const r=ewRouteForEdge(e.data,a,b,sd,obst);
+    const kind=(e.data&&e.data.kind)||'prec';
+    const d=r.pts.map((pt,i)=>(i?'L':'M')+(pt.x+ox)+','+(pt.y+oy)).join(' ');
+    const cor=kind==='compat'?'#8a6fc4':'#4c5a52';
+    const dash=kind==='retorno'?' stroke-dasharray="6 5"':kind==='compat'?' stroke-dasharray="1 5" stroke-linecap="round"':'';
+    const mk=kind==='compat'?' marker-start="url(#fc)" marker-end="url(#fc)"':' marker-end="url(#fa)"';
+    g.push(`<path d="${d}" fill="none" stroke="${cor}" stroke-width="1.6"${dash}${mk}/>`);
+  });
+  /* tarefas */
+  tasks.forEach(n=>{
+    const r=rects.get(n.id), x=r.x+ox, y=r.y+oy, w=r.w, h=r.h, dt=n.data||{};
+    const st=FLOW_EXP_STATUS[dt.status]||FLOW_EXP_STATUS['Não iniciado'];
+    const tp=dt.taskType||'processo';
+    const base=`fill="#ffffff" stroke="${st}" stroke-width="1.6"`;
+    if(tp==='decisao') g.push(`<path d="M${x+w/2},${y} L${x+w},${y+h/2} L${x+w/2},${y+h} L${x},${y+h/2} Z" ${base}/>`);
+    else if(tp==='terminacao') g.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2}" ${base}/>`);
+    else if(tp==='conector') g.push(`<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${w/2}" ry="${h/2}" ${base}/>`);
+    else if(tp==='documentos') g.push(`<path d="M${x},${y} H${x+w} V${y+h-10} Q${x+w*0.75},${y+h-20} ${x+w/2},${y+h-10} T${x},${y+h-10} Z" ${base}/>`);
+    else { g.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" ${base}/>`); if(tp==='processo-predefinido'){ g.push(`<line x1="${x+9}" y1="${y}" x2="${x+9}" y2="${y+h}" stroke="${st}" stroke-width="1.2"/><line x1="${x+w-9}" y1="${y}" x2="${x+w-9}" y2="${y+h}" stroke="${st}" stroke-width="1.2"/>`); } }
+    const compact=tp==='decisao'||tp==='conector';
+    const linhas=flowWrap(dt.label,Math.max(8,Math.floor((compact?w*0.6:w-24)/6.6)),compact?3:3);
+    const ly=y+h/2-(linhas.length-1)*7.5+4;
+    linhas.forEach((t,i)=>g.push(`<text x="${x+w/2}" y="${ly+i*15}" font-size="12" font-weight="700" fill="#1f2a24" text-anchor="middle">${flowEsc(t)}</text>`));
+    const ix=x+(tp==='processo-predefinido'?15:9), iy=y+h-(tp==='documentos'?20:7);
+    if(dt.code&&!compact) g.push(`<text x="${ix}" y="${y+13}" font-size="9" font-family="ui-monospace,Menlo,monospace" fill="#6b776f">${flowEsc(dt.code)}</text>`);
+    if(!compact&&h>=70){
+      const inf=[dt.sector?setorSigla(dt.sector):'',dt.status||''].filter(Boolean).join(' · ');
+      g.push(`<text x="${ix}" y="${iy}" font-size="9" fill="#6b776f">${flowEsc(inf)}</text>`);
+      g.push(`<circle cx="${x+w-(tp==='processo-predefinido'?17:11)}" cy="${iy-3}" r="3.5" fill="${st}"/>`);
+    }
+  });
+  /* legenda */
+  const ly0=H-LEG+18; let lx=P;
+  const item=(svgFrag,txt)=>{ g.push(svgFrag(lx,ly0)); g.push(`<text x="${lx+34}" y="${ly0+4}" font-size="11" fill="#3d4943">${flowEsc(txt)}</text>`); lx+=40+txt.length*6.2+18; };
+  g.push(`<line x1="${P}" y1="${H-LEG}" x2="${W-P}" y2="${H-LEG}" stroke="#e1e6df"/>`);
+  item((x,y)=>`<line x1="${x}" y1="${y}" x2="${x+28}" y2="${y}" stroke="#4c5a52" stroke-width="1.6" marker-end="url(#fa)"/>`,'Precedência');
+  item((x,y)=>`<line x1="${x}" y1="${y}" x2="${x+28}" y2="${y}" stroke="#4c5a52" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#fa)"/>`,'Retorno');
+  item((x,y)=>`<line x1="${x}" y1="${y}" x2="${x+28}" y2="${y}" stroke="#8a6fc4" stroke-width="1.6" stroke-dasharray="1 5" stroke-linecap="round" marker-start="url(#fc)" marker-end="url(#fc)"/>`,'Compatibilização');
+  Object.keys(FLOW_EXP_STATUS).forEach(k=>item((x,y)=>`<circle cx="${x+14}" cy="${y}" r="5" fill="${FLOW_EXP_STATUS[k]}"/>`,k));
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Arial, Helvetica, sans-serif">${g.join('')}</svg>`;
+}
+function baixarArquivo(nome,blob){ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),3000); }
+function svgParaPng(svg,escala){
+  return new Promise((res,rej)=>{
+    const m=/width="(\d+)" height="(\d+)"/.exec(svg); const w=m?+m[1]:1000, h=m?+m[2]:600;
+    const k=Math.min(escala||2, 16000/Math.max(w,h));
+    const img=new Image();
+    img.onload=()=>{ const c=document.createElement('canvas'); c.width=Math.round(w*k); c.height=Math.round(h*k); const ctx=c.getContext('2d'); ctx.setTransform(k,0,0,k,0,0); ctx.drawImage(img,0,0); c.toBlob(b=>b?res(b):rej(new Error('PNG grande demais')),'image/png'); };
+    img.onerror=()=>rej(new Error('Falha ao gerar a imagem'));
+    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  });
+}
+
 /* Aresta única (todas as linhas do fluxograma usam esta). */
 function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,markerEnd,markerStart,selected,data,style}){
   const nodeLookup = useStore(s=>s.nodeLookup);
@@ -3327,22 +3440,7 @@ function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePo
     const a=ewRectOf(nodeLookup.get(source)), b=ewRectOf(nodeLookup.get(target));
     if(!a||!b) return {pts:[{x:sourceX,y:sourceY},{x:targetX,y:targetY}],mid:null,midPt:null};
     const sd=sides.get(id)||{s1:'E',s2:'W',t1:.5,t2:.5};
-    const manual=typeof d.mid==='number'||!!d.sa||!!d.ta;
-    const r=ewRoute(a,b,sd.s1,sd.s2,d.sa&&d.t1!=null?d.t1:null,d.ta&&d.t2!=null?d.t2:null,obstacles,d.mid,d.midAx);
-    if(manual||ewPathClear(r.pts,obstacles)) return r;
-    /* Só rotas no estilo EW (no máximo 3 trechos, sem zigue-zague). Se a
-       combinação automática raspa numa tarefa, testa os outros lados e fica
-       com a rota livre mais curta/com menos dobras. Se nenhuma for livre,
-       mantém a automática (como o EW faz). */
-    let best=null, bestScore=Infinity;
-    for(const s1 of ['E','W','N','S']) for(const s2 of ['E','W','N','S']){
-      const c=ewRoute(a,b,s1,s2,null,null,obstacles);
-      if(!ewPathClear(c.pts,obstacles)) continue;
-      let len=0; for(let k=1;k<c.pts.length;k++) len+=Math.abs(c.pts[k].x-c.pts[k-1].x)+Math.abs(c.pts[k].y-c.pts[k-1].y);
-      const sc=len+(c.pts.length-2)*90;
-      if(sc<bestScore){ bestScore=sc; best=c; }
-    }
-    return best||r;
+    return ewRouteForEdge(d,a,b,sd,obstacles);
   },[nodeLookup,sides,obstacles,id,source,target,d.mid,d.midAx,sourceX,sourceY,targetX,targetY]);
 
   const kind=d.kind||'prec';
@@ -3729,6 +3827,26 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
     }
   },[isEditMode]);
 
+  /* Setas do teclado movem as tarefas selecionadas (modo edição), como no EW:
+     10px por toque; com Shift, 1px. */
+  const setaHistRef=useRef(0);
+  useEffect(()=>{
+    if(!isEditMode) return;
+    const h=(e)=>{
+      const k=e.key; if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k)) return;
+      const t=e.target, tag=t&&t.tagName; if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(t&&t.isContentEditable)) return;
+      if(document.querySelector('.modal-overlay')) return;
+      const sel=nodesRef.current.filter(n=>n.selected&&n.type==='task'); if(!sel.length) return;
+      e.preventDefault();
+      const st=e.shiftKey?1:10, dx=k==='ArrowLeft'?-st:k==='ArrowRight'?st:0, dy=k==='ArrowUp'?-st:k==='ArrowDown'?st:0;
+      const agora=Date.now(); if(agora-setaHistRef.current>700){ try{ pushHistory(); }catch(_){} } setaHistRef.current=agora;
+      const ids=new Set(sel.map(n=>n.id));
+      setNodes(ns=>ns.map(n=>ids.has(n.id)?{...n,position:{x:n.position.x+dx,y:n.position.y+dy}}:n));
+    };
+    window.addEventListener('keydown',h);
+    return ()=>window.removeEventListener('keydown',h);
+  },[isEditMode,pushHistory]);
+
   /* ── Registrar API ── */
   useEffect(()=>{
     registerApi({
@@ -3858,6 +3976,21 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
         }));
         setSelEdges([]);
       },
+      /* Alinhar as tarefas selecionadas (como no EW): topo, centro ou esquerda. */
+      alignSelected:(modo)=>{
+        const sel=nodesRef.current.filter(n=>n.selected&&n.type==='task');
+        if(sel.length<2) return;
+        pushHistory();
+        const R=sel.map(n=>({id:n.id,...ewRectOf(n)}));
+        const top=Math.min(...R.map(r=>r.y)), left=Math.min(...R.map(r=>r.x));
+        const mid=Math.round((R.reduce((a,r)=>a+r.y+r.h/2,0)/R.length)/10)*10;
+        const byId=new Map(R.map(r=>[r.id,r]));
+        setNodes(ns=>ns.map(n=>{ const r=byId.get(n.id); if(!r) return n;
+          const pos=modo==='top'?{x:n.position.x,y:top}:modo==='left'?{x:left,y:n.position.y}:{x:n.position.x,y:mid-r.h/2};
+          return {...n,position:pos}; }));
+      },
+      /* SVG do fluxograma (com legenda) — usado pelo Exportar PNG/SVG. */
+      exportSvg:(titulo)=>buildFlowSvg(nodesRef.current,edgesRef.current,swimlaneDataRef.current,titulo),
       /* Vínculo editado no modal da tarefa → atualiza as linhas do desenho. */
       linkOp:(op)=>{
         const S=String;
@@ -4585,7 +4718,7 @@ function ChecklistModal({node,onClose,onSave,standardChecklists,projectCity}){
    direto pro fluxograma daquele projeto. */
 /* Opções ao exportar o PDF do fluxograma: orientação (paisagem/retrato) e
    tamanho da margem — igual à configuração de impressão do Excel. */
-function FlowExportModal({onExport,onClose}){
+function FlowExportModal({onExport,onClose,onOutro}){
   const[orient,setOrient]=useState('landscape');
   const[margin,setMargin]=useState('6mm');
   const opt=(cur,val,setter,label,sub)=>(
@@ -4613,9 +4746,17 @@ function FlowExportModal({onExport,onClose}){
             {opt(margin,'12mm',setMargin,'Normal','Margem folgada')}
           </div>
         </div>
+        {onOutro&&<div style={{marginTop:16,paddingTop:12,borderTop:'1px solid var(--border)'}}>
+          <div style={{fontSize:11.5,fontWeight:600,color:'var(--text2)',marginBottom:6}}>Outros formatos</div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <button className="btn-modal ghost" onClick={()=>onOutro('png')} title="Imagem do fluxograma com legenda"><i className="ti ti-photo"/> Imagem PNG</button>
+            <button className="btn-modal ghost" onClick={()=>onOutro('svg')} title="Desenho vetorial (abre no navegador, Illustrator, Inkscape…)"><i className="ti ti-vector"/> SVG</button>
+            <button className="btn-modal ghost" onClick={()=>onOutro('csv')} title="Tabela de tarefas com predecessoras e sucessoras (Excel, MS Project, ClickUp)"><i className="ti ti-table-export"/> Tabela CSV</button>
+          </div>
+        </div>}
         <div className="modal-footer" style={{marginTop:18}}>
           <button className="btn-modal ghost" onClick={onClose}>Cancelar</button>
-          <button className="btn-modal" onClick={()=>onExport({orient,margin})}><i className="ti ti-file-type-pdf"/> Exportar</button>
+          <button className="btn-modal" onClick={()=>onExport({orient,margin})}><i className="ti ti-file-type-pdf"/> Exportar PDF</button>
         </div>
       </div>
     </div>
@@ -16502,6 +16643,35 @@ function App({currentUser}){
       return agendarComPedidos(p,{...p,connections:conns});
     }));
   };
+  /* Exportar o fluxograma em PNG/SVG (com legenda) ou a tabela CSV de
+     predecessoras/sucessoras (Excel, MS Project, ClickUp). */
+  const exportarFluxoOutro=async(fmt)=>{
+    if(!project) return;
+    const base=(project.name||'fluxograma').replace(/[\\/:*?"<>|]+/g,'').trim()||'fluxograma';
+    try{
+      if(fmt==='csv'){
+        const tasks=(project.tasks||[]).filter(t=>t&&!t.deleted);
+        const byId={}; tasks.forEach(t=>byId[String(t.id)]=t);
+        const nome=id=>{ const t=byId[String(id)]; return t?(t.code||t.label||''):''; };
+        const tipo=k=>k==='retorno'?' (Retorno)':k==='oculto'?' (Oculto)':'';
+        const cs=(project.connections||[]).filter(c=>c&&byId[String(c.from)]&&byId[String(c.to)]);
+        const q=v=>{ const t=String(v==null?'':v); return /[;"\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t; };
+        const linhas=[['Código','Tarefa','Tipo','Fase','Setor','Status','Início','Fim','Predecessoras','Sucessoras','Compatibiliza com']];
+        tasks.forEach(t=>{ const id=String(t.id);
+          const pre=cs.filter(c=>String(c.to)===id&&c.kind!=='compat').map(c=>nome(c.from)+tipo(c.kind)).join(', ');
+          const suc=cs.filter(c=>String(c.from)===id&&c.kind!=='compat').map(c=>nome(c.to)+tipo(c.kind)).join(', ');
+          const cmp=cs.filter(c=>c.kind==='compat'&&(String(c.from)===id||String(c.to)===id)).map(c=>nome(String(c.from)===id?c.to:c.from)).join(', ');
+          linhas.push([t.code||'',t.label||'',(TASK_TYPES.find(x=>x.id===(t.taskType||'processo'))||{}).label||'',(PHASES.find(p=>p.id===t.phase)||{}).name||'',t.sector?setorSigla(t.sector):'',t.status||'',t.startDate?fmtISOBR(t.startDate):'',t.endDate?fmtISOBR(t.endDate):'',pre,suc,cmp]);
+        });
+        baixarArquivo(base+' - tarefas.csv',new Blob(['\ufeff'+linhas.map(l=>l.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+        return;
+      }
+      if(!apiRef.current||!apiRef.current.exportSvg){ window.alert('Abra a aba Fluxograma para exportar a imagem.'); return; }
+      const svg=apiRef.current.exportSvg(project.name||'');
+      if(fmt==='svg') baixarArquivo(base+' - fluxograma.svg',new Blob([svg],{type:'image/svg+xml'}));
+      else baixarArquivo(base+' - fluxograma.png',await svgParaPng(svg,2));
+    }catch(e){ console.error(e); window.alert('Não foi possível exportar: '+(e.message||e)); }
+  };
   /* Vínculos editados no modal da tarefa (estilo EW): grava nas conexões do
      projeto (cronograma) e espelha no Fluxograma aberto. */
   const vinculoOp=(op)=>{
@@ -17686,6 +17856,11 @@ function App({currentUser}){
                   <button className="tb-btn" onClick={()=>apiRef.current.undo()} title="Desfazer (Ctrl+Z)"><i className="ti ti-arrow-back-up"/> Desfazer</button>
                   <button className="tb-btn" disabled={sel.nodes!==2} onClick={()=>apiRef.current.connectSelected()}><i className="ti ti-git-merge"/> Conectar 2 nós</button>
                   <button className="tb-btn" disabled={sel.edges!==1} onClick={()=>apiRef.current.reverseSelected()}><i className="ti ti-arrow-back-up"/> Inverter</button>
+                  <span className="tb-align" title="Alinhar as tarefas selecionadas (selecione 2 ou mais com Shift)">
+                    <button className="tb-btn" disabled={sel.nodes<2} onClick={()=>apiRef.current.alignSelected('top')} title="Alinhar pelo topo"><i className="ti ti-layout-align-top"/></button>
+                    <button className="tb-btn" disabled={sel.nodes<2} onClick={()=>apiRef.current.alignSelected('middle')} title="Alinhar pelo centro (mesma altura)"><i className="ti ti-layout-align-middle"/></button>
+                    <button className="tb-btn" disabled={sel.nodes<2} onClick={()=>apiRef.current.alignSelected('left')} title="Alinhar à esquerda"><i className="ti ti-layout-align-left"/></button>
+                  </span>
                   <select className="tb-btn tb-select" disabled={sel.edges!==1} value={sel.edgeKind||'prec'} title="Tipo da linha selecionada"
                     onChange={e=>apiRef.current.setSelectedEdgeKind(e.target.value)}>
                     {EDGE_KINDS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
@@ -17789,7 +17964,8 @@ function App({currentUser}){
       )}
       {flowExportOpen&&(
         <FlowExportModal onClose={()=>setFlowExportOpen(false)}
-          onExport={opts=>{ setFlowExportOpen(false); setTimeout(()=>handleExportFlowPDF(opts),60); }}/>
+          onExport={opts=>{ setFlowExportOpen(false); setTimeout(()=>handleExportFlowPDF(opts),60); }}
+          onOutro={exportarFluxoOutro}/>
       )}
       {syncError&&(
         <div style={{position:'fixed',left:'50%',bottom:20,transform:'translateX(-50%)',zIndex:999,
