@@ -8,7 +8,7 @@
    do celular) e compensa o zoom 0.8 do app. Ver .app-h-js no CSS. */
 (function(){
   var r=document.documentElement;
-  function medir(){ var h=window.innerHeight||r.clientHeight; if(h>0){ r.style.setProperty('--app-h',(h/0.8)+'px'); r.classList.add('app-h-js'); } }
+  function medir(){ var h=window.innerHeight||r.clientHeight, w=r.clientWidth||window.innerWidth; if(h>0){ r.style.setProperty('--app-h',(h/0.8)+'px'); r.style.setProperty('--app-w',(w/0.8)+'px'); r.classList.add('app-h-js'); } }
   medir();
   window.addEventListener('resize',medir);
   window.addEventListener('orientationchange',function(){ setTimeout(medir,250); });
@@ -51,7 +51,11 @@
      em todos os celulares (Safari do iPhone inclusive), onde vh/dvh com o zoom
      de 0.8 não batem com a área visível e o rodapé do menu (Configurações)
      ficava fora da tela. --app-h = altura visível ÷ 0.8 (por causa do zoom). */
+  @media screen {
   html.app-h-js .app-shell, html.app-h-js .app-main { height: var(--app-h) !important; }
+  /* Largura também medida: no iPad (Safari/WebKit) o zoom 0.8 deixava o app ocupando só parte da tela. */
+  html.app-h-js .app-shell { width: var(--app-w) !important; max-width: none !important; }
+  }
   html, body { overflow: hidden; }
   /* O fluxograma (React Flow) nao pode ser afetado pelo zoom, senao as
      linhas saem tortas. Anulamos o zoom so nele (0.8 x 1.25 = 1). */
@@ -283,7 +287,7 @@
   .app-nav{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 14px;padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
   .app-nav-logo{display:flex;align-items:center;gap:10px;margin-bottom:26px;padding:0 6px;}
   /* Marca "incorporando" — Outfit Medium em minúsculas; o símbolo (ConectaMark) leva as curvas na cor da marca e o centro laranja. */
-  .app-brand{font-family:var(--font-display);font-weight:500;font-size:23px;line-height:1;letter-spacing:-.03em;color:var(--brand);white-space:nowrap;}
+  .app-brand{font-family:var(--font-display);font-weight:500;font-size:20px;line-height:1.1;letter-spacing:-.03em;color:var(--brand);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;}
   .app-brand b{font-weight:700;}
   .logo-badge{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
   .app-nav-portal{display:flex;align-items:center;justify-content:center;gap:6px;margin:-4px 4px 14px;padding:5px 8px;border-radius:9px;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:default;background:var(--blue-bg);color:var(--accent);border:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -301,6 +305,8 @@
   .app-nav{position:relative;transition:width .15s ease;}
   .app-nav.arrastando{transition:none;user-select:none;}
   .app-nav-item,.app-nav-subitem,.app-nav-sec{white-space:nowrap;overflow:hidden;}
+  /* No menu (coluna com rolagem), nada pode encolher — senão rótulos como "PORTAL DI" ficam cortados ao meio. */
+  .app-nav>*,.app-nav-box>*,.app-nav-subs>*{flex-shrink:0;}
   .app-nav-item i{flex-shrink:0;}
   .app-nav-grip{position:absolute;top:0;right:-4px;width:10px;height:100%;cursor:col-resize;z-index:5;touch-action:none;}
   .app-nav-grip::after{content:'';position:absolute;top:0;bottom:0;left:4px;width:2px;background:transparent;transition:background .15s;}
@@ -15337,7 +15343,9 @@ function App({currentUser}){
      de criação do Cronograma, só que aqui a tarefa entra pelo apiRef (vira
      um nó no canvas, arrastável) em vez de ir direto pra `projects`. */
   const[showFlowAddModal,setShowFlowAddModal]=useState(false);
-  const[sidebarCollapsed,setSidebarCollapsed]=useState(false);
+  /* Painel "Informações" do Fluxograma começa recolhido; a pessoa abre se quiser. */
+  const[sidebarCollapsed,setSidebarCollapsed]=useState(true);
+  useEffect(()=>{ if(viewMode==='flow') setSidebarCollapsed(true); },[viewMode]); /* recolhe ao abrir a aba */
   /* Tema começa pelo que a pessoa escolheu da última vez (guardado no
      próprio navegador) — assim cada pessoa mantém claro/escuro entre visitas.
      Padrão: escuro, se nunca escolheu. */
