@@ -1647,6 +1647,10 @@
      NodeResizer em modo edição) — os cards preenchem 100% do wrapper que o
      React Flow dimensiona, em vez de usar um tamanho fixo em px. */
   .rf-node{background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;padding:8px 13px;width:100%;height:100%;position:relative;display:flex;flex-direction:column;justify-content:space-between;}
+  /* Linhas do card nunca se espremem umas sobre as outras: só o nome cede espaço. */
+  .rf-node>*{flex-shrink:0;}
+  .rf-node>.node-title-wrap{flex-shrink:1;}
+  .rf-node:has(.node-meta) .node-title-wrap .node-title{-webkit-line-clamp:2;font-size:12.5px;}
   .rf-node.selected,.rf-node.sel-outline{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent);}
   .node-meta{font-size:9px;color:var(--text2);font-weight:600;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* Setor: só texto, sem cor de fundo — mesma tipografia do status, pra padronizar. */
@@ -3240,23 +3244,8 @@ function ewClean(pts){
 }
 /* a, b = retângulos; s1/s2 = lados; t1/t2 = posição no lado; mid = ajuste manual */
 function ewRoute(a,b,s1,s2,t1,t2,obst,manualMid,manualAx){
-  /* Sem degrauzinho: se as duas tarefas estão frente a frente e as faixas
-     delas se sobrepõem, as duas pontas usam a MESMA altura (ou o mesmo x) →
-     linha 100% reta. Só quando os pontos não foram fixados pela pessoa
-     (t1/t2 = null). Losango/conector continuam saindo pela ponta. */
-  const oposto={S:'N',N:'S',E:'W',W:'E'}[s1]===s2;
-  if(t1==null&&t2==null&&oposto){
-    const horiz=s1==='E'||s1==='W';
-    const faixa=r=>{ const fix=r.type==='decisao'||r.type==='conector';
-      const c=horiz?r.y+r.h/2:r.x+r.w/2, m=12;
-      return fix?[c,c]:(horiz?[r.y+m,r.y+r.h-m]:[r.x+m,r.x+r.w-m]); };
-    const A=faixa(a), B=faixa(b), lo=Math.max(A[0],B[0]), hi=Math.min(A[1],B[1]);
-    if(lo<=hi){
-      const ca=horiz?a.y+a.h/2:a.x+a.w/2, cb=horiz?b.y+b.h/2:b.x+b.w/2;
-      const v=(ca>=lo&&ca<=hi)?ca:(cb>=lo&&cb<=hi)?cb:(lo+hi)/2;
-      t1=horiz?(v-a.y)/a.h:(v-a.x)/a.w; t2=horiz?(v-b.y)/b.h:(v-b.x)/b.w;
-    }
-  }
+  /* Como no EW: as linhas ficam FIXAS no centro do lado da tarefa (ou no
+     ponto escolhido pela pessoa) — não deslizam pelo lado. */
   const p1=ewAnchor(a,s1,t1), p2=ewAnchor(b,s2,t2);
   let L=18;
   const facing={S:'N',N:'S',E:'W',W:'E'}[s1]===s2;
