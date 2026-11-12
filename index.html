@@ -1087,6 +1087,12 @@
   .pn-cards-compact .venc-card{padding:12px 14px;text-align:left;}
   .pn-cards-compact .venc-card-label{justify-content:flex-start;font-size:13px;margin-bottom:6px;gap:6px;}
   .pn-cards-compact .venc-card-value{font-size:24px;text-align:left;}
+  /* Números do app (indicadores, KPIs, % e gráficos): fonte IBM Plex Sans,
+     mais sóbria/profissional, com algarismos de mesma largura (tabulares). */
+  :root{--font-num:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;}
+  .venc-card-value,.kpi-value,.fin-kpi-value,.cm-kpi-val,.ini-stat-v,.delivery-card-pct,.rp-geral-pct,.pn-pct,.venc-num,.venc-date,
+  .react-flow__node .node-date-value,svg text{font-family:var(--font-num) !important;font-variant-numeric:tabular-nums;}
+  .venc-card-value,.kpi-value,.fin-kpi-value,.cm-kpi-val,.ini-stat-v,.delivery-card-pct,.rp-geral-pct{font-weight:600 !important;letter-spacing:-.01em;}
   /* ═══ Painel Semanal — visual novo (teste, nov/2026) ═══
      Mesmas cores; muda só o FORMATO e a FONTE: fonte técnica (IBM Plex Sans),
      cantos retos, resumo numa faixa única dividida, status como texto com
