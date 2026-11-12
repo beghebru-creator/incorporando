@@ -1728,6 +1728,8 @@
   .node-code{position:absolute;top:5px;left:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.3px;pointer-events:none;}
   .rf-predef .node-code{left:16px;}
   /* Modal da tarefa: seções recolhíveis (Detalhes, Datas, Vínculos, Atas, Contratos) */
+  .nm-sub{display:flex;align-items:center;gap:6px;margin:14px 0 6px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text);}
+  .nm-sub .ti{color:var(--text2);font-size:14px;}
   .nm-sec{border:1px solid var(--border);border-radius:9px;margin-bottom:8px;background:var(--surface2);overflow:hidden;}
   .nm-sec-h{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;background:transparent;border:none;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left;}
   .nm-sec-h:hover{background:color-mix(in srgb,var(--accent) 7%,transparent);}
@@ -1753,7 +1755,6 @@
   .vk-prop{font-size:10px;color:var(--amber);margin-left:4px;}
   .tt-sel{position:relative;}
   .tt-sel-ic{position:absolute;left:8px;top:50%;transform:translateY(-50%);display:flex;color:var(--text2);pointer-events:none;}
-  .tt-sel select.form-input{padding-left:30px;}
   .tb-select{appearance:auto;padding-right:6px;}
   .edge-mid-handle{fill:var(--accent);stroke:var(--surface);stroke-width:1.5px;pointer-events:all;}
   .edge-mid-handle:hover{fill:var(--edge-sel);}
@@ -2210,7 +2211,6 @@ const TASK_TYPE_GLIFO={'processo':'▭','decisao':'◇','terminacao':'⬭','docu
 function TaskTypePicker({value,onChange,disabled}){
   return(
     <div className="tt-sel">
-      <span className="tt-sel-ic"><TaskTypeIcon type={value} size={13}/></span>
       <select className="form-input" value={value} disabled={disabled} onChange={e=>onChange(e.target.value)}>
         {TASK_TYPES.map(t=><option key={t.id} value={t.id}>{(TASK_TYPE_GLIFO[t.id]||'')+'  '+t.label}</option>)}
       </select>
@@ -4339,7 +4339,7 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
           const cs=(conexoes||[]).filter(c=>c&&c.from!=null&&c.to!=null), sid=String(node.id);
           const nP=cs.filter(c=>String(c.to)===sid&&c.kind!=='compat').length, nS=cs.filter(c=>String(c.from)===sid&&c.kind!=='compat').length, nC=cs.filter(c=>c.kind==='compat'&&(String(c.from)===sid||String(c.to)===sid)).length;
           return(<>
-            <NmSecao icone="ti-adjustments-horizontal" titulo="Detalhes" resumo={resumoDet}>
+            <NmSecao icone="ti-adjustments-horizontal" titulo="Detalhes" resumo={[resumoDet,resumoDatas,(nP+nS+nC)?(nP+nS+nC)+' vínculo(s)':''].filter(Boolean).join(' · ')}>
               <div className="modal-field" style={{marginTop:8}}>
                 <label className="modal-field-label">Fase</label>
                 <select className="form-input" value={phaseId} disabled={!pEstrutura} onChange={e=>setPhaseId(e.target.value)}>
@@ -4374,9 +4374,8 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
                 </select>
               </div>
               <label className="chk-inflow"><input type="checkbox" checked={inFlow} disabled={!pEstrutura} onChange={e=>setInFlow(e.target.checked)}/> <span>Mostrar esta tarefa também no <b>Fluxograma</b></span></label>
-            </NmSecao>
-            <NmSecao icone="ti-calendar" titulo="Datas" resumo={resumoDatas}>
-              <div className="modal-field" style={{display:'flex',gap:10,marginTop:8}}>
+              <div className="nm-sub"><i className="ti ti-calendar"/> Datas</div>
+              <div className="modal-field" style={{display:'flex',gap:10}}>
                 <div style={{flex:1}}>
                   <label className="modal-field-label">Data de início</label>
                   <input type="date" className="form-input" value={startDate} disabled={!pDatas} onChange={e=>setStartDate(e.target.value)}/>
@@ -4396,15 +4395,13 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
                   <input type="date" className="form-input" value={endMeta} disabled={!metaEditable||!pDatas} onChange={e=>setEndMeta(e.target.value)} title={metaEditable?'Digite para fixar o término; deixe em branco para o motor calcular':'Calculado no Cronograma — igual em todas as abas'}/>
                 </div>
               </div>
-            </NmSecao>
-            {onVinculo&&<NmSecao icone="ti-git-branch" titulo="Vínculos" resumo={nP+' predecessora(s) · '+nS+' sucessora(s) · '+nC+' compat.'}>
-              <VinculosTarefa taskId={node.id} tarefas={tarefas} conexoes={conexoes} onVinculo={onVinculo} onAbrirTarefa={onAbrirTarefa} editavel={pEstrutura}/>
-            </NmSecao>}
-            {!DEMO_MODE&&<NmSecao icone="ti-notes" titulo="Atas de reunião" resumo="registrar e consultar as atas desta tarefa">
-              <AtasDaTarefa projId={projId} taskId={node.id} taskLabel={node.data.label} projects={projects}/>
-            </NmSecao>}
+              {onVinculo&&<>
+                <div className="nm-sub"><i className="ti ti-git-branch"/> Vínculos</div>
+                <VinculosTarefa taskId={node.id} tarefas={tarefas} conexoes={conexoes} onVinculo={onVinculo} onAbrirTarefa={onAbrirTarefa} editavel={pEstrutura}/>
+              </>}
             {Array.isArray(contratosVinc)&&contratosVinc.length>0&&(
-              <NmSecao icone="ti-file-dollar" titulo="Contratos vinculados" resumo={String(contratosVinc.length)}>
+              <>
+                <div className="nm-sub"><i className="ti ti-file-dollar"/> Contratos vinculados ({contratosVinc.length})</div>
                 <div className="fin-vinc-box">
                   {contratosVinc.map(c=>{ const k=finContratoKPIs(c); return (
                     <div key={c.id} className="fin-vinc-item">
@@ -4416,14 +4413,18 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
                       {onOpenContrato && <button className="btn-modal ghost" style={{padding:'5px 10px'}} onClick={()=>onOpenContrato(c.id,c._origem)} title={'Abrir o contrato no Controle Financeiro do '+(c._origem==='prj'?'Portal PRJ':'Portal DI')}><i className="ti ti-external-link"/> Abrir</button>}
                     </div>); })}
                 </div>
-              </NmSecao>
+              </>
             )}
+            </NmSecao>
           </>);
         })()}
         <div className="modal-field" style={{marginTop:10}}>
           <label className="modal-field-label">Comentários</label>
           <ComentariosTarefa lista={comentarios} notaAntiga={notes} onChange={mudarComentarios}/>
         </div>
+        {!DEMO_MODE&&<NmSecao icone="ti-notes" titulo="Atas de reunião" resumo="registrar e consultar">
+          <AtasDaTarefa projId={projId} taskId={node.id} taskLabel={node.data.label} projects={projects}/>
+        </NmSecao>}
         <div className="modal-footer" style={{justifyContent:'space-between'}}>
           {(onResetSize&&pEstrutura)
             ? <button className="btn-modal ghost" onClick={()=>{onResetSize(node.id);onClose();}} title="Volta a tarefa ao tamanho padrão do tipo"><i className="ti ti-ruler-2"/> Redefinir tamanho</button>
