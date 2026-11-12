@@ -1627,6 +1627,10 @@
   .node-top-right-icons{position:absolute;top:8px;right:8px;z-index:5;display:flex;align-items:center;gap:7px;}
   .node-notes-indicator{position:relative;font-size:11px;color:var(--text3);cursor:help;}
   .node-checklist-indicator{position:relative;font-size:9px;font-weight:600;color:var(--text3);display:flex;align-items:center;gap:3px;cursor:help;}
+  /* Tooltip de comentários sempre por cima das outras tarefas: a tarefa que
+     está mostrando o tooltip sobe para a frente de todas. */
+  .react-flow__node:has(.node-notes-tooltip){z-index:100000 !important;}
+  .node-notes-tooltip{max-height:240px;overflow-y:auto;overscroll-behavior:contain;}
   .node-notes-tooltip{position:absolute;top:18px;right:0;z-index:50;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:9px 11px;font-size:11px;line-height:1.5;color:var(--text);width:200px;max-width:60vw;white-space:pre-wrap;box-shadow:0 8px 20px rgba(0,0,0,.35);pointer-events:none;}
   .st-done .dot{background:var(--st-done);}
   .st-wip .dot{background:var(--st-wip);}
