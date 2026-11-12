@@ -1531,6 +1531,63 @@
   .sch-projrow td{background:var(--blue-bg);font-weight:800;border-bottom:2px solid var(--border2);color:var(--text);}
   .sch-projrow .sch-name{font-weight:800;font-size:13px;}
   .sch-projrow.drop-into td{box-shadow:inset 0 0 0 2px var(--accent);}
+  /* ───────── Painel de Metas (Portal Diretoria) ───────── */
+  .pm-wrap{display:flex;flex-direction:column;gap:14px;}
+  .pm-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:10px;border-bottom:2px solid var(--text);}
+  .pm-kicker{font-size:11.5px;color:var(--text3);font-weight:600;}
+  .pm-title{font-size:21px;font-weight:800;letter-spacing:-.2px;margin-top:2px;}
+  .pm-sec{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 18px;}
+  .pm-sec-t{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;}
+  .pm-sec-s{font-size:12px;color:var(--text2);margin:3px 0 12px;}
+  .pm-ct{font-size:11px;font-weight:700;color:var(--text2);background:var(--surface2);padding:1px 7px;border-radius:4px;}
+  .pm-frase{font-size:16px;line-height:1.45;margin-bottom:12px;}
+  .pm-stack{display:flex;height:30px;border-radius:4px;overflow:hidden;gap:2px;}
+  .pm-stack>div{display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;min-width:3px;}
+  .pm-stack.thin{height:7px;gap:1px;margin:2px 0 4px;}
+  .pm-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:14px;border:1px solid var(--border);border-radius:4px;}
+  .pm-kpi{padding:12px 14px;border-left:1px solid var(--border);}
+  .pm-kpi:first-child{border-left:none;}
+  .pm-kpi-h{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;}
+  .pm-kpi-h i{font-size:16px;}
+  .pm-kpi-v{font-size:30px;font-weight:800;line-height:1;margin-top:10px;font-variant-numeric:tabular-nums;}
+  .pm-kpi-n{font-size:12px;color:var(--text2);margin-top:3px;}
+  .pm-kpi-d{font-size:11.5px;color:var(--text3);margin-top:8px;line-height:1.4;}
+  @media(max-width:760px){.pm-kpis{grid-template-columns:1fr 1fr;}.pm-kpi:nth-child(3){border-left:none;}.pm-kpi:nth-child(n+3){border-top:1px solid var(--border);}}
+  .pm-emp{border-top:1px solid var(--border);padding:8px 0 6px;}
+  .pm-emp-h{width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;font:inherit;color:var(--text);cursor:pointer;padding:4px 0;text-align:left;}
+  .pm-emp-n{flex:1;min-width:0;font-weight:800;font-size:13.5px;text-transform:uppercase;letter-spacing:.2px;display:flex;flex-direction:column;}
+  .pm-emp-n small{font-size:11.5px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text2);margin-top:1px;}
+  .pm-emp-p{display:flex;flex-direction:column;align-items:flex-end;}
+  .pm-emp-p b{font-size:20px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+  .pm-emp-p small{font-size:11px;color:var(--text2);}
+  .pm-tbl-wrap{overflow-x:auto;margin:8px 0 6px;}
+  .pm-tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px;}
+  .pm-tbl th{text-align:left;font-size:11px;font-weight:700;color:var(--text3);padding:7px 8px;background:var(--surface2);}
+  .pm-tbl td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
+  .pm-t-n{font-weight:700;text-transform:uppercase;font-size:12px;}
+  .pm-t-s{font-size:11px;color:var(--text3);margin-top:2px;}
+  .pm-code{font-size:10px;font-weight:700;color:var(--text2);background:var(--surface2);padding:1px 5px;border-radius:3px;margin-right:6px;}
+  .pm-pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:4px;white-space:nowrap;}
+  .pm-chart{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;height:190px;align-items:stretch;}
+  .pm-col{display:flex;flex-direction:column;min-width:0;}
+  .pm-col-bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;border-bottom:1px solid var(--border2);}
+  .pm-col-n{font-size:11.5px;font-weight:700;text-align:center;margin-bottom:3px;}
+  .pm-col-stk{display:flex;flex-direction:column;border-radius:3px 3px 0 0;overflow:hidden;gap:1px;max-width:38px;width:100%;margin:0 auto;}
+  .pm-col-stk>div{min-height:2px;}
+  .pm-col-l{font-size:11px;color:var(--text2);text-align:center;margin-top:5px;}
+  .pm-leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;font-size:11.5px;color:var(--text2);}
+  .pm-leg span{display:inline-flex;align-items:center;gap:6px;}
+  .pm-leg i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  .pm-two{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
+  @media(max-width:900px){.pm-two{grid-template-columns:1fr;}}
+  .pm-li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--border);}
+  .pm-li-n{font-weight:700;font-size:12.5px;text-transform:uppercase;}
+  .pm-li-s{font-size:11.5px;color:var(--text2);margin-top:2px;line-height:1.4;}
+  .pm-none{font-size:12.5px;color:var(--text3);padding:10px 0 4px;}
+  .pm-how-g{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:10px;}
+  @media(max-width:900px){.pm-how-g{grid-template-columns:1fr;}}
+  .pm-how b{font-size:12.5px;}
+  .pm-how p{font-size:12px;color:var(--text2);line-height:1.5;margin:4px 0 0;}
   /* ───────── Controle de Metas (Portal Diretoria) ───────── */
   .cm-wrap{padding:20px 24px 40px;max-width:1320px;margin:0 auto;}
   .cm-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
@@ -2068,6 +2125,136 @@
   .ata-codigo{margin-bottom:12px;font-size:12px;}
   .ata-codigo pre{max-height:220px;overflow:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;white-space:pre;}
   @keyframes ataGira{to{transform:rotate(360deg);}} .ata-gira{display:inline-block;animation:ataGira 1s linear infinite;}
+  /* ── IPTU (Portal DI) ──
+     Cores dos gráficos (identidade de cada fatia/série). Validadas para
+     daltonismo nos dois temas; no claro ficam um pouco mais escuras. */
+  :root{--iptu-c1:#17a87f;--iptu-c2:#4f7cff;--iptu-c3:#e8650c;--iptu-c4:#957af2;}
+  [data-theme="light"]{--iptu-c1:#0fa37a;--iptu-c2:#3d6cf0;--iptu-c3:#e8650c;--iptu-c4:#8b6fe6;}
+  .iptu-wrap .pdi-wrap{padding:0;}
+  .iptu-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .iptu-tabs{flex-wrap:wrap;}
+  .iptu-tab-n{margin-left:6px;font-size:10.5px;background:var(--surface3);color:var(--text2);border-radius:10px;padding:1px 6px;}
+  .fin-tab.active .iptu-tab-n{background:rgba(255,255,255,.22);color:#fff;}
+  .iptu-head-actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;}
+  .iptu-head-actions .pdi-btn{padding:8px 12px;font-size:12px;}
+  .iptu-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px;}
+  .iptu-kpis3{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .iptu-kpis .venc-card{padding:14px 16px;min-width:0;}
+  .iptu-kpis .venc-card.iptu-static{cursor:default;}
+  .iptu-kpi-v{font-size:24px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .iptu-kpi-s{font-size:11px;color:var(--text2);margin-top:6px;}
+  .iptu-grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px;}
+  .iptu-card{margin-bottom:0;display:flex;flex-direction:column;gap:14px;min-width:0;}
+  .iptu-card .pdi-card-desc{margin-bottom:0;}
+  .iptu-card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .iptu-link{background:none;border:none;color:var(--accent);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;padding:4px 0;}
+  .iptu-link:hover{text-decoration:underline;}
+  .iptu-sub-t{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:4px 0 8px;}
+  .iptu-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .iptu-pill.blue{background:var(--blue-bg);color:var(--accent);}
+  .iptu-pill.purple{background:var(--purple-bg);color:var(--purple);}
+  .iptu-pill.red{background:var(--red-bg);color:var(--red);}
+  .iptu-pill.amber{background:var(--amber-bg);color:var(--amber);}
+  .iptu-pill.green{background:var(--green-bg);color:var(--green);}
+  .iptu-pill.gray{background:var(--surface2);color:var(--text2);}
+  .iptu-pills{display:flex;flex-wrap:wrap;gap:8px;}
+  .iptu-mini-list{display:flex;flex-direction:column;}
+  .iptu-mini{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--border);font-size:12.5px;}
+  .iptu-mini:first-child{border-top:none;}
+  .iptu-mini .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .iptu-mini .s{font-size:11px;color:var(--text2);}
+  /* Rosca */
+  .iptu-donut-wrap{display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
+  .iptu-donut{position:relative;width:180px;height:180px;flex-shrink:0;}
+  .iptu-donut svg{width:100%;height:100%;transform:rotate(-90deg);}
+  .iptu-donut .seg{cursor:pointer;transition:opacity .15s;}
+  .iptu-donut.hov .seg{opacity:.35;}
+  .iptu-donut.hov .seg.on{opacity:1;}
+  .iptu-donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;}
+  .iptu-donut-c b{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .iptu-donut-c span{font-size:11px;color:var(--text2);max-width:110px;}
+  .iptu-legend{flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px;}
+  .iptu-lg{display:grid;grid-template-columns:10px 1fr auto auto;gap:10px;align-items:center;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;}
+  .iptu-lg:hover,.iptu-lg.on{background:var(--surface2);}
+  .iptu-lg .dot{width:10px;height:10px;border-radius:3px;}
+  .iptu-lg .nm{color:var(--text2);}
+  .iptu-lg .pc{font-weight:700;font-variant-numeric:tabular-nums;}
+  .iptu-lg .qt{color:var(--text3);font-size:11.5px;font-variant-numeric:tabular-nums;min-width:58px;text-align:right;}
+  /* Barras */
+  .iptu-bars{display:flex;flex-direction:column;gap:12px;}
+  .iptu-bar-row{display:grid;grid-template-columns:130px minmax(0,1fr) 100px;gap:12px;align-items:center;font-size:12px;}
+  .iptu-bar-row .bl{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .iptu-bar-row .bv{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;}
+  .iptu-bar-row .bv small{display:block;font-weight:500;color:var(--text3);font-size:10.5px;}
+  .iptu-track{height:10px;background:var(--surface2);border-radius:6px;overflow:hidden;}
+  .iptu-fill{height:100%;border-radius:0 4px 4px 0;background:var(--iptu-c2);}
+  .iptu-pair-lg{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--text2);}
+  .iptu-pair-lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
+  .iptu-pairs{display:flex;flex-direction:column;gap:12px;}
+  .iptu-pair{display:flex;flex-direction:column;gap:5px;}
+  .iptu-pair-h{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:12px;flex-wrap:wrap;}
+  .iptu-pb{display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:11.5px;font-variant-numeric:tabular-nums;}
+  .iptu-pb span{text-align:right;color:var(--text2);}
+  .iptu-pb .iptu-track{height:8px;}
+  /* Montante geral + tiras de parcelas */
+  .iptu-big{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+  .iptu-big .n{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+  .iptu-big .s{font-size:13px;color:var(--text2);}
+  .iptu-big .s b{color:var(--text);}
+  .iptu-stack{display:flex;gap:2px;height:26px;border-radius:6px;overflow:hidden;}
+  .iptu-stack > span{min-width:3px;}
+  .iptu-stack-lg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+  .iptu-stack-lg .sl{display:grid;grid-template-columns:12px minmax(0,1fr);column-gap:8px;row-gap:2px;font-size:12px;align-items:center;}
+  .iptu-stack-lg .sw{width:12px;height:12px;border-radius:3px;}
+  .iptu-stack-lg .nm{color:var(--text2);}
+  .iptu-stack-lg b,.iptu-stack-lg .pc{grid-column:2;font-variant-numeric:tabular-nums;}
+  .iptu-stack-lg b{font-size:14px;}
+  .iptu-stack-lg .pc{font-size:11px;color:var(--text3);}
+  .iptu-pend{background:var(--surface2);box-shadow:inset 0 0 0 1.5px var(--iptu-c2);}
+  .iptu-hatch{background:repeating-linear-gradient(135deg,var(--iptu-c3) 0 3px,transparent 3px 7px);box-shadow:inset 0 0 0 1.5px var(--iptu-c3);}
+  .iptu-emp-total{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;color:var(--text2);text-align:right;}
+  .iptu-emp-total b{color:var(--text);font-size:15px;font-variant-numeric:tabular-nums;}
+  .iptu-g-rows{display:flex;flex-direction:column;}
+  .iptu-g-row{display:grid;grid-template-columns:140px minmax(0,1fr) 170px;gap:12px;align-items:center;font-size:12.5px;padding:10px 0;border-top:1px solid var(--border);}
+  .iptu-g-row:first-child{border-top:none;padding-top:0;}
+  .iptu-g-row small{display:block;font-size:10.5px;color:var(--text3);margin-top:2px;font-weight:500;}
+  .iptu-g-row .gv{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;}
+  .iptu-strip{display:flex;gap:2px;height:18px;}
+  .iptu-strip span{flex:1;border-radius:3px;min-width:0;}
+  /* Tabelas e controles */
+  .iptu-row{cursor:pointer;}
+  .iptu-row.open td,.iptu-detail td{background:var(--surface2);}
+  .iptu-sub{font-size:11px;color:var(--text2);margin-top:3px;white-space:nowrap;}
+  .iptu-sub.warn{color:var(--amber);font-weight:600;}
+  .iptu-desc{color:var(--text2);min-width:240px;max-width:420px;}
+  .iptu-desc-t{color:var(--text);font-weight:600;font-size:12px;margin-bottom:2px;}
+  .iptu-detail td{padding-top:0!important;}
+  .iptu-det{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
+  .iptu-det > div{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;min-width:0;}
+  .iptu-det small{display:block;font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+  .iptu-det b{font-variant-numeric:tabular-nums;}
+  .iptu-det-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;}
+  .iptu-det-actions .pdi-btn{padding:7px 12px;font-size:12px;text-decoration:none;}
+  .iptu-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .iptu-chips button{background:var(--surface);border:1px solid var(--border2);color:var(--text2);border-radius:20px;padding:5px 11px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .iptu-chips button.on{background:var(--blue-bg);border-color:var(--accent);color:var(--accent);}
+  .iptu-decide{display:inline-flex;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:2px;gap:2px;}
+  .iptu-decide button{background:none;border:none;color:var(--text2);font-family:inherit;font-size:11px;font-weight:600;padding:5px 9px;border-radius:6px;cursor:pointer;white-space:nowrap;}
+  .iptu-decide button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.15);}
+  .iptu-decide button.on.vista{color:var(--green);}
+  .iptu-decide button.on.parcelar{color:var(--accent);}
+  .iptu-switch{width:34px;height:20px;border-radius:20px;background:var(--surface3);border:1px solid var(--border2);position:relative;cursor:pointer;flex-shrink:0;padding:0;}
+  .iptu-switch span{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text2);transition:left .15s;}
+  .iptu-switch.on{background:var(--accent);border-color:var(--accent);}
+  .iptu-switch.on span{left:16px;background:#fff;}
+  .iptu-check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2);margin-bottom:12px;cursor:pointer;}
+  .iptu-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .iptu-cell{width:100%;min-width:0;padding:6px 8px;}
+  .iptu-modal-foot{display:flex;gap:8px;align-items:center;margin-top:16px;}
+  .iptu-alert-bar{max-width:none;margin:0 0 12px;padding:10px 14px;border-radius:10px;background:var(--amber-bg);color:var(--amber);}
+  @media(max-width:1100px){ .iptu-kpis{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  @media(max-width:900px){ .iptu-grid2{grid-template-columns:minmax(0,1fr);} .iptu-stack-lg{grid-template-columns:repeat(2,minmax(0,1fr));} .iptu-head-actions{margin-left:0;} }
+  @media(max-width:560px){ .iptu-kpis,.iptu-kpis3{grid-template-columns:repeat(2,minmax(0,1fr));} .iptu-g-row{grid-template-columns:minmax(0,1fr) auto;} .iptu-g-row .iptu-strip{grid-column:1/-1;order:3;} .iptu-row3{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -2238,6 +2425,8 @@ function inicioDaSemana(d){ const x=new Date(d); x.setHours(0,0,0,0); const dow=
    transferência (importados de Excel pelo app) e, futuramente, IPTU e certidões
    (gravados por um robô). */
 const REGISTROS_DOC = db.collection('fluxoapp_meta').doc('registros');
+/* IPTU (Portal DI): processos na prefeitura, guias/pagamentos e config. */
+const IPTU_DOC = db.collection('fluxoapp_meta').doc('iptu');
 /* Preferências por usuário (favoritos, rascunhos de ofício etc.): um documento
    por usuário, identificado pelo uid do login. Assim os favoritos de cada
    pessoa são independentes — não ficam no geral. */
@@ -5967,8 +6156,195 @@ function gerarProjetosMetasTeste(){
   });
 }
 
+/* ── PAINEL DE METAS (Portal Diretoria · aba "Painel de metas") ──
+   Mesma organização do painel de metas da engenharia: resumo em uma frase,
+   barra de percentuais, 4 indicadores, resultado por empreendimento (com a
+   tabela das metas), mês a mês, atrasadas, vencendo em 30 dias, em validação
+   e a explicação do cálculo. Usa as metas do Cronograma (isMeta). */
+const PM_CATS=[
+  {key:'noprazo',  bucket:'batida',    label:'Concluídas no prazo',      short:'No prazo',      color:'#6E9B3C', icon:'ti-circle-check', desc:'Concluídas e validadas como meta batida.'},
+  {key:'foraprazo',bucket:'naobatida', label:'Concluídas fora do prazo', short:'Fora do prazo', color:'#C9574A', icon:'ti-clock-exclamation', desc:'Concluídas e validadas como meta não batida.'},
+  {key:'atrasada', bucket:'atrasada',  label:'Atrasadas',                short:'Atrasada',      color:'#D07A3E', icon:'ti-alert-triangle', desc:'Ainda não concluídas e com a data da meta já ultrapassada.'},
+  {key:'avencer',  bucket:'aconcluir', label:'A vencer',                 short:'A vencer',      color:'#8A8A7E', icon:'ti-calendar-event', desc:'Ainda em aberto, dentro do prazo.'},
+];
+const PM_VALID={key:'validacao',bucket:'validar',label:'Em validação',short:'Em validação',color:'#4F8A74',icon:'ti-checklist'};
+const PM_BY_BUCKET=(()=>{ const m={}; PM_CATS.concat([PM_VALID]).forEach(c=>{ m[c.bucket]=c; }); return m; })();
+const PM_MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function pmDate(sd){ return SCHED.parseISO(sd)||parseFlexDate(sd)||null; }
+function pmFmt(d){ return d?(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()):'—'; }
+function pmDias(a,b){ return Math.round((a.getTime()-b.getTime())/86400000); }
+function pmPct(n,t){ return t>0?Math.round(n/t*100):0; }
+function pmPath(t,byId){ const out=[]; let p=t.parentId!=null?byId[String(t.parentId)]:null, guard=0; while(p&&guard++<12){ out.unshift(p.label||''); p=p.parentId!=null?byId[String(p.parentId)]:null; } return out.filter(Boolean).join(' › '); }
+function pmResultado(x){
+  if(x.cat==='atrasada') return {txt:x.dias+' dia'+(x.dias===1?'':'s')+' em atraso'};
+  if(x.cat==='avencer') return {txt:x.dias===0?'vence hoje':('falta'+(x.dias===1?'':'m')+' '+x.dias+' dia'+(x.dias===1?'':'s'))};
+  if(x.real&&x.meta){ const d=pmDias(x.real,x.meta); return {txt:d===0?'no dia da meta':(Math.abs(d)+' dia'+(Math.abs(d)===1?'':'s')+' '+(d<0?'antes':'depois'))}; }
+  return {txt:'—'};
+}
+
+function PainelMetas({allMetas,onValidar,onIrValidar}){
+  const hoje=React.useMemo(()=>{ const h=new Date(); h.setHours(0,0,0,0); return h; },[]);
+  /* Normaliza cada meta: data da meta, conclusão real, categoria e dias. */
+  const metas=React.useMemo(()=>{
+    const byIdCache=new Map();
+    return allMetas.map(x=>{
+      let byId=byIdCache.get(x.projId); if(!byId){ byId={}; (x.proj.tasks||[]).forEach(t=>{ byId[String(t.id)]=t; }); byIdCache.set(x.projId,byId); }
+      const meta=pmDate(x.info.blE||x.info.end||cmMetaTarget(x.t));
+      const atual=pmDate(x.info.end);
+      const concl=x.t.status==='Concluído'||x.t.metaConcluida;
+      const real=concl?pmDate(x.info.summary?x.info.end:(x.t.endDate||x.info.end)):null;
+      const c=PM_BY_BUCKET[x.bucket]||PM_CATS[3];
+      let dias=null;
+      if(meta&&c.key==='atrasada') dias=pmDias(hoje,meta);
+      if(meta&&c.key==='avencer') dias=Math.max(0,pmDias(meta,hoje));
+      return {...x, meta, atual, real, cat:c.key, catInfo:c, dias, ano:meta?meta.getFullYear():null, path:pmPath(x.t,byId)};
+    });
+  },[allMetas,hoje]);
+
+  const anos=React.useMemo(()=>[...new Set(metas.map(m=>m.ano).filter(Boolean))].sort((a,b)=>b-a),[metas]);
+  const anoAtual=hoje.getFullYear();
+  const [ano,setAno]=useState(null);
+  const anoSel=ano!=null&&anos.includes(ano)?ano:(anos.includes(anoAtual)?anoAtual:(anos[0]||anoAtual));
+  const [aberto,setAberto]=useState(null);
+
+  const doAno=React.useMemo(()=>metas.filter(m=>m.ano===anoSel&&m.cat!=='validacao'),[metas,anoSel]);
+  const emValidacao=React.useMemo(()=>metas.filter(m=>m.cat==='validacao').sort((a,b)=>(a.meta?a.meta.getTime():0)-(b.meta?b.meta.getTime():0)),[metas]);
+  const semData=metas.filter(m=>!m.meta&&m.cat!=='validacao').length;
+  const total=doAno.length;
+  const cnt=React.useMemo(()=>{ const c={noprazo:0,foraprazo:0,atrasada:0,avencer:0}; doAno.forEach(m=>{ c[m.cat]++; }); return c; },[doAno]);
+
+  const porEmp=React.useMemo(()=>{
+    const m=new Map();
+    doAno.forEach(x=>{ if(!m.has(x.projId)) m.set(x.projId,{id:x.projId,name:x.projName,items:[],noprazo:0,foraprazo:0,atrasada:0,avencer:0}); const g=m.get(x.projId); g.items.push(x); g[x.cat]++; });
+    const arr=[...m.values()];
+    arr.forEach(g=>{ g.total=g.items.length; g.pct=pmPct(g.noprazo,g.total); g.items.sort((a,b)=>(a.meta?a.meta.getTime():0)-(b.meta?b.meta.getTime():0)); });
+    return arr.sort((a,b)=>b.pct-a.pct||b.total-a.total||a.name.localeCompare(b.name,'pt'));
+  },[doAno]);
+
+  const meses=React.useMemo(()=>{ const ms=PM_MESES.map(()=>({noprazo:0,foraprazo:0,atrasada:0,avencer:0,total:0})); doAno.forEach(x=>{ const k=x.meta.getMonth(); ms[k][x.cat]++; ms[k].total++; }); return ms; },[doAno]);
+  const maxMes=Math.max(1,...meses.map(m=>m.total));
+  const atrasadas=React.useMemo(()=>metas.filter(m=>m.cat==='atrasada').sort((a,b)=>b.dias-a.dias),[metas]);
+  const proximas=React.useMemo(()=>metas.filter(m=>m.cat==='avencer'&&m.dias!=null&&m.dias<=30).sort((a,b)=>a.dias-b.dias),[metas]);
+
+  const linhaInfo=x=>[x.projName,x.path||(x.setor!=='—'?setorSigla(x.setor):''),x.resp!=='—'?x.resp:'','meta '+pmFmt(x.meta)].filter(Boolean).join(' · ');
+  const Pill=({x})=>{ const r=pmResultado(x); return <span className="pm-pill" style={{color:x.catInfo.color,background:x.catInfo.color+'22'}}>{r.txt}</span>; };
+
+  if(!metas.length) return <div className="pm-sec"><div className="cm-empty"><i className="ti ti-target-arrow" style={{fontSize:32,display:'block',marginBottom:10}}/>Nenhuma meta encontrada.<br/><span style={{fontSize:12}}>Marque tarefas como <b>meta</b> no Cronograma dos empreendimentos para elas aparecerem aqui.</span></div></div>;
+
+  const frase=total===0
+    ? <>Nenhuma meta com data em {anoSel}.</>
+    : <>Das <b>{total} metas</b> de {anoSel}, <b>{cnt.noprazo} {cnt.noprazo===1?'foi concluída':'foram concluídas'} no prazo ({pmPct(cnt.noprazo,total)}%)</b>, {cnt.foraprazo} fora do prazo ({pmPct(cnt.foraprazo,total)}%), <b>{cnt.atrasada} {cnt.atrasada===1?'está atrasada':'estão atrasadas'} ({pmPct(cnt.atrasada,total)}%)</b> e {cnt.avencer} ainda {cnt.avencer===1?'vence':'vencem'} ({pmPct(cnt.avencer,total)}%).{emValidacao.length>0&&<> {emValidacao.length} {emValidacao.length===1?'aguarda':'aguardam'} validação.</>}</>;
+
+  return (
+    <div className="pm-wrap">
+      <div className="pm-head">
+        <div>
+          <div className="pm-kicker">Portal Diretoria · Controle de Metas</div>
+          <div className="pm-title">Painel de Metas</div>
+        </div>
+        {anos.length>0&&<div className="cm-field"><label>Ano da meta</label><select value={anoSel} onChange={e=>setAno(Number(e.target.value))}>{anos.map(a=><option key={a} value={a}>{a}</option>)}</select></div>}
+      </div>
+
+      <div className="pm-sec">
+        <div className="pm-frase">{frase}</div>
+        {total>0&&<div className="pm-stack">
+          {PM_CATS.map(c=>cnt[c.key]>0?<div key={c.key} style={{flex:cnt[c.key],background:c.color}} title={c.label+': '+cnt[c.key]}>{pmPct(cnt[c.key],total)>=6?pmPct(cnt[c.key],total)+'%':''}</div>:null)}
+        </div>}
+        <div className="pm-kpis">
+          {PM_CATS.map(c=>(
+            <div key={c.key} className="pm-kpi">
+              <div className="pm-kpi-h"><i className={'ti '+c.icon} style={{color:c.color}}/> {c.label}</div>
+              <div className="pm-kpi-v">{pmPct(cnt[c.key],total)}%</div>
+              <div className="pm-kpi-n">{cnt[c.key]} de {total}</div>
+              <div className="pm-kpi-d">{c.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="pm-sec">
+        <div className="pm-sec-t">Resultado por empreendimento</div>
+        <div className="pm-sec-s">Do maior para o menor percentual no prazo. Clique em um empreendimento para ver as metas.</div>
+        {porEmp.length===0?<div className="cm-empty">Sem metas em {anoSel}.</div>:porEmp.map(g=>{ const open=aberto===g.id; return (
+          <div key={g.id} className={'pm-emp'+(open?' open':'')}>
+            <button className="pm-emp-h" onClick={()=>setAberto(open?null:g.id)}>
+              <i className={'ti ti-chevron-'+(open?'down':'right')} style={{color:'var(--text3)'}}/>
+              <span className="pm-emp-n">{g.name}<small>{g.total} meta{g.total===1?'':'s'}{g.atrasada>0&&<b style={{color:'#D07A3E'}}> · {g.atrasada} atrasada{g.atrasada===1?'':'s'}</b>}</small></span>
+              <span className="pm-emp-p"><b>{g.pct}%</b><small>no prazo</small></span>
+            </button>
+            <div className="pm-stack thin">{PM_CATS.map(c=>g[c.key]>0?<div key={c.key} style={{flex:g[c.key],background:c.color}} title={c.label+': '+g[c.key]}/>:null)}</div>
+            {open&&<div className="pm-tbl-wrap"><table className="pm-tbl">
+              <thead><tr><th>Meta</th><th>Responsável</th><th>Data meta</th><th>Conclusão real</th><th>Resultado</th></tr></thead>
+              <tbody>{g.items.map(x=>(
+                <tr key={x.t.id}>
+                  <td><div className="pm-t-n">{x.t.code&&<span className="pm-code">{x.t.code}</span>}{x.t.label}</div><div className="pm-t-s">{x.path||(x.setor!=='—'?setorSigla(x.setor):'')}</div></td>
+                  <td>{x.resp!=='—'?x.resp:<span style={{color:'var(--text3)'}}>—</span>}</td>
+                  <td><div>{pmFmt(x.meta)}</div>{x.atual&&x.meta&&x.atual.getTime()!==x.meta.getTime()&&<div className="pm-t-s">venc. atual {pmFmt(x.atual)}</div>}</td>
+                  <td>{x.real?pmFmt(x.real):'—'}</td>
+                  <td><Pill x={x}/></td>
+                </tr>))}</tbody>
+            </table></div>}
+          </div>); })}
+      </div>
+
+      <div className="pm-sec">
+        <div className="pm-sec-t">Mês a mês</div>
+        <div className="pm-sec-s">Metas de {anoSel} agrupadas pelo mês da data da meta</div>
+        <div className="pm-chart">
+          {meses.map((m,i)=>(
+            <div key={i} className="pm-col">
+              <div className="pm-col-bar">
+                {m.total>0&&<span className="pm-col-n">{m.total}</span>}
+                <div className="pm-col-stk" style={{height:(m.total/maxMes*100)+'%'}}>
+                  {PM_CATS.slice().reverse().map(c=>m[c.key]>0?<div key={c.key} style={{flex:m[c.key],background:c.color}} title={PM_MESES[i]+' · '+c.label+': '+m[c.key]}/>:null)}
+                </div>
+              </div>
+              <div className="pm-col-l">{PM_MESES[i]}</div>
+            </div>
+          ))}
+        </div>
+        <div className="pm-leg">{PM_CATS.map(c=><span key={c.key}><i style={{background:c.color}}/>{c.short}</span>)}</div>
+      </div>
+
+      <div className="pm-two">
+        <div className="pm-sec">
+          <div className="pm-sec-t">O que está atrasado <span className="pm-ct">{atrasadas.length}</span></div>
+          <div className="pm-sec-s">Da mais atrasada para a menos atrasada (todos os anos)</div>
+          {atrasadas.length===0?<div className="pm-none">Nenhuma meta atrasada.</div>:atrasadas.map(x=>(
+            <div key={x.projId+'-'+x.t.id} className="pm-li"><div><div className="pm-li-n">{x.t.label}</div><div className="pm-li-s">{linhaInfo(x)}</div></div><Pill x={x}/></div>))}
+        </div>
+        <div className="pm-sec">
+          <div className="pm-sec-t">Vencem nos próximos 30 dias <span className="pm-ct">{proximas.length}</span></div>
+          <div className="pm-sec-s">Para agir antes que atrasem</div>
+          {proximas.length===0?<div className="pm-none">Nada vence nos próximos 30 dias.</div>:proximas.map(x=>(
+            <div key={x.projId+'-'+x.t.id} className="pm-li"><div><div className="pm-li-n">{x.t.label}</div><div className="pm-li-s">{linhaInfo(x)}</div></div><Pill x={x}/></div>))}
+        </div>
+      </div>
+
+      <div className="pm-sec">
+        <div className="pm-sec-t">Em validação <span className="pm-ct">{emValidacao.length}</span></div>
+        <div className="pm-sec-s">{emValidacao.length} tarefa{emValidacao.length===1?' aguarda':'s aguardam'} o ok da diretoria. Lista de todos os anos, fora dos percentuais acima.</div>
+        {emValidacao.length===0?<div className="pm-none">Nenhuma tarefa em validação.</div>:<>
+          {emValidacao.map(x=>(
+            <div key={x.projId+'-'+x.t.id} className="pm-li"><div><div className="pm-li-n">{x.t.label}</div><div className="pm-li-s">{linhaInfo(x)}{x.real?' · concluída '+pmFmt(x.real):''}</div></div>
+              <button className="cm-val-btn" onClick={()=>onValidar&&onValidar(x)}><i className="ti ti-checklist"/> Validar</button></div>))}
+          {onIrValidar&&<button className="cm-clear" style={{marginTop:6}} onClick={onIrValidar}>abrir a aba Metas para validar</button>}
+        </>}
+      </div>
+
+      <div className="pm-sec pm-how">
+        <div className="pm-sec-t">Como os números são calculados</div>
+        <div className="pm-how-g">
+          <div><b>Qual é a meta</b><p>Cada tarefa marcada como meta no Cronograma. Tarefa-mãe usa a soma das subtarefas. A data da meta é o término da linha de base; sem linha de base, vale o término previsto. Remarcar a tarefa não muda a meta, e cada uma entra no ano da sua data.</p></div>
+          <div><b>O que é concluída</b><p>Tarefa concluída e validada pela diretoria: “bateu” conta como no prazo e “não bateu” como fora do prazo. Concluída e ainda sem validação aparece em separado, em Em validação. A coluna Resultado compara a data da meta com a conclusão real.</p></div>
+          <div><b>O que fica de fora</b><p>Tarefas que não são meta e metas sem nenhuma data.{semData>0?<> Hoje: {semData} meta{semData===1?'':'s'} sem data.</>:''} Os filtros de empreendimento, setor e responsável valem para todo o painel.</p></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function ControleMetas({projects,onValidateMeta}){
-  const [tab,setTab]=useState('validar');
+  const [tab,setTab]=useState('painel');
   const [fEmp,setFEmp]=useState(''); const [fSetor,setFSetor]=useState(''); const [fResp,setFResp]=useState('');
   const [groupBy,setGroupBy]=useState('proj');
   const [valTask,setValTask]=useState(null); /* {task, projId, hol} */
@@ -6008,8 +6384,8 @@ function ControleMetas({projects,onValidateMeta}){
   return (
     <div className="cm-wrap">
       <div className="cm-tabs">
+        <button className={'cm-tab'+(tab==='painel'?' active':'')} onClick={()=>setTab('painel')}><i className="ti ti-chart-bar"/> Painel de metas</button>
         <button className={'cm-tab'+(tab==='validar'?' active':'')} onClick={()=>setTab('validar')}><i className="ti ti-checklist"/> Metas para validar {totalValidar>0&&<span className="cm-tabct">{totalValidar}</span>}</button>
-        <button className={'cm-tab'+(tab==='acomp'?' active':'')} onClick={()=>setTab('acomp')}><i className="ti ti-chart-bar"/> Acompanhamento</button>
       </div>
 
       <div className="cm-filters">
@@ -6048,48 +6424,7 @@ function ControleMetas({projects,onValidateMeta}){
             </div>
       )}
 
-      {tab==='acomp'&&(<>
-        <div className="cm-kpis">
-          <div className="cm-kpi"><div className="cm-kpi-val">{total}</div><div className="cm-kpi-lbl">Total de metas</div></div>
-          {CM_BUCKETS.map(b=>(
-            <div key={b.key} className="cm-kpi"><div className="cm-kpi-val" style={{color:b.color}}>{counts[b.key]||0}</div><div className="cm-kpi-lbl"><span className="cm-kpi-dot" style={{background:b.color}}/>{b.label}</div></div>
-          ))}
-        </div>
-        <div className="cm-cards">
-          <div className="cm-card">
-            <div className="cm-card-title"><i className="ti ti-chart-donut"/> Distribuição</div>
-            {total>0?<CmDonut segments={donutSegs}/>:<div className="cm-empty">Sem metas com esses filtros.</div>}
-            {total>0&&<div className="cm-legend">
-              {CM_BUCKETS.map(b=>(<div key={b.key} className="cm-legend-item"><span className="cm-kpi-dot" style={{background:b.color}}/>{b.label}<b>{counts[b.key]||0}</b></div>))}
-            </div>}
-            {taxa!=null&&<div style={{marginTop:12,paddingTop:12,borderTop:'1px solid var(--border)',fontSize:12,color:'var(--text2)'}}>Taxa de acerto (metas validadas): <b style={{color:'var(--text)'}}>{taxa}%</b> <span style={{color:'var(--text3)'}}>({counts.batida} de {counts.batida+counts.naobatida})</span></div>}
-          </div>
-          <div className="cm-card">
-            <div className="cm-card-title"><i className="ti ti-chart-bar"/> Metas por
-              <div className="cm-groupsel">
-                <button className={groupBy==='proj'?'active':''} onClick={()=>setGroupBy('proj')}>Empreendimento</button>
-                <button className={groupBy==='setor'?'active':''} onClick={()=>setGroupBy('setor')}>Setor</button>
-                <button className={groupBy==='resp'?'active':''} onClick={()=>setGroupBy('resp')}>Responsável</button>
-              </div>
-            </div>
-            {groups.length===0?<div className="cm-empty">Sem metas com esses filtros.</div>:
-              <div className="cm-bars">
-                {groups.map(g=>(
-                  <div key={g.name} className="cm-bar-row">
-                    <div className="cm-bar-name" title={g.name}>{g.name}</div>
-                    <div className="cm-bar-track">
-                      {CM_BUCKETS.map(b=>g[b.key]>0?<div key={b.key} className="cm-bar-seg" style={{width:(g[b.key]/g.total*100)+'%',background:b.color}} title={b.label+': '+g[b.key]}/>:null)}
-                    </div>
-                    <div className="cm-bar-tot">{g.total}</div>
-                  </div>
-                ))}
-              </div>}
-            <div className="cm-legend" style={{flexDirection:'row',flexWrap:'wrap',gap:'6px 14px',marginTop:14}}>
-              {CM_BUCKETS.map(b=>(<div key={b.key} className="cm-legend-item" style={{fontSize:11}}><span className="cm-kpi-dot" style={{background:b.color}}/>{b.label}</div>))}
-            </div>
-          </div>
-        </div>
-      </>)}
+      {tab==='painel'&&<PainelMetas allMetas={filtered} onValidar={openValidar} onIrValidar={()=>setTab('validar')}/>}
 
       {valTask&&<MetaValidateModal
         task={valTask.task}
@@ -8398,6 +8733,8 @@ function parseRegistrosExcel(file, projNames){
             inscricao:String(pick(r,['inscricao','indicacao','iptu'],['empreend'])||'').trim(),
             registrado:!!(abertura||encerramento||descricao),
             transferido:boolify(pick(r,['transfer'])),
+            /* Data da venda (opcional): alimenta "compradores há mais de 90 dias sem transferir" (IPTU). */
+            dataVenda:iptuISO(pick(r,['data da venda','data venda','dt venda'],['valor'])),
           };
         }).filter(u=>(u.emp||u.cliente||u.quadra||u.lote) && !blocked(u.emp) && (matchProj(u.emp)||allowed(u.emp)));
         resolve(unidades);
@@ -8544,16 +8881,17 @@ function RegistrosUnidades({registros,salvarUnidades,salvarCertidoesEmps,salvarE
 
         <div className="venc-table-wrap">
           <table className="venc-table reg-table">
-            <colgroup><col style={{width:'20%'}}/><col style={{width:'22%'}}/><col style={{width:'11%'}}/><col style={{width:'11%'}}/><col style={{width:'11%'}}/><col style={{width:'11%'}}/><col style={{width:'14%'}}/></colgroup>
-            <thead><tr><th>Empreendimento</th><th>Cliente</th><th>Quadra</th><th>Lote</th><th>Registrado</th><th>Transferido</th><th>IPTU</th></tr></thead>
+            <colgroup><col style={{width:'18%'}}/><col style={{width:'20%'}}/><col style={{width:'9%'}}/><col style={{width:'9%'}}/><col style={{width:'12%'}}/><col style={{width:'10%'}}/><col style={{width:'10%'}}/><col style={{width:'12%'}}/></colgroup>
+            <thead><tr><th>Empreendimento</th><th>Cliente</th><th>Quadra</th><th>Lote</th><th>Venda</th><th>Registrado</th><th>Transferido</th><th>IPTU</th></tr></thead>
             <tbody>
-              {filtered.length===0 && <tr><td colSpan={7}><div className="venc-empty">Nenhuma unidade com os filtros atuais.</div></td></tr>}
+              {filtered.length===0 && <tr><td colSpan={8}><div className="venc-empty">Nenhuma unidade com os filtros atuais.</div></td></tr>}
               {filtered.map(u=>{ const ip=iptu&&iptu[u.id]; return (
                 <tr key={u.id}>
                   <td className="venc-emp">{u.emp}</td>
                   <td>{u.cliente}</td>
                   <td className="venc-num">{u.quadra}</td>
                   <td className="venc-num">{u.lote}</td>
+                  <td className="venc-date">{u.dataVenda?iptuBR(u.dataVenda):'—'}{!u.transferido&&u.dataVenda&&iptuDias(u.dataVenda)>90 && <div style={{fontSize:10.5,color:'var(--amber)',fontWeight:600,marginTop:3}}>há {iptuDur(iptuDias(u.dataVenda))} sem transferir</div>}</td>
                   <td style={{cursor:'pointer'}} onClick={()=>toggle(u.id,'registrado')} title="Clique para alternar">
                     {badgeSN(u.registrado)}
                     {(u.descricao||u.abertura||u.encerramento) && <div style={{fontSize:10,color:'var(--text2)',marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={[u.descricao,u.abertura&&('Abertura: '+u.abertura),u.encerramento&&('Encerramento: '+u.encerramento)].filter(Boolean).join(' · ')}>{u.descricao||[u.abertura&&('Ab: '+u.abertura),u.encerramento&&('Enc: '+u.encerramento)].filter(Boolean).join(' · ')}</div>}
@@ -13224,6 +13562,7 @@ const PORTAL_ABAS=[
   {key:'contatos',     nome:'Lista de Contatos',       ic:'ti-address-book',     grupo:'controle', dados:'proprio',       desc:'Contatos por cidade e órgão (nome, telefone, e-mail e observações), com busca rápida — prefeituras, cartórios, concessionárias e demais parceiros.'},
   {key:'prazos',       nome:'Prazos de Aprovação',     ic:'ti-hourglass',        grupo:'controle', dados:'proprio',       desc:'Prazo médio por tipo de aprovação e órgão.'},
   {key:'registros',    nome:'Registros de Unidades',   ic:'ti-home-check',       grupo:'unidades', dados:'compartilhado', desc:'Unidades vendidas por empreendimento (cliente, quadra, lote), controle de registro e transferência na prefeitura, e — via robô — IPTU das não transferidas.'},
+  {key:'iptu',         nome:'IPTU',                    ic:'ti-receipt-2',        grupo:'unidades', dados:'compartilhado', desc:'Processos na prefeitura (redução, impugnação, isenção), guias e pagamentos por empreendimento, decisão à vista × parcelado e visão geral das unidades.'},
   {key:'certidoes',    nome:'Certidões negativas',     ic:'ti-certificate',      grupo:'unidades', dados:'compartilhado', desc:'CND dos imóveis, das empresas e dos sócios — situação, última consulta e vencimento de cada certidão.'},
   {key:'atas',         nome:'Atas de Reunião',         ic:'ti-notes',            grupo:'acomp', dados:'compartilhado', desc:'Registro das reuniões (prefeitura, órgãos, parceiros) vinculado às tarefas: resumo, decisões, próximos passos e a ata completa — inclusive importada automaticamente do Google Meet (Gemini).'},
   {key:'parceiros',    nome:'Relatório dos Parceiros', ic:'ti-users-group',      grupo:'acomp', dados:'compartilhado', desc:'Relatório mensal para os parceiros por empreendimento: macrofluxo, andamento do mês, linha do tempo, desenvolvimento de projetos, fotos e andamento da obra — com PDF.'},
@@ -13241,7 +13580,7 @@ const PORTAL_GRUPOS={
 function portalGrupoDaAba(k){ const a=PORTAL_ABAS.find(x=>x.key===k); return a?a.grupo:null; }
 const PORTAL_ABAS_DADOS_TXT={proprio:'dados próprios do portal',compartilhado:'mesma base em todos os portais'};
 const PORTAL_ICONES=[['ti-layout-grid','Grade'],['ti-file-text','Documento'],['ti-folders','Pastas'],['ti-cash-banknote','Dinheiro'],['ti-report-money','Relatório financeiro'],['ti-building','Prédio'],['ti-briefcase','Maleta'],['ti-chart-bar','Gráfico'],['ti-clipboard-list','Prancheta'],['ti-map-2','Mapa'],['ti-users-group','Pessoas'],['ti-tools','Ferramentas'],['ti-home-check','Casa'],['ti-scale','Jurídico'],['ti-bulldozer','Obra']];
-const PORTAIS_FIXOS={portaldi:{icone:'ti-file-text',abas:['painel','atas','financeiro','vencimentos','contatos','registros','certidoes','parceiros'],setorBase:'DI'},
+const PORTAIS_FIXOS={portaldi:{icone:'ti-file-text',abas:['painel','atas','financeiro','vencimentos','contatos','registros','iptu','certidoes','parceiros'],setorBase:'DI'},
                      portalprj:{icone:'ti-folders',abas:['financeiro'],setorBase:'PRJ'}};
 function portalNome(p){ if(!p) return ''; const n=String(p.nome||'').trim(); if(n) return n; if(p.id==='portaldi') return 'Portal '+setorSigla('DI'); if(p.id==='portalprj') return 'Portal '+setorSigla('PRJ'); return 'Portal'; }
 /* Lista completa e normalizada (DI e PRJ sempre presentes). Quando ainda não
@@ -13258,6 +13597,8 @@ function normalizarPortais(raw, setoresCfg){
     let abasS=salvo&&Array.isArray(salvo.abas)?portalAbasLimpa(salvo.abas):base.abas;
     /* Aba nova (Atas, nov/2026): entra sozinha no Portal DI já configurado. */
     if(pid==='portaldi'&&salvo&&Array.isArray(salvo.abas)&&!salvo.abas.includes('atas')){ abasS=abasS.slice(); const i=abasS.indexOf('painel'); abasS.splice(i>=0?i+1:0,0,'atas'); }
+    /* Aba nova (IPTU, nov/2026): entra sozinha no Portal DI já configurado, logo depois de Registros. */
+    if(pid==='portaldi'&&salvo&&Array.isArray(salvo.abas)&&!salvo.abas.includes('iptu')&&!abasS.includes('iptu')){ abasS=abasS.slice(); const i=abasS.indexOf('registros'); abasS.splice(i>=0?i+1:abasS.length,0,'iptu'); }
     return salvo?{...base,...salvo,fixo:true,removido:false,abas:abasS,setores:Array.isArray(salvo.setores)?salvo.setores:base.setores}:base; };
   const outros=lista.filter(x=>!PORTAIS_FIXOS[x.id]).map(x=>({...x,fixo:false,abas:portalAbasLimpa(x.abas),setores:Array.isArray(x.setores)?x.setores:[]}));
   return [fixo('portaldi'),fixo('portalprj'),...outros];
@@ -13455,6 +13796,715 @@ function PortaisConfig({portais,setPortais,setoresCfg}){
   </>);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   IPTU (Portal DI) — controle do IPTU das glebas em projeto e dos lotes dos
+   projetos registrados. Abas: Visão geral, Processos na prefeitura (redução,
+   impugnação, isenção, revisão…), Guias e pagamentos (por exercício, à vista ×
+   parcelado, decisão da diretoria) e Registros de Unidades (o componente
+   RegistrosUnidades, que deixou de ser um card próprio no Portal DI).
+   Dados em fluxoapp_meta/iptu: { processos:[], guias:[], config:{} }.
+   Registros continuam em fluxoapp_meta/registros (não mudou nada lá).
+   ═══════════════════════════════════════════════════════════════════════════ */
+const IPTU_STATUS={
+  analise:{t:'Em análise',c:'blue'},
+  parecer:{t:'Aguardando parecer',c:'purple'},
+  exigencia:{t:'Exigência a cumprir',c:'red'},
+  recurso:{t:'Em recurso',c:'amber'},
+  deferido_parcial:{t:'Deferido parcial',c:'green'},
+  deferido:{t:'Deferido',c:'green'},
+  indeferido:{t:'Indeferido',c:'gray'},
+  arquivado:{t:'Arquivado',c:'gray'}
+};
+const IPTU_ENCERRADOS=['deferido','indeferido','arquivado'];
+const IPTU_TIPOS=['Redução','Impugnação','Contestação','Isenção','Isenção parcial','Revisão','Unificação / subdivisão','Doação de área','Outro'];
+const IPTU_SITUACAO={aberta:'Em aberto',vista:'Pago à vista',parcelado:'Parcelado',suspensa:'Suspensa (processo)'};
+const IPTU_DECISAO={pendente:'Pendente',vista:'À vista',parcelar:'Parcelar'};
+const IPTU_ALERTAS=[
+  {k:'guia',t:'Guia ou parcela a vencer',s:'7 dias antes, 1 dia antes e no dia do vencimento'},
+  {k:'impugnacao',t:'Prazo de impugnação',s:'7 dias antes da data-limite informada na guia'},
+  {k:'parado',t:'Processo parado',s:'Toda segunda-feira, os processos sem movimentação há mais de 90 dias'},
+  {k:'transferencia',t:'Comprador sem transferir',s:'Toda segunda-feira, vendidos há mais de 90 dias e ainda no nosso nome'}
+];
+const IPTU_CFG_PADRAO={rendimentoCaixa:0.9,multaJuros:20,reajuste:5,totalLotes:{},venal:{},alertas:{guia:true,impugnacao:true,parado:true,transferencia:true}};
+
+/* ── Helpers ── */
+function iptuId(p){ return p+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function iptuNorm(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function iptuNum(v){
+  if(v===''||v==null) return null;
+  if(typeof v==='number') return isFinite(v)?v:null;
+  let s=String(v).replace(/[^\d,.\-]/g,''); if(!s) return null;
+  if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.');
+  const n=parseFloat(s); return isNaN(n)?null:n;
+}
+function iptuLocalISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+/* Aceita data do Excel (número serial), dd/mm/aaaa ou aaaa-mm-dd. */
+function iptuISO(v){
+  if(v===''||v==null) return '';
+  if(typeof v==='number'){ const d=new Date(Math.round((v-25569)*86400000)); return isNaN(d)?'':d.toISOString().slice(0,10); }
+  if(v instanceof Date) return isNaN(v)?'':iptuLocalISO(v);
+  const s=String(v).trim();
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m?m[1]+'-'+m[2]+'-'+m[3]:'';
+}
+function iptuBR(iso){ const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?m[3]+'/'+m[2]+'/'+m[1]:'—'; }
+/* Dias desde a data (positivo = no passado). */
+function iptuDias(iso){ if(!iso) return null; const d=new Date(iso+'T00:00:00'); if(isNaN(d)) return null; const h=new Date(); h.setHours(0,0,0,0); return Math.round((h-d)/86400000); }
+function iptuDur(n){ if(n==null) return '—'; if(n<60) return n+(n===1?' dia':' dias'); if(n<730) return Math.round(n/30.4)+' meses'; return (n/365).toLocaleString('pt-BR',{maximumFractionDigits:1})+' anos'; }
+function iptuBRL(v){ return v==null||isNaN(v)?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}); }
+function iptuBRLK(v){ v=v||0; if(Math.abs(v)>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:2})+' mi'; if(Math.abs(v)>=1e4) return 'R$ '+Math.round(v/1000).toLocaleString('pt-BR')+' mil'; return iptuBRL(v); }
+function iptuPct(a,b){ return b?Math.round(a/b*100):0; }
+function iptuAddMeses(iso,k){ const d=new Date(iso+'T00:00:00'); if(isNaN(d)) return ''; d.setMonth(d.getMonth()+k); return iptuLocalISO(d); }
+/* Juro mensal que o desconto da cota única representa frente a parcelar em n
+   vezes (1ª parcela na data da cota única). Se passa o rendimento do caixa,
+   pagar à vista é melhor. */
+function iptuTaxaImplicita(descPct,n){
+  const d=(descPct||0)/100; n=Math.max(1,n||1); if(d<=0||n<2) return 0;
+  let lo=0,hi=0.5;
+  for(let i=0;i<80;i++){ const r=(lo+hi)/2; let pv=0; for(let k=0;k<n;k++) pv+=(1/n)/Math.pow(1+r,k); if(pv>1-d) lo=r; else hi=r; }
+  return (lo+hi)/2;
+}
+/* Quanto da guia já foi pago, quanto falta e quanto está suspenso. */
+function iptuGuiaResumo(g){
+  const lan=g.valorLancado||0, d=(g.descontoVista||0)/100, n=Math.max(1,g.numParcelas||1), pagas=Math.min(n,g.parcelasPagas||0);
+  if(g.situacao==='vista') return {devido:lan*(1-d),pago:lan*(1-d),vista:lan*(1-d),parc:0,aPagar:0,susp:0,desconto:lan*d,pagas:0,n};
+  if(g.situacao==='suspensa') return {devido:lan,pago:0,vista:0,parc:0,aPagar:0,susp:lan,desconto:0,pagas:0,n};
+  if(g.situacao==='parcelado') return {devido:lan,pago:lan/n*pagas,vista:0,parc:lan/n*pagas,aPagar:lan/n*(n-pagas),susp:0,desconto:0,pagas,n};
+  return {devido:lan,pago:0,vista:0,parc:0,aPagar:lan,susp:0,desconto:0,pagas:0,n};
+}
+/* Próximo vencimento ainda não pago da guia (ou '' se nada a pagar). */
+function iptuProxVenc(g){
+  if(!g.primeiroVenc||g.situacao==='vista'||g.situacao==='suspensa') return '';
+  if(g.situacao==='parcelado'){ const n=Math.max(1,g.numParcelas||1), p=g.parcelasPagas||0; return p>=n?'':iptuAddMeses(g.primeiroVenc,p); }
+  return g.primeiroVenc;
+}
+/* Situação das unidades para o gráfico da Visão geral. "Não comercializadas"
+   = total de lotes do empreendimento (Configurar) − unidades da planilha. */
+function iptuResumoUnidades(unidades,totalLotes){
+  const porEmp={}; unidades.forEach(u=>{ porEmp[u.emp]=(porEmp[u.emp]||0)+1; });
+  let nc=0; Object.keys(totalLotes||{}).forEach(e=>{ nc+=Math.max(0,(iptuNum(totalLotes[e])||0)-(porEmp[e]||0)); });
+  return [
+    {k:'tr',nm:'Transferidas e registradas',v:unidades.filter(u=>u.transferido&&u.registrado).length,cor:'var(--iptu-c1)'},
+    {k:'tn',nm:'Transferidas, não registradas',v:unidades.filter(u=>u.transferido&&!u.registrado).length,cor:'var(--iptu-c2)'},
+    {k:'vn',nm:'Vendidas, ainda não transferidas',v:unidades.filter(u=>!u.transferido).length,cor:'var(--iptu-c3)'},
+    {k:'nc',nm:'Não comercializadas (estoque)',v:nc,cor:'var(--iptu-c4)'}
+  ];
+}
+function iptuCompradoresAtrasados(unidades){ return unidades.filter(u=>!u.transferido&&u.dataVenda&&iptuDias(u.dataVenda)>90); }
+
+/* ── Planilha: importar / exportar (abas Processos, Guias, Empreendimentos) ── */
+function iptuCol(row,...nomes){
+  const ks=Object.keys(row);
+  for(const n of nomes){ const k=ks.find(x=>iptuNorm(x)===n); if(k!=null&&row[k]!=='') return row[k]; }
+  for(const n of nomes){ const k=ks.find(x=>iptuNorm(x).includes(n)); if(k!=null&&row[k]!=='') return row[k]; }
+  return '';
+}
+function iptuStatusDeTexto(s){
+  const n=iptuNorm(s); if(!n) return 'analise';
+  const direto=Object.keys(IPTU_STATUS).find(k=>iptuNorm(IPTU_STATUS[k].t)===n||k===n.replace(/ /g,'_')); if(direto) return direto;
+  if(n.includes('parcial')) return 'deferido_parcial';
+  if(n.includes('indefer')||n.includes('negad')) return 'indeferido';
+  if(n.includes('defer')) return 'deferido';
+  if(n.includes('arquiv')) return 'arquivado';
+  if(n.includes('exig')) return 'exigencia';
+  if(n.includes('recurso')) return 'recurso';
+  if(n.includes('parecer')) return 'parecer';
+  return 'analise';
+}
+function iptuSituacaoDeTexto(s){ const n=iptuNorm(s); if(n.includes('vista')) return 'vista'; if(n.includes('parcel')) return 'parcelado'; if(n.includes('suspens')||n.includes('impugn')) return 'suspensa'; return 'aberta'; }
+function iptuDecisaoDeTexto(s){ const n=iptuNorm(s); if(n.includes('vista')) return 'vista'; if(n.includes('parcel')) return 'parcelar'; return 'pendente'; }
+function iptuSimNao(s){ const n=iptuNorm(s); return n==='sim'||n==='s'||n==='x'||n==='true'||n==='1'; }
+function iptuLinhaProcesso(r){
+  const numero=String(iptuCol(r,'n processo','numero','processo')).trim(); const titulo=String(iptuCol(r,'titulo')).trim();
+  if(!numero&&!titulo) return null;
+  return {proj:String(iptuCol(r,'projeto','empreendimento')).trim(),tipo:String(iptuCol(r,'tipo')).trim()||'Outro',titulo,numero,orgao:String(iptuCol(r,'orgao')).trim(),
+    protocolo:iptuISO(iptuCol(r,'data de protocolo','protocolo')),status:iptuStatusDeTexto(iptuCol(r,'status')),descricao:String(iptuCol(r,'descricao')).trim(),
+    ultimaMov:iptuISO(iptuCol(r,'ultima movimentacao','movimentacao')),valorLancado:iptuNum(iptuCol(r,'valor lancado')),valorPleiteado:iptuNum(iptuCol(r,'valor pleiteado')),
+    valorFinal:iptuNum(iptuCol(r,'valor final')),suspendeGuia:iptuSimNao(iptuCol(r,'suspende a guia','suspende')),proximoPasso:String(iptuCol(r,'proximo passo')).trim(),link:String(iptuCol(r,'link clickup','link')).trim()};
+}
+function iptuLinhaGuia(r){
+  const emp=String(iptuCol(r,'empreendimento','projeto')).trim(); const valor=iptuNum(iptuCol(r,'valor lancado'));
+  if(!emp||valor==null) return null;
+  let desc=iptuNum(iptuCol(r,'desconto a vista','desconto')); if(desc!=null&&desc>0&&desc<1) desc=desc*100;
+  return {exercicio:iptuNum(iptuCol(r,'exercicio','ano'))||new Date().getFullYear(),emp,imovel:String(iptuCol(r,'imovel')).trim(),tipo:iptuNorm(iptuCol(r,'tipo')).startsWith('lote')?'Lotes':'Gleba',
+    qtdLotes:iptuNum(iptuCol(r,'qtd lotes','lotes')),inscricao:String(iptuCol(r,'inscricao')).trim(),valorLancado:valor,descontoVista:desc||0,numParcelas:iptuNum(iptuCol(r,'n parcelas','parcelas'))||1,
+    primeiroVenc:iptuISO(iptuCol(r,'1 vencimento','vencimento')),limiteImpugnacao:iptuISO(iptuCol(r,'limite impugnacao','impugnacao')),situacao:iptuSituacaoDeTexto(iptuCol(r,'situacao')),
+    parcelasPagas:iptuNum(iptuCol(r,'parcelas pagas'))||0,dataPagamento:iptuISO(iptuCol(r,'data pagamento')),decisao:iptuDecisaoDeTexto(iptuCol(r,'decisao')),
+    processo:String(iptuCol(r,'processo')).trim(),obs:String(iptuCol(r,'observacao','obs')).trim()};
+}
+function iptuLinhaEmp(r){
+  const emp=String(iptuCol(r,'empreendimento','projeto')).trim(); if(!emp) return null;
+  return {emp,totalLotes:iptuNum(iptuCol(r,'total de lotes','lotes')),venal:iptuNum(iptuCol(r,'valor venal','venal')),mercado:iptuNum(iptuCol(r,'preco de mercado','mercado','venda'))};
+}
+function iptuLerPlanilha(file){
+  return new Promise((resolve,reject)=>{
+    if(!window.XLSX){ reject(new Error('leitor de Excel não carregou; recarregue a página')); return; }
+    const fr=new FileReader();
+    fr.onload=e=>{ try{
+      const wb=window.XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const aba=nome=>{ const k=wb.SheetNames.find(n=>iptuNorm(n).startsWith(nome)); return k?window.XLSX.utils.sheet_to_json(wb.Sheets[k],{defval:''}):[]; };
+      resolve({processos:aba('processo').map(iptuLinhaProcesso).filter(Boolean),guias:aba('guia').map(iptuLinhaGuia).filter(Boolean),emps:aba('empreend').map(iptuLinhaEmp).filter(Boolean)});
+    }catch(err){ reject(err); } };
+    fr.onerror=()=>reject(new Error('não consegui ler o arquivo'));
+    fr.readAsArrayBuffer(file);
+  });
+}
+/* Linhas da planilha (mesmos títulos que o importador reconhece). */
+function iptuProcessoParaLinha(p){ return {'Projeto':p.proj||'','Tipo':p.tipo||'','Título':p.titulo||'','Nº processo':p.numero||'','Órgão':p.orgao||'','Data de protocolo':iptuBR(p.protocolo).replace('—',''),'Status':(IPTU_STATUS[p.status]||{}).t||'','Descrição':p.descricao||'','Última movimentação':iptuBR(p.ultimaMov).replace('—',''),'Valor lançado':p.valorLancado==null?'':p.valorLancado,'Valor pleiteado':p.valorPleiteado==null?'':p.valorPleiteado,'Valor final':p.valorFinal==null?'':p.valorFinal,'Suspende a guia':p.suspendeGuia?'Sim':'Não','Próximo passo':p.proximoPasso||'','Link ClickUp':p.link||''}; }
+function iptuGuiaParaLinha(g){ return {'Exercício':g.exercicio||'','Empreendimento':g.emp||'','Imóvel':g.imovel||'','Tipo':g.tipo||'Gleba','Qtd. lotes':g.qtdLotes==null?'':g.qtdLotes,'Inscrição':g.inscricao||'','Valor lançado':g.valorLancado==null?'':g.valorLancado,'Desconto à vista (%)':g.descontoVista||0,'Nº parcelas':g.numParcelas||1,'1º vencimento':iptuBR(g.primeiroVenc).replace('—',''),'Limite impugnação':iptuBR(g.limiteImpugnacao).replace('—',''),'Situação':IPTU_SITUACAO[g.situacao]||'Em aberto','Parcelas pagas':g.parcelasPagas||0,'Data pagamento':iptuBR(g.dataPagamento).replace('—',''),'Decisão':IPTU_DECISAO[g.decisao]||'Pendente','Processo':g.processo||'','Observação':g.obs||''}; }
+/* Processos abertos no ClickUp em 23/10/2026 — vão no modelo para completar. */
+const IPTU_PROCESSOS_CLICKUP=[
+  ['REDUÇÃO IPTU 2026','01-077321/2026','Prefeitura (SMF)','Redução'],
+  ['CONTESTAÇÃO IPTU','01-077464/2025','Prefeitura (SMFI)','Contestação'],
+  ['ISENÇÃO IPTU IF 011 (ÁREA VERDE)','01-286804/2025','Prefeitura (SMF)','Isenção'],
+  ['IMPUGNAÇÃO IPTU 2025 L01 QD05','69638/2026','Prefeitura (SMF)','Impugnação'],
+  ['REDUÇÃO IPTU 2026','01-065943/2026','Prefeitura (SMF)','Redução'],
+  ['UNIFICAÇÃO / SUBDIVISÃO','00-013652/2022','Prefeitura (SMU)','Unificação / subdivisão'],
+  ['DOAÇÃO ÁREA SMMA','01-284391/2023','Prefeitura (Patrimônio)','Doação de área'],
+  ['REVISÃO IPTU SUBLOTE 01','80519/2025','Prefeitura (SMFI)','Revisão'],
+  ['IMPUGNAÇÃO IPTU 2026 L01 QD05','71261/2026','Prefeitura (SMF)','Impugnação'],
+  ['ISENÇÃO PARCIAL IPTU','7962/2026','Prefeitura (SMFI)','Isenção parcial'],
+  ['Impugnação de IPTU - MATSU QD 05 L. 01','91424/2025','Protocolos','Impugnação']
+];
+function iptuExportar(dados,cfg,modelo){
+  const X=window.XLSX; if(!X){ alert('O leitor de Excel não carregou. Recarregue a página.'); return; }
+  const procs=modelo?IPTU_PROCESSOS_CLICKUP.map(([titulo,numero,orgao,tipo])=>iptuProcessoParaLinha({titulo,numero,orgao,tipo,status:'analise'})):dados.processos.map(iptuProcessoParaLinha);
+  const guias=modelo?[iptuGuiaParaLinha({exercicio:new Date().getFullYear(),emp:'(exemplo, apague esta linha)',imovel:'Gleba · matrícula 00.000',tipo:'Gleba',valorLancado:100000,descontoVista:10,numParcelas:10,primeiroVenc:new Date().getFullYear()+'-02-10',situacao:'parcelado',parcelasPagas:3,decisao:'parcelar'})]:dados.guias.map(iptuGuiaParaLinha);
+  const empNomes=[...new Set([...Object.keys(cfg.totalLotes||{}),...Object.keys(cfg.venal||{})])];
+  const emps=(modelo||!empNomes.length)?[{'Empreendimento':'(exemplo, apague esta linha)','Total de lotes':420,'Valor venal (R$/m²)':95,'Preço de mercado (R$/m²)':70}]:empNomes.map(e=>({'Empreendimento':e,'Total de lotes':(cfg.totalLotes||{})[e]||'','Valor venal (R$/m²)':((cfg.venal||{})[e]||{}).venal||'','Preço de mercado (R$/m²)':((cfg.venal||{})[e]||{}).mercado||''}));
+  const wb=X.utils.book_new();
+  X.utils.book_append_sheet(wb,X.utils.json_to_sheet(procs.length?procs:[iptuProcessoParaLinha({})]),'Processos');
+  X.utils.book_append_sheet(wb,X.utils.json_to_sheet(guias.length?guias:[iptuGuiaParaLinha({})]),'Guias');
+  X.utils.book_append_sheet(wb,X.utils.json_to_sheet(emps),'Empreendimentos');
+  X.writeFile(wb,modelo?'modelo-iptu.xlsx':'iptu-'+iptuLocalISO(new Date())+'.xlsx');
+}
+
+/* Dados de exemplo para o modo ?demo (não grava nada). */
+const IPTU_DEMO={
+  processos:[
+    {id:'d1',proj:'Empreendimento A',tipo:'Redução',titulo:'REDUÇÃO IPTU 2026',numero:'01-077321/2026',orgao:'Prefeitura (SMF)',protocolo:'2026-03-10',status:'analise',ultimaMov:'2026-03-24',descricao:'Pedido de redução do valor venal lançado em 2026 para a gleba.',valorLancado:164700,valorPleiteado:112000,proximoPasso:'Aguardar vistoria do fiscal'},
+    {id:'d2',proj:'Empreendimento C',tipo:'Redução',titulo:'REDUÇÃO IPTU 2026',numero:'01-065943/2026',orgao:'Prefeitura (SMF)',protocolo:'2026-02-27',status:'exigencia',ultimaMov:'2026-08-20',descricao:'Prefeitura pediu planta com as áreas não edificáveis.',valorLancado:71800,valorPleiteado:48000,suspendeGuia:true,proximoPasso:'Entregar planta'},
+    {id:'d3',proj:'Matsu',tipo:'Impugnação',titulo:'IMPUGNAÇÃO IPTU 2026 L01 QD05',numero:'71261/2026',orgao:'Prefeitura (SMF)',protocolo:'2026-05-15',status:'analise',ultimaMov:'2026-05-20',descricao:'Impugnação do lançamento 2026 do lote 01 da quadra 05.',valorLancado:7100,valorPleiteado:4300,suspendeGuia:true,proximoPasso:'Aguarda decisão do processo de 2025'},
+    {id:'d4',proj:'Empreendimento B',tipo:'Isenção parcial',titulo:'ISENÇÃO PARCIAL IPTU',numero:'7962/2026',orgao:'Prefeitura (SMFI)',protocolo:'2026-01-20',status:'deferido',ultimaMov:'2026-08-22',descricao:'Isenção parcial sobre a faixa de APP.',valorLancado:31400,valorPleiteado:24600,valorFinal:26100,proximoPasso:'Conferir guia retificada'}
+  ],
+  guias:[
+    {id:'g1',exercicio:2026,emp:'Empreendimento A',imovel:'Gleba · matr. 18.402',tipo:'Gleba',valorLancado:164700,descontoVista:10,numParcelas:10,primeiroVenc:'2026-02-10',situacao:'vista',dataPagamento:'2026-02-10',decisao:'vista'},
+    {id:'g2',exercicio:2026,emp:'Empreendimento B',imovel:'Gleba · matr. 7.115',tipo:'Gleba',valorLancado:96300,descontoVista:5,numParcelas:10,primeiroVenc:'2026-02-10',situacao:'parcelado',parcelasPagas:9,decisao:'parcelar'},
+    {id:'g3',exercicio:2026,emp:'Empreendimento B',imovel:'22 lotes em estoque',tipo:'Lotes',qtdLotes:22,valorLancado:31400,descontoVista:5,numParcelas:10,primeiroVenc:'2026-02-10',situacao:'parcelado',parcelasPagas:9,decisao:'parcelar'},
+    {id:'g4',exercicio:2026,emp:'Empreendimento C',imovel:'Gleba · matr. 30.988',tipo:'Gleba',valorLancado:71800,descontoVista:10,numParcelas:8,primeiroVenc:'2026-02-10',situacao:'suspensa',processo:'01-065943/2026',decisao:'pendente'},
+    {id:'g5',exercicio:2026,emp:'Matsu',imovel:'38 lotes em estoque',tipo:'Lotes',qtdLotes:38,valorLancado:54900,descontoVista:15,numParcelas:10,primeiroVenc:'2026-02-14',situacao:'vista',dataPagamento:'2026-02-14',decisao:'vista'}
+  ],
+  config:{totalLotes:{'Matsu':240,'Empreendimento B':180},venal:{'Empreendimento A':{venal:95,mercado:70},'Matsu':{venal:410,mercado:380},'Empreendimento B':{venal:260,mercado:340}}}
+};
+
+/* ── Pequenos componentes ── */
+function IptuPill({c,children,title}){ return <span className={'iptu-pill '+(c||'gray')} title={title}>{children}</span>; }
+function IptuKpi({label,icon,value,sub,color,onClick}){
+  return (
+    <div className={'venc-card'+(onClick?'':' iptu-static')} onClick={onClick} role={onClick?'button':undefined} tabIndex={onClick?0:undefined} onKeyDown={onClick?(e=>{ if(e.key==='Enter') onClick(); }):undefined}>
+      <div className="venc-card-label"><i className={'ti ti-'+icon} style={color?{color}:undefined}/> {label}</div>
+      <div className="venc-card-value iptu-kpi-v" style={color?{color}:undefined}>{value}</div>
+      {sub && <div className="iptu-kpi-s">{sub}</div>}
+    </div>
+  );
+}
+function IptuDonut({fatias,onClick}){
+  const[hov,setHov]=useState(null);
+  const tot=fatias.reduce((a,f)=>a+f.v,0), R=70, C=2*Math.PI*R, gap=tot?2.2:0;
+  let off=0;
+  const cur=fatias.find(f=>f.k===hov);
+  return (
+    <div className="iptu-donut-wrap">
+      <div className={'iptu-donut'+(hov?' hov':'')}>
+        <svg viewBox="0 0 180 180" role="img" aria-label="Situação das unidades">
+          <circle cx="90" cy="90" r={R} fill="none" stroke="var(--surface2)" strokeWidth="22"/>
+          {tot>0 && fatias.map(f=>{ const len=f.v/tot*C; const el=(
+            <circle key={f.k} className={'seg'+(hov===f.k?' on':'')} cx="90" cy="90" r={R} fill="none" stroke={f.cor} strokeWidth="22"
+              strokeDasharray={Math.max(len-gap,0)+' '+(C-len+gap)} strokeDashoffset={-off}
+              onMouseEnter={()=>setHov(f.k)} onMouseLeave={()=>setHov(null)} onClick={onClick}><title>{f.nm+': '+f.v}</title></circle>); off+=len; return el; })}
+        </svg>
+        <div className="iptu-donut-c">{cur?<><b>{iptuPct(cur.v,tot)}%</b><span>{cur.nm}</span></>:<><b>{tot}</b><span>lotes nos projetos registrados</span></>}</div>
+      </div>
+      <div className="iptu-legend">
+        {fatias.map(f=>(
+          <div key={f.k} className={'iptu-lg'+(hov===f.k?' on':'')} onMouseEnter={()=>setHov(f.k)} onMouseLeave={()=>setHov(null)} onClick={onClick}>
+            <span className="dot" style={{background:f.cor}}/><span className="nm">{f.nm}</span><span className="pc">{iptuPct(f.v,tot)}%</span><span className="qt">{f.v} un.</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Modal: processo ── */
+function IptuProcessoModal({item,projNames,onSave,onDelete,onClose}){
+  const ini=item||{tipo:'Redução',status:'analise'};
+  const[f,setF]=useState({...ini,valorLancado:ini.valorLancado==null?'':String(ini.valorLancado),valorPleiteado:ini.valorPleiteado==null?'':String(ini.valorPleiteado),valorFinal:ini.valorFinal==null?'':String(ini.valorFinal)});
+  const set=(k,v)=>setF(o=>({...o,[k]:v}));
+  const salvar=()=>{
+    if(!String(f.numero||'').trim()&&!String(f.titulo||'').trim()) return;
+    onSave({...f,id:f.id||iptuId('proc'),numero:String(f.numero||'').trim(),titulo:String(f.titulo||'').trim(),valorLancado:iptuNum(f.valorLancado),valorPleiteado:iptuNum(f.valorPleiteado),valorFinal:iptuNum(f.valorFinal),suspendeGuia:!!f.suspendeGuia});
+  };
+  return (
+    <div className="modal-overlay" onClick={e=>{ if(e.target.classList.contains('modal-overlay')) onClose(); }}>
+      <div className="pdi-modal-panel">
+        <div className="pdi-modal-head"><div className="pdi-modal-title">{item?'Editar processo':'Novo processo'}</div><button className="pdi-icon-btn" onClick={onClose}><i className="ti ti-x"/></button></div>
+        <div className="pdi-modal-body">
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Projeto</label><input className="pdi-input" list="iptu-projs" value={f.proj||''} onChange={e=>set('proj',e.target.value)} placeholder="Empreendimento"/><datalist id="iptu-projs">{projNames.map(p=><option key={p} value={p}/>)}</datalist></div>
+            <div className="pdi-field"><label className="pdi-label">Tipo</label><select className="pdi-select" value={f.tipo||''} onChange={e=>set('tipo',e.target.value)}>{IPTU_TIPOS.map(t=><option key={t}>{t}</option>)}</select></div>
+          </div>
+          <div className="pdi-field"><label className="pdi-label">Título</label><input className="pdi-input" value={f.titulo||''} onChange={e=>set('titulo',e.target.value)} placeholder="Ex.: REDUÇÃO IPTU 2026"/></div>
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Nº do processo</label><input className="pdi-input" value={f.numero||''} onChange={e=>set('numero',e.target.value)} placeholder="01-000000/2026"/></div>
+            <div className="pdi-field"><label className="pdi-label">Órgão</label><input className="pdi-input" value={f.orgao||''} onChange={e=>set('orgao',e.target.value)} placeholder="Prefeitura (SMF)"/></div>
+          </div>
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Data de protocolo</label><input type="date" className="pdi-input" value={f.protocolo||''} onChange={e=>set('protocolo',e.target.value)}/></div>
+            <div className="pdi-field"><label className="pdi-label">Última movimentação</label><input type="date" className="pdi-input" value={f.ultimaMov||''} onChange={e=>set('ultimaMov',e.target.value)}/></div>
+          </div>
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Status</label><select className="pdi-select" value={f.status||'analise'} onChange={e=>set('status',e.target.value)}>{Object.keys(IPTU_STATUS).map(k=><option key={k} value={k}>{IPTU_STATUS[k].t}</option>)}</select></div>
+            <div className="pdi-field"><label className="pdi-label">Link (ClickUp)</label><input className="pdi-input" value={f.link||''} onChange={e=>set('link',e.target.value)} placeholder="https://app.clickup.com/t/…"/></div>
+          </div>
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Valor lançado (R$)</label><input className="pdi-input" inputMode="decimal" value={f.valorLancado} onChange={e=>set('valorLancado',e.target.value)}/></div>
+            <div className="pdi-field"><label className="pdi-label">Valor pleiteado (R$)</label><input className="pdi-input" inputMode="decimal" value={f.valorPleiteado} onChange={e=>set('valorPleiteado',e.target.value)}/></div>
+          </div>
+          {(IPTU_ENCERRADOS.includes(f.status)||f.status==='deferido_parcial') && <div className="pdi-field"><label className="pdi-label">Valor final decidido (R$)</label><input className="pdi-input" inputMode="decimal" value={f.valorFinal} onChange={e=>set('valorFinal',e.target.value)} placeholder="Valor que a prefeitura manteve"/></div>}
+          <label className="iptu-check"><input type="checkbox" checked={!!f.suspendeGuia} onChange={e=>set('suspendeGuia',e.target.checked)}/> O processo suspende o pagamento da guia</label>
+          <div className="pdi-field"><label className="pdi-label">Descrição</label><textarea className="pdi-input" rows={3} value={f.descricao||''} onChange={e=>set('descricao',e.target.value)}/></div>
+          <div className="pdi-field"><label className="pdi-label">Próximo passo</label><input className="pdi-input" value={f.proximoPasso||''} onChange={e=>set('proximoPasso',e.target.value)}/></div>
+          <div className="iptu-modal-foot">
+            {item && onDelete && <button className="pdi-btn ghost" onClick={()=>{ if(window.confirm('Excluir este processo?')) onDelete(item.id); }}><i className="ti ti-trash"/> Excluir</button>}
+            <span style={{flex:1}}/>
+            <button className="pdi-btn ghost" onClick={onClose}>Cancelar</button>
+            <button className="pdi-btn" onClick={salvar}><i className="ti ti-check"/> Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Modal: guia ── */
+function IptuGuiaModal({item,empNames,exercicio,onSave,onDelete,onClose}){
+  const ini=item||{exercicio,tipo:'Gleba',descontoVista:'',numParcelas:10,situacao:'aberta',parcelasPagas:0,decisao:'pendente'};
+  const txt=v=>v==null?'':String(v);
+  const[f,setF]=useState({...ini,exercicio:txt(ini.exercicio),qtdLotes:txt(ini.qtdLotes),valorLancado:txt(ini.valorLancado),descontoVista:txt(ini.descontoVista),numParcelas:txt(ini.numParcelas),parcelasPagas:txt(ini.parcelasPagas)});
+  const set=(k,v)=>setF(o=>({...o,[k]:v}));
+  const salvar=()=>{
+    if(!String(f.emp||'').trim()||iptuNum(f.valorLancado)==null) return;
+    const n=Math.max(1,iptuNum(f.numParcelas)||1);
+    onSave({...f,id:f.id||iptuId('guia'),emp:String(f.emp).trim(),exercicio:iptuNum(f.exercicio)||exercicio,qtdLotes:iptuNum(f.qtdLotes),valorLancado:iptuNum(f.valorLancado),descontoVista:iptuNum(f.descontoVista)||0,numParcelas:n,parcelasPagas:Math.min(n,iptuNum(f.parcelasPagas)||0)});
+  };
+  return (
+    <div className="modal-overlay" onClick={e=>{ if(e.target.classList.contains('modal-overlay')) onClose(); }}>
+      <div className="pdi-modal-panel">
+        <div className="pdi-modal-head"><div className="pdi-modal-title">{item?'Editar guia':'Nova guia'}</div><button className="pdi-icon-btn" onClick={onClose}><i className="ti ti-x"/></button></div>
+        <div className="pdi-modal-body">
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Empreendimento</label><input className="pdi-input" list="iptu-emps" value={f.emp||''} onChange={e=>set('emp',e.target.value)}/><datalist id="iptu-emps">{empNames.map(p=><option key={p} value={p}/>)}</datalist></div>
+            <div className="pdi-field"><label className="pdi-label">Exercício</label><input className="pdi-input" inputMode="numeric" value={f.exercicio} onChange={e=>set('exercicio',e.target.value)}/></div>
+          </div>
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Imóvel</label><input className="pdi-input" value={f.imovel||''} onChange={e=>set('imovel',e.target.value)} placeholder="Gleba · matrícula / 38 lotes em estoque"/></div>
+            <div className="pdi-field"><label className="pdi-label">Inscrição / indicação fiscal</label><input className="pdi-input" value={f.inscricao||''} onChange={e=>set('inscricao',e.target.value)}/></div>
+          </div>
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Tipo</label><select className="pdi-select" value={f.tipo||'Gleba'} onChange={e=>set('tipo',e.target.value)}><option>Gleba</option><option>Lotes</option></select></div>
+            <div className="pdi-field"><label className="pdi-label">Qtd. de lotes (se lotes)</label><input className="pdi-input" inputMode="numeric" value={f.qtdLotes} onChange={e=>set('qtdLotes',e.target.value)}/></div>
+          </div>
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Valor lançado (R$)</label><input className="pdi-input" inputMode="decimal" value={f.valorLancado} onChange={e=>set('valorLancado',e.target.value)}/></div>
+            <div className="pdi-field"><label className="pdi-label">Desconto à vista (%)</label><input className="pdi-input" inputMode="decimal" value={f.descontoVista} onChange={e=>set('descontoVista',e.target.value)} placeholder="10"/></div>
+          </div>
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Nº de parcelas</label><input className="pdi-input" inputMode="numeric" value={f.numParcelas} onChange={e=>set('numParcelas',e.target.value)}/></div>
+            <div className="pdi-field"><label className="pdi-label">1º vencimento (cota única)</label><input type="date" className="pdi-input" value={f.primeiroVenc||''} onChange={e=>set('primeiroVenc',e.target.value)}/></div>
+          </div>
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Situação</label><select className="pdi-select" value={f.situacao||'aberta'} onChange={e=>set('situacao',e.target.value)}>{Object.keys(IPTU_SITUACAO).map(k=><option key={k} value={k}>{IPTU_SITUACAO[k]}</option>)}</select></div>
+            <div className="pdi-field"><label className="pdi-label">Decisão da diretoria</label><select className="pdi-select" value={f.decisao||'pendente'} onChange={e=>set('decisao',e.target.value)}>{Object.keys(IPTU_DECISAO).map(k=><option key={k} value={k}>{IPTU_DECISAO[k]}</option>)}</select></div>
+          </div>
+          {f.situacao==='parcelado' && <div className="pdi-field"><label className="pdi-label">Parcelas pagas</label><input className="pdi-input" inputMode="numeric" value={f.parcelasPagas} onChange={e=>set('parcelasPagas',e.target.value)}/></div>}
+          {f.situacao==='vista' && <div className="pdi-field"><label className="pdi-label">Data do pagamento</label><input type="date" className="pdi-input" value={f.dataPagamento||''} onChange={e=>set('dataPagamento',e.target.value)}/></div>}
+          <div className="pdi-row2">
+            <div className="pdi-field"><label className="pdi-label">Processo vinculado (nº)</label><input className="pdi-input" value={f.processo||''} onChange={e=>set('processo',e.target.value)}/></div>
+            <div className="pdi-field"><label className="pdi-label">Limite para impugnar</label><input type="date" className="pdi-input" value={f.limiteImpugnacao||''} onChange={e=>set('limiteImpugnacao',e.target.value)}/></div>
+          </div>
+          <div className="pdi-field"><label className="pdi-label">Observação</label><input className="pdi-input" value={f.obs||''} onChange={e=>set('obs',e.target.value)}/></div>
+          <div className="iptu-modal-foot">
+            {item && onDelete && <button className="pdi-btn ghost" onClick={()=>{ if(window.confirm('Excluir esta guia?')) onDelete(item.id); }}><i className="ti ti-trash"/> Excluir</button>}
+            <span style={{flex:1}}/>
+            <button className="pdi-btn ghost" onClick={onClose}>Cancelar</button>
+            <button className="pdi-btn" onClick={salvar}><i className="ti ti-check"/> Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Modal: configurar (parâmetros + dados por empreendimento) ── */
+function IptuConfigModal({cfg,empNames,onSave,onClose}){
+  const[f,setF]=useState({rendimentoCaixa:String(cfg.rendimentoCaixa),multaJuros:String(cfg.multaJuros),reajuste:String(cfg.reajuste)});
+  const[emps,setEmps]=useState(()=>{ const o={}; empNames.forEach(e=>{ const v=(cfg.venal||{})[e]||{}; o[e]={totalLotes:(cfg.totalLotes||{})[e]==null?'':String(cfg.totalLotes[e]),venal:v.venal==null?'':String(v.venal),mercado:v.mercado==null?'':String(v.mercado)}; }); return o; });
+  const setE=(e,k,v)=>setEmps(o=>({...o,[e]:{...o[e],[k]:v}}));
+  const salvar=()=>{
+    const totalLotes={}, venal={};
+    Object.keys(emps).forEach(e=>{ const r=emps[e]; const t=iptuNum(r.totalLotes); if(t!=null) totalLotes[e]=t; const vv=iptuNum(r.venal), vm=iptuNum(r.mercado); if(vv!=null||vm!=null) venal[e]={venal:vv,mercado:vm}; });
+    onSave({rendimentoCaixa:iptuNum(f.rendimentoCaixa)||0,multaJuros:iptuNum(f.multaJuros)||0,reajuste:iptuNum(f.reajuste)||0,totalLotes,venal});
+  };
+  return (
+    <div className="modal-overlay" onClick={e=>{ if(e.target.classList.contains('modal-overlay')) onClose(); }}>
+      <div className="pdi-modal-panel" style={{width:760}}>
+        <div className="pdi-modal-head"><div className="pdi-modal-title">Configurar IPTU</div><button className="pdi-icon-btn" onClick={onClose}><i className="ti ti-x"/></button></div>
+        <div className="pdi-modal-body">
+          <div className="iptu-row3">
+            <div className="pdi-field"><label className="pdi-label">Rendimento do caixa (% ao mês)</label><input className="pdi-input" inputMode="decimal" value={f.rendimentoCaixa} onChange={e=>setF(o=>({...o,rendimentoCaixa:e.target.value}))}/></div>
+            <div className="pdi-field"><label className="pdi-label">Multa + juros se negado (%)</label><input className="pdi-input" inputMode="decimal" value={f.multaJuros} onChange={e=>setF(o=>({...o,multaJuros:e.target.value}))}/></div>
+            <div className="pdi-field"><label className="pdi-label">Reajuste p/ projeção (%)</label><input className="pdi-input" inputMode="decimal" value={f.reajuste} onChange={e=>setF(o=>({...o,reajuste:e.target.value}))}/></div>
+          </div>
+          <div className="venc-note" style={{margin:'4px 0 10px'}}>Por empreendimento: o <b>total de lotes</b> calcula as unidades não comercializadas; <b>valor venal</b> e <b>preço de mercado</b> (R$/m²) alimentam o comparativo da Visão geral.</div>
+          <div className="venc-table-wrap" style={{maxHeight:'none'}}>
+            <table className="venc-table">
+              <thead><tr><th>Empreendimento</th><th>Total de lotes</th><th>Venal (R$/m²)</th><th>Mercado (R$/m²)</th></tr></thead>
+              <tbody>{empNames.length===0?<tr><td colSpan={4}><div className="venc-empty">Nenhum empreendimento ainda.</div></td></tr>:empNames.map(e=>(
+                <tr key={e}><td className="venc-emp">{e}</td>
+                  <td><input className="pdi-input iptu-cell" inputMode="numeric" value={emps[e].totalLotes} onChange={x=>setE(e,'totalLotes',x.target.value)}/></td>
+                  <td><input className="pdi-input iptu-cell" inputMode="decimal" value={emps[e].venal} onChange={x=>setE(e,'venal',x.target.value)}/></td>
+                  <td><input className="pdi-input iptu-cell" inputMode="decimal" value={emps[e].mercado} onChange={x=>setE(e,'mercado',x.target.value)}/></td></tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <div className="iptu-modal-foot"><span style={{flex:1}}/><button className="pdi-btn ghost" onClick={onClose}>Cancelar</button><button className="pdi-btn" onClick={salvar}><i className="ti ti-check"/> Salvar</button></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Aba: Visão geral ── */
+function IptuGeral({dados,cfg,unidades,exercicio,setTab,salvarConfig}){
+  const guias=dados.guias.filter(g=>g.exercicio===exercicio);
+  const res=guias.map(iptuGuiaResumo);
+  const lan=guias.reduce((a,g)=>a+(g.valorLancado||0),0), pago=res.reduce((a,r)=>a+r.pago,0), susp=res.reduce((a,r)=>a+r.susp,0);
+  const abertos=dados.processos.filter(p=>!IPTU_ENCERRADOS.includes(p.status));
+  const parados=abertos.filter(p=>iptuDias(p.ultimaMov||p.protocolo)>90);
+  const economiaObtida=dados.processos.filter(p=>IPTU_ENCERRADOS.includes(p.status)||p.status==='deferido_parcial').reduce((a,p)=>a+(p.valorLancado!=null&&p.valorFinal!=null?Math.max(0,p.valorLancado-p.valorFinal):0),0);
+  const emDiscussao=abertos.reduce((a,p)=>a+(p.valorLancado!=null&&p.valorPleiteado!=null?p.valorLancado-p.valorPleiteado:0),0);
+  const fatias=iptuResumoUnidades(unidades,cfg.totalLotes);
+  const ncUn=fatias[2].v+fatias[3].v, totUn=fatias.reduce((a,f)=>a+f.v,0);
+  const porStatus=Object.keys(IPTU_STATUS).map(k=>({k,n:abertos.filter(p=>p.status===k).length})).filter(x=>x.n);
+  /* IPTU por empreendimento + custo do estoque (R$/lote/mês) */
+  const porEmp={}; guias.forEach(g=>{ const o=porEmp[g.emp]||(porEmp[g.emp]={v:0,lotes:0,lotesV:0}); o.v+=g.valorLancado||0; if(g.tipo==='Lotes'&&g.qtdLotes){ o.lotes+=g.qtdLotes; o.lotesV+=g.valorLancado||0; } });
+  const empArr=Object.entries(porEmp).sort((a,b)=>b[1].v-a[1].v), maxV=empArr.length?empArr[0][1].v:1;
+  const venc=guias.map(g=>({g,d:iptuProxVenc(g)})).filter(x=>x.d).sort((a,b)=>a.d.localeCompare(b.d)).slice(0,5);
+  const pendDecisao=guias.filter(g=>(g.decisao||'pendente')==='pendente'&&g.situacao==='aberta').length;
+  const venalArr=Object.entries(cfg.venal||{}).filter(([e,v])=>v&&v.venal&&v.mercado);
+  const maxM2=Math.max(1,...venalArr.flatMap(([e,v])=>[v.venal,v.mercado]));
+  const atrasados=iptuCompradoresAtrasados(unidades).length;
+  const toggleAlerta=k=>salvarConfig({alertas:{...cfg.alertas,[k]:!cfg.alertas[k]}});
+  return (<>
+    <div className="iptu-kpis">
+      <IptuKpi label={'IPTU lançado '+exercicio} icon="receipt-2" value={iptuBRLK(lan)} sub={guias.length+' guias'} onClick={()=>setTab('guias')}/>
+      <IptuKpi label={'Pago em '+exercicio} icon="check" value={iptuBRLK(pago)} sub={iptuPct(pago,lan)+'% do lançado'} color="var(--green)" onClick={()=>setTab('guias')}/>
+      <IptuKpi label="Suspenso por processo" icon="scale" value={iptuBRLK(susp)} sub="exigibilidade suspensa" color="var(--amber)" onClick={()=>setTab('processos')}/>
+      <IptuKpi label="Economia obtida" icon="trending-up" value={iptuBRLK(economiaObtida)} sub={'+ '+iptuBRLK(emDiscussao)+' em discussão'} color="var(--accent)" onClick={()=>setTab('processos')}/>
+      <IptuKpi label="Processos em andamento" icon="file-search" value={abertos.length} sub={parados.length?<span style={{color:'var(--amber)',fontWeight:600}}>{parados.length} sem movimentação há +90 dias</span>:'nenhum parado'} onClick={()=>setTab('processos')}/>
+    </div>
+
+    <div className="iptu-grid2">
+      <div className="pdi-card iptu-card">
+        <div className="iptu-card-h"><div><div className="pdi-card-title"><i className="ti ti-home-check"/> Registros de unidades</div><div className="pdi-card-desc">Situação dos lotes dos projetos registrados. Clique para abrir a lista.</div></div><button className="iptu-link" onClick={()=>setTab('registros')}>Abrir <i className="ti ti-arrow-right"/></button></div>
+        <IptuDonut fatias={fatias} onClick={()=>setTab('registros')}/>
+        <div className="venc-note">{totUn?<>Laranja e roxo ainda geram IPTU no nome da empresa: <b>{ncUn} lotes ({iptuPct(ncUn,totUn)}%)</b>.</>:'Importe a planilha em Registros de unidades e informe o total de lotes em Configurar.'}{atrasados>0 && <> · <b style={{color:'var(--amber)'}}>{atrasados} compradores</b> há +90 dias sem transferir.</>}</div>
+      </div>
+
+      <div className="pdi-card iptu-card">
+        <div className="iptu-card-h"><div><div className="pdi-card-title"><i className="ti ti-file-search"/> Processos na prefeitura</div><div className="pdi-card-desc">{abertos.length} em andamento, por status.</div></div><button className="iptu-link" onClick={()=>setTab('processos')}>Abrir <i className="ti ti-arrow-right"/></button></div>
+        <div className="iptu-pills">{porStatus.length?porStatus.map(x=><IptuPill key={x.k} c={IPTU_STATUS[x.k].c}>{IPTU_STATUS[x.k].t} · {x.n}</IptuPill>):<span className="venc-note" style={{margin:0}}>Nenhum processo em andamento.</span>}</div>
+        <div className="iptu-sub-t">Parados há mais tempo</div>
+        <div className="iptu-mini-list">{[...abertos].sort((a,b)=>(iptuDias(b.ultimaMov||b.protocolo)||0)-(iptuDias(a.ultimaMov||a.protocolo)||0)).slice(0,4).map(p=>{ const d=iptuDias(p.ultimaMov||p.protocolo); return (
+          <div key={p.id} className="iptu-mini"><div style={{minWidth:0}}><div className="t">{p.titulo||p.numero}</div><div className="s">{p.proj||'—'} · {p.numero}</div></div><IptuPill c={d>90?'amber':'gray'}><i className="ti ti-clock"/> {iptuDur(d)}</IptuPill></div>); })}</div>
+      </div>
+
+      <div className="pdi-card iptu-card">
+        <div className="iptu-card-h"><div><div className="pdi-card-title"><i className="ti ti-chart-bar"/> IPTU {exercicio} por empreendimento</div><div className="pdi-card-desc">Quanto cada área custa por ano. Nos lotes em estoque, o custo por lote por mês.</div></div></div>
+        {empArr.length===0?<div className="venc-note" style={{margin:0}}>Cadastre as guias do exercício em Guias e pagamentos.</div>:
+        <div className="iptu-bars">{empArr.map(([e,o])=>(
+          <div key={e} className="iptu-bar-row" title={e+': '+iptuBRL(o.v)}><span className="bl">{e}</span><div className="iptu-track"><div className="iptu-fill" style={{width:(o.v/maxV*100)+'%'}}/></div><span className="bv">{iptuBRLK(o.v)}{o.lotes>0 && <small>{iptuBRL(o.lotesV/o.lotes/12)}/lote·mês</small>}</span></div>
+        ))}</div>}
+      </div>
+
+      <div className="pdi-card iptu-card">
+        <div className="iptu-card-h"><div><div className="pdi-card-title"><i className="ti ti-calendar-event"/> Próximos vencimentos</div><div className="pdi-card-desc">Guias e parcelas ainda não pagas.</div></div>{pendDecisao>0 && <IptuPill c="purple">{pendDecisao} decisões pendentes</IptuPill>}</div>
+        <div className="iptu-mini-list">{venc.length===0?<div className="venc-note" style={{margin:0}}>Nada a vencer.</div>:venc.map(({g,d})=>{ const dd=-iptuDias(d); return (
+          <div key={g.id} className="iptu-mini"><div style={{minWidth:0}}><div className="t">{g.emp} · {g.imovel||g.tipo}</div><div className="s">{g.situacao==='parcelado'?'Parcela '+((g.parcelasPagas||0)+1)+'/'+g.numParcelas+' · '+iptuBRL(g.valorLancado/g.numParcelas):'Cota única ou 1ª parcela'}</div></div><IptuPill c={dd<0?'red':dd<=7?'amber':'blue'}>{iptuBR(d)}{dd<0?' · vencida':''}</IptuPill></div>); })}</div>
+      </div>
+
+      <div className="pdi-card iptu-card">
+        <div className="iptu-card-h"><div><div className="pdi-card-title"><i className="ti ti-scale"/> Valor venal × preço de mercado</div><div className="pdi-card-desc">Em R$/m². Quando o venal passa do mercado, há argumento técnico para pedir revisão.</div></div></div>
+        {venalArr.length===0?<div className="venc-note" style={{margin:0}}>Informe venal e mercado por empreendimento em Configurar.</div>:<>
+        <div className="iptu-pair-lg"><span><i style={{background:'var(--iptu-c3)'}}/>Valor venal (prefeitura)</span><span><i style={{background:'var(--iptu-c2)'}}/>Preço de venda / mercado</span></div>
+        <div className="iptu-pairs">{venalArr.map(([e,v])=>{ const r=v.venal/v.mercado; return (
+          <div key={e} className="iptu-pair">
+            <div className="iptu-pair-h"><span className="venc-emp">{e}</span><IptuPill c={r>1?'red':'green'}>venal = {Math.round(r*100)}% do mercado</IptuPill></div>
+            <div className="iptu-pb"><div className="iptu-track"><div className="iptu-fill" style={{width:(v.venal/maxM2*100)+'%',background:'var(--iptu-c3)'}}/></div><span>R$ {v.venal}</span></div>
+            <div className="iptu-pb"><div className="iptu-track"><div className="iptu-fill" style={{width:(v.mercado/maxM2*100)+'%',background:'var(--iptu-c2)'}}/></div><span>R$ {v.mercado}</span></div>
+          </div>); })}</div></>}
+      </div>
+
+      <div className="pdi-card iptu-card">
+        <div className="iptu-card-h"><div><div className="pdi-card-title"><i className="ti ti-bell"/> Alertas por e-mail</div><div className="pdi-card-desc">Enviados pelo Apps Script para os e-mails cadastrados em Configurações.</div></div></div>
+        <div className="iptu-mini-list">{IPTU_ALERTAS.map(a=>{ const on=!!cfg.alertas[a.k]; return (
+          <div key={a.k} className="iptu-mini"><div style={{minWidth:0}}><div className="t">{a.t}</div><div className="s">{a.s}</div></div><button className={'iptu-switch'+(on?' on':'')} onClick={()=>toggleAlerta(a.k)} aria-pressed={on} aria-label={(on?'Desligar':'Ligar')+' alerta: '+a.t}><span/></button></div>); })}</div>
+      </div>
+    </div>
+  </>);
+}
+
+/* ── Aba: Processos ── */
+function IptuProcessos({dados,cfg,projNames,salvar}){
+  const[busca,setBusca]=useState(''); const[fProj,setFProj]=useState(''); const[fSt,setFSt]=useState(''); const[fTipo,setFTipo]=useState('');
+  const[verEncerrados,setVerEncerrados]=useState(false); const[aberto,setAberto]=useState(null); const[modal,setModal]=useState(null);
+  const lista=dados.processos;
+  const abertos=lista.filter(p=>!IPTU_ENCERRADOS.includes(p.status));
+  const comValor=abertos.filter(p=>p.valorLancado!=null);
+  const disc=comValor.reduce((a,p)=>a+p.valorLancado,0), eco=comValor.reduce((a,p)=>a+(p.valorLancado-(p.valorPleiteado||0)),0);
+  const susp=abertos.filter(p=>p.suspendeGuia).reduce((a,p)=>a+(p.valorLancado||0),0), multa=(cfg.multaJuros||0)/100;
+  const projs=[...new Set(lista.map(p=>p.proj).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
+  const tipos=[...new Set(lista.map(p=>p.tipo).filter(Boolean))];
+  const q=busca.trim().toLowerCase();
+  const filtrados=lista.filter(p=>(verEncerrados||!IPTU_ENCERRADOS.includes(p.status))&&(!fProj||p.proj===fProj)&&(!fSt||p.status===fSt)&&(!fTipo||p.tipo===fTipo)&&(!q||[p.titulo,p.numero,p.descricao,p.proj,p.orgao].join(' ').toLowerCase().includes(q)))
+    .sort((a,b)=>String(b.protocolo||'').localeCompare(String(a.protocolo||'')));
+  const salvarItem=item=>{ const existe=lista.some(p=>p.id===item.id); salvar('processos',existe?lista.map(p=>p.id===item.id?item:p):[...lista,item]); setModal(null); };
+  const excluir=id=>{ salvar('processos',lista.filter(p=>p.id!==id)); setModal(null); setAberto(null); };
+  return (<>
+    <div className="iptu-kpis iptu-kpis3">
+      <IptuKpi label="Valor lançado em discussão" icon="scale" value={iptuBRLK(disc)} sub={comValor.length+' processos com valor'}/>
+      <IptuKpi label="Economia se deferidos" icon="trending-up" value={iptuBRLK(eco)} sub="lançado − pleiteado" color="var(--green)"/>
+      <IptuKpi label="A pagar se negados" icon="alert-triangle" value={iptuBRLK(susp*(1+multa))} sub={iptuBRL(susp)+' suspensos + multa e juros (~'+(cfg.multaJuros||0)+'%)'} color="var(--red)"/>
+    </div>
+    <div className="venc-toolbar">
+      <div className="venc-search"><i className="ti ti-search"/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar nº, título, descrição…"/></div>
+      <div className="flow-filter"><span className="flow-filter-label">Projeto:</span><span className="flow-filter-select-wrap"><select className="flow-filter-select" value={fProj} onChange={e=>setFProj(e.target.value)}><option value="">Todos</option>{projs.map(p=><option key={p} value={p}>{p}</option>)}</select><i className="ti ti-chevron-down"/></span></div>
+      <div className="flow-filter"><span className="flow-filter-label">Status:</span><span className="flow-filter-select-wrap"><select className="flow-filter-select" value={fSt} onChange={e=>setFSt(e.target.value)}><option value="">Todos</option>{Object.keys(IPTU_STATUS).map(k=><option key={k} value={k}>{IPTU_STATUS[k].t}</option>)}</select><i className="ti ti-chevron-down"/></span></div>
+      <label className="iptu-check" style={{margin:0}}><input type="checkbox" checked={verEncerrados} onChange={e=>setVerEncerrados(e.target.checked)}/> Mostrar encerrados</label>
+      <button className="venc-add-btn" onClick={()=>setModal({})}><i className="ti ti-plus"/> Novo processo</button>
+    </div>
+    {tipos.length>1 && <div className="iptu-chips"><button className={!fTipo?'on':''} onClick={()=>setFTipo('')}>Todos os tipos</button>{tipos.map(t=><button key={t} className={fTipo===t?'on':''} onClick={()=>setFTipo(fTipo===t?'':t)}>{t}</button>)}</div>}
+    <div className="venc-table-wrap">
+      <table className="venc-table">
+        <thead><tr><th>Projeto</th><th>Nº processo</th><th>Data de protocolo</th><th>Status</th><th>Descrição</th></tr></thead>
+        <tbody>
+          {filtrados.length===0 && <tr><td colSpan={5}><div className="venc-empty">{lista.length?'Nenhum processo com esses filtros.':'Nenhum processo ainda. Use "Novo processo" ou importe a planilha (o modelo já vem com os processos abertos no ClickUp).'}</div></td></tr>}
+          {filtrados.map(p=>{ const dProt=iptuDias(p.protocolo), dMov=iptuDias(p.ultimaMov||p.protocolo), st=IPTU_STATUS[p.status]||IPTU_STATUS.analise, open=aberto===p.id; return (
+            <React.Fragment key={p.id}>
+              <tr className={'iptu-row'+(open?' open':'')} onClick={()=>setAberto(open?null:p.id)}>
+                <td><div className="venc-emp">{p.proj||'—'}</div><div className="iptu-sub">{p.tipo}</div></td>
+                <td><div className="venc-num" style={{color:'var(--text)',fontWeight:600}}>{p.numero||'—'}</div><div className="iptu-sub">{p.orgao}</div></td>
+                <td><div className="venc-date">{iptuBR(p.protocolo)}</div>{dProt!=null && <div className="iptu-sub">aberto há {iptuDur(dProt)}</div>}</td>
+                <td><IptuPill c={st.c}>{st.t}</IptuPill>{dMov!=null && !IPTU_ENCERRADOS.includes(p.status) && <div className={'iptu-sub'+(dMov>90?' warn':'')}>{dMov>90?'parado · ':''}movim. há {iptuDur(dMov)}</div>}</td>
+                <td className="iptu-desc"><div className="iptu-desc-t">{p.titulo}</div>{p.descricao}</td>
+              </tr>
+              {open && <tr className="iptu-detail"><td colSpan={5}>
+                <div className="iptu-det">
+                  <div><small>Valor lançado</small><b>{iptuBRL(p.valorLancado)}</b></div>
+                  <div><small>Valor pleiteado</small><b>{iptuBRL(p.valorPleiteado)}</b></div>
+                  {p.valorFinal!=null?<div><small>Valor final</small><b>{iptuBRL(p.valorFinal)}</b> <span style={{color:'var(--green)'}}>(economia {iptuBRL((p.valorLancado||0)-p.valorFinal)})</span></div>
+                    :<div><small>Economia se deferido</small><b style={{color:'var(--green)'}}>{p.valorLancado==null?'—':iptuBRL(p.valorLancado-(p.valorPleiteado||0))}</b></div>}
+                  <div><small>Se negado</small>{p.valorLancado==null?'—':p.suspendeGuia?<><b style={{color:'var(--red)'}}>{iptuBRL(p.valorLancado*(1+multa))}</b> a pagar</>:'Já pago; perde-se a restituição'}</div>
+                  <div><small>Próximo passo</small>{p.proximoPasso||'—'}</div>
+                </div>
+                <div className="iptu-det-actions">
+                  {p.link && <a className="pdi-btn ghost" href={p.link} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}><i className="ti ti-external-link"/> Abrir no ClickUp</a>}
+                  <button className="pdi-btn ghost" onClick={e=>{ e.stopPropagation(); setModal(p); }}><i className="ti ti-pencil"/> Editar</button>
+                </div>
+              </td></tr>}
+            </React.Fragment>); })}
+        </tbody>
+      </table>
+    </div>
+    <div className="venc-note" style={{maxWidth:'none'}}>Clique numa linha para ver valores, próximo passo e editar.</div>
+    {modal && <IptuProcessoModal item={modal.id?modal:null} projNames={projNames} onSave={salvarItem} onDelete={excluir} onClose={()=>setModal(null)}/>}
+  </>);
+}
+
+/* ── Aba: Guias e pagamentos ── */
+function IptuGuias({dados,cfg,empNames,exercicio,setExercicio,exercicios,salvar}){
+  const[modal,setModal]=useState(null);
+  const lista=dados.guias, guias=lista.filter(g=>g.exercicio===exercicio);
+  const res=guias.map(g=>({g,r:iptuGuiaResumo(g)}));
+  const parts={vista:0,parc:0,aPagar:0,susp:0}; let descOk=0;
+  res.forEach(({r})=>{ parts.vista+=r.vista; parts.parc+=r.parc; parts.aPagar+=r.aPagar; parts.susp+=r.susp; descOk+=r.desconto; });
+  const tot=parts.vista+parts.parc+parts.aPagar+parts.susp, pago=parts.vista+parts.parc;
+  const SEG=[
+    {k:'vista',nm:'Pago à vista',st:{background:'var(--iptu-c1)'}},
+    {k:'parc',nm:'Pago em parcelas',st:{background:'var(--iptu-c2)'}},
+    {k:'aPagar',nm:'A pagar',cls:'iptu-pend'},
+    {k:'susp',nm:'Suspenso por processo',cls:'iptu-hatch'}
+  ];
+  const pc=v=>tot?Math.round(v/tot*100)+'%':'0%';
+  const caixa=(cfg.rendimentoCaixa||0)/100, reaj=(cfg.reajuste||0)/100;
+  const projecao=guias.reduce((a,g)=>a+(g.valorLancado||0),0)*(1+reaj);
+  const emps=[...new Set(guias.map(g=>g.emp))].sort((a,b)=>a.localeCompare(b,'pt'));
+  const salvarItem=item=>{ const existe=lista.some(g=>g.id===item.id); salvar('guias',existe?lista.map(g=>g.id===item.id?item:g):[...lista,item]); setModal(null); };
+  const excluir=id=>{ salvar('guias',lista.filter(g=>g.id!==id)); setModal(null); };
+  const patch=(id,p)=>salvar('guias',lista.map(g=>g.id===id?{...g,...p}:g));
+  const pagarParcela=g=>{ const n=Math.max(1,g.numParcelas||1); patch(g.id,{situacao:'parcelado',parcelasPagas:Math.min(n,(g.parcelasPagas||0)+1)}); };
+  const tira=g=>{
+    const r=iptuGuiaResumo(g);
+    if(g.situacao==='vista') return <div className="iptu-strip"><span style={{background:'var(--iptu-c1)'}} title={'Cota única · '+iptuBRL(r.pago)+(g.dataPagamento?' · paga em '+iptuBR(g.dataPagamento):'')+' · desconto de '+iptuBRL(r.desconto)}/></div>;
+    if(g.situacao==='suspensa') return <div className="iptu-strip"><span className="iptu-hatch" title={'Suspenso · '+iptuBRL(g.valorLancado)+(g.processo?' · processo '+g.processo:'')}/></div>;
+    if(g.situacao==='parcelado'){ const n=r.n, p=(g.valorLancado||0)/n; return <div className="iptu-strip">{Array.from({length:n},(_,k)=><span key={k} className={k<r.pagas?'':'iptu-pend'} style={k<r.pagas?{background:'var(--iptu-c2)'}:undefined} title={'Parcela '+(k+1)+'/'+n+' · '+iptuBRL(p)+(g.primeiroVenc?(k<r.pagas?' · paga':' · vence em '+iptuBR(iptuAddMeses(g.primeiroVenc,k))):'')}/>)}</div>; }
+    return <div className="iptu-strip"><span className="iptu-pend" title={'Em aberto · '+iptuBRL(g.valorLancado)+(g.primeiroVenc?' · vence em '+iptuBR(g.primeiroVenc):'')}/></div>;
+  };
+  const valorTxt=g=>{ const r=iptuGuiaResumo(g);
+    if(g.situacao==='vista') return <>{iptuBRL(r.pago)}<small>cota única · −{g.descontoVista||0}%</small></>;
+    if(g.situacao==='suspensa') return <>{iptuBRL(g.valorLancado)}<small>suspenso{g.processo?' · '+g.processo:''}</small></>;
+    if(g.situacao==='parcelado') return <>{iptuBRL(r.pago)}<small>{r.pagas}/{r.n} parcelas · faltam {iptuBRL(r.aPagar)}</small></>;
+    return <>{iptuBRL(g.valorLancado)}<small>em aberto{g.primeiroVenc?' · vence '+iptuBR(g.primeiroVenc):''}</small></>; };
+  return (<>
+    <div className="venc-toolbar">
+      <div className="fin-tabs">{exercicios.map(x=><button key={x} className={'fin-tab'+(x===exercicio?' active':'')} onClick={()=>setExercicio(x)}>{x}</button>)}</div>
+      <IptuPill c="blue">Projeção {exercicio+1}: {iptuBRLK(projecao)}</IptuPill>
+      <button className="venc-add-btn" onClick={()=>setModal({})}><i className="ti ti-plus"/> Nova guia</button>
+    </div>
+    {guias.length===0?<div className="pdi-card"><div className="pdi-card-title"><i className="ti ti-cash-banknote"/> Nenhuma guia em {exercicio}</div><div className="pdi-card-desc" style={{marginBottom:0}}>Cadastre as guias com "Nova guia" ou importe a planilha (aba Guias).</div></div>:<>
+    <div className="pdi-card iptu-card">
+      <div className="iptu-card-h"><div><div className="pdi-card-title"><i className="ti ti-cash-banknote"/> Montante do IPTU {exercicio}</div><div className="pdi-card-desc">Todas as guias de glebas e de lotes em estoque.</div></div></div>
+      <div className="iptu-big"><span className="n">{iptuBRL(pago)}</span><span className="s">pagos de {iptuBRL(tot)} devidos · <b>{pc(pago)}</b></span></div>
+      <div className="iptu-stack" role="img" aria-label={'Montante '+exercicio+': '+SEG.map(s=>s.nm+' '+pc(parts[s.k])).join(', ')}>{SEG.filter(s=>parts[s.k]>0).map(s=><span key={s.k} className={s.cls||''} style={{flex:parts[s.k]+' 1 0',...(s.st||{})}} title={s.nm+' · '+iptuBRL(parts[s.k])+' · '+pc(parts[s.k])}/>)}</div>
+      <div className="iptu-stack-lg">{SEG.map(s=><div key={s.k} className="sl"><span className={'sw '+(s.cls||'')} style={s.st}/><span className="nm">{s.nm}</span><b>{iptuBRL(parts[s.k])}</b><span className="pc">{pc(parts[s.k])}</span></div>)}</div>
+      <div className="venc-note" style={{margin:0}}>Desconto obtido nas cotas únicas: <b style={{color:'var(--green)'}}>{iptuBRL(descOk)}</b>. Passe o mouse nas barras para ver cada parcela.</div>
+    </div>
+    <div className="iptu-sub-t">Por empreendimento</div>
+    <div className="iptu-grid2">{emps.map(e=>{ const gs=guias.filter(g=>g.emp===e); let dev=0,pg=0; gs.forEach(g=>{ const r=iptuGuiaResumo(g); dev+=r.devido; pg+=r.pago; }); const temSusp=gs.some(g=>g.situacao==='suspensa'); return (
+      <div key={e} className="pdi-card iptu-card">
+        <div className="iptu-card-h"><div><div className="pdi-card-title">{e}</div><div className="pdi-card-desc">{gs.length} guia{gs.length>1?'s':''} em {exercicio}</div></div>
+          <div className="iptu-emp-total"><b>{iptuBRL(pg)}</b><span>pagos de {iptuBRL(dev)}</span>{pg>=dev-1?<IptuPill c="green">Quitado</IptuPill>:temSusp?<IptuPill c="amber">{pg?iptuPct(pg,dev)+'% pago · ':''}com suspensão</IptuPill>:<IptuPill c="blue">{iptuPct(pg,dev)}% pago</IptuPill>}</div></div>
+        <div className="iptu-g-rows">{gs.map(g=>(
+          <div key={g.id} className="iptu-g-row"><div className="gl">{g.imovel||g.tipo}<small>{g.tipo}{g.qtdLotes?' · '+g.qtdLotes+' lotes':''}</small></div>{tira(g)}<div className="gv">{valorTxt(g)}</div></div>
+        ))}</div>
+      </div>); })}</div>
+    <div className="iptu-sub-t">Detalhe das guias</div>
+    <div className="venc-table-wrap">
+      <table className="venc-table">
+        <thead><tr><th>Empreendimento</th><th>Imóvel</th><th style={{textAlign:'right'}}>Lançado</th><th style={{textAlign:'right'}}>À vista</th><th>Taxa do desconto</th><th>Situação</th><th>Decisão da diretoria</th><th></th></tr></thead>
+        <tbody>{guias.map(g=>{ const r=iptuTaxaImplicita(g.descontoVista,g.numParcelas), vistaMelhor=r>caixa, dec=g.decisao||'pendente'; return (
+          <tr key={g.id}>
+            <td className="venc-emp">{g.emp}</td>
+            <td>{g.imovel||'—'}<div className="iptu-sub">{g.tipo}{g.inscricao?' · '+g.inscricao:''}</div></td>
+            <td className="venc-num" style={{textAlign:'right',color:'var(--text)'}}>{iptuBRL(g.valorLancado)}<div className="iptu-sub">{g.numParcelas||1}× {iptuBRL((g.valorLancado||0)/(g.numParcelas||1))}</div></td>
+            <td className="venc-num" style={{textAlign:'right',color:'var(--text)'}}>{iptuBRL((g.valorLancado||0)*(1-(g.descontoVista||0)/100))}<div className="iptu-sub">{g.descontoVista||0}% de desconto</div></td>
+            <td className="venc-num" style={{color:'var(--text)'}}>{(r*100).toLocaleString('pt-BR',{maximumFractionDigits:2})}% a.m.<div className="iptu-sub" style={{color:vistaMelhor?'var(--green)':'var(--accent)',fontWeight:600}}>{(g.numParcelas||1)<2||!g.descontoVista?'—':vistaMelhor?'À vista rende mais':'Parcelar rende mais'}</div></td>
+            <td><IptuPill c={g.situacao==='vista'?'green':g.situacao==='parcelado'?'blue':g.situacao==='suspensa'?'amber':'gray'}>{IPTU_SITUACAO[g.situacao]||'Em aberto'}{g.situacao==='parcelado'?' · '+(g.parcelasPagas||0)+'/'+(g.numParcelas||1):''}</IptuPill></td>
+            <td><div className="iptu-decide">{Object.keys(IPTU_DECISAO).map(k=><button key={k} className={(dec===k?'on ':'')+k} onClick={()=>patch(g.id,{decisao:k})}>{IPTU_DECISAO[k]}</button>)}</div></td>
+            <td><div className="venc-actions">
+              {g.situacao!=='vista'&&g.situacao!=='suspensa'&&(g.situacao!=='parcelado'||(g.parcelasPagas||0)<(g.numParcelas||1)) && <button className="venc-act-btn" title="Registrar parcela paga" onClick={()=>pagarParcela(g)}><i className="ti ti-circle-check"/></button>}
+              <button className="venc-act-btn" title="Editar" onClick={()=>setModal(g)}><i className="ti ti-pencil"/></button>
+            </div></td>
+          </tr>); })}</tbody>
+      </table>
+    </div>
+    <div className="venc-note" style={{maxWidth:'none'}}>A "taxa do desconto" é o juro mensal que a empresa ganha ao pagar a cota única em vez de parcelar. Se passa o rendimento do caixa ({(cfg.rendimentoCaixa||0).toLocaleString('pt-BR')}% a.m., em Configurar), pagar à vista é melhor.</div>
+    </>}
+    {modal && <IptuGuiaModal item={modal.id?modal:null} empNames={empNames} exercicio={exercicio} onSave={salvarItem} onDelete={excluir} onClose={()=>setModal(null)}/>}
+  </>);
+}
+
+/* ── Tela principal ── */
+function IptuView({projects,registros,salvarUnidades,salvarCertidoesEmps,salvarEmpData,onBack,uid}){
+  const[tab,setTab]=useState('geral');
+  const[dados,setDados]=useState(DEMO_MODE?IPTU_DEMO:{processos:[],guias:[],config:{}});
+  const[showCfg,setShowCfg]=useState(false);
+  const[importando,setImportando]=useState(false);
+  const[msg,setMsg]=useState('');
+  useEffect(()=>{
+    if(DEMO_MODE) return;
+    const unsub=IPTU_DOC.onSnapshot((snap)=>{
+      const d=snap.exists?snap.data():{};
+      setDados({processos:Array.isArray(d.processos)?d.processos:[],guias:Array.isArray(d.guias)?d.guias:[],config:d.config||{}});
+    },(err)=>console.error('Erro ao ler IPTU do Firestore:',err));
+    return unsub;
+  },[]);
+  const salvar=(campo,valor)=>{
+    setDados(d=>({...d,[campo]:valor}));
+    if(!DEMO_MODE) IPTU_DOC.set({[campo]:valor},{merge:true}).catch(err=>console.error('Erro ao salvar IPTU:',err));
+  };
+  const cfg={...IPTU_CFG_PADRAO,...dados.config,alertas:{...IPTU_CFG_PADRAO.alertas,...((dados.config||{}).alertas||{})}};
+  const salvarConfig=p=>salvar('config',{...(dados.config||{}),...p});
+  const unidades=Array.isArray(registros&&registros.unidades)?registros.unidades:[];
+  const projNames=(projects||[]).filter(p=>!p.archived&&!p.deleted).map(p=>p.name).filter(Boolean);
+  const empNames=[...new Set([...projNames,...dados.guias.map(g=>g.emp),...dados.processos.map(p=>p.proj),...unidades.map(u=>u.emp),...Object.keys(cfg.totalLotes||{}),...Object.keys(cfg.venal||{})].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
+  const anoAtual=new Date().getFullYear();
+  const exercicios=[...new Set([anoAtual,...dados.guias.map(g=>g.exercicio).filter(Boolean)])].sort((a,b)=>a-b);
+  const[exercicio,setExercicio]=useState(anoAtual);
+  const abertos=dados.processos.filter(p=>!IPTU_ENCERRADOS.includes(p.status)).length;
+
+  const importar=file=>{
+    setImportando(true); setMsg('');
+    iptuLerPlanilha(file).then(r=>{
+      setImportando(false);
+      if(!r.processos.length&&!r.guias.length&&!r.emps.length){ setMsg('Nada importado. A planilha precisa das abas "Processos", "Guias" e/ou "Empreendimentos" com os títulos do modelo.'); return; }
+      if(!window.confirm(`Importar ${r.processos.length} processo(s), ${r.guias.length} guia(s) e ${r.emps.length} empreendimento(s)? Processos com o mesmo nº e guias do mesmo exercício/empreendimento/imóvel serão atualizados.`)) return;
+      if(r.processos.length){
+        const chave=p=>iptuNorm(p.numero||p.titulo);
+        const atuais=[...dados.processos];
+        r.processos.forEach(np=>{ const i=atuais.findIndex(p=>chave(p)===chave(np)); if(i>=0) atuais[i]={...atuais[i],...np,id:atuais[i].id}; else atuais.push({...np,id:iptuId('proc')}); });
+        salvar('processos',atuais);
+      }
+      if(r.guias.length){
+        const chave=g=>g.exercicio+'|'+iptuNorm(g.emp)+'|'+iptuNorm(g.imovel);
+        const atuais=[...dados.guias];
+        r.guias.forEach(ng=>{ const i=atuais.findIndex(g=>chave(g)===chave(ng)); if(i>=0) atuais[i]={...atuais[i],...ng,id:atuais[i].id}; else atuais.push({...ng,id:iptuId('guia')}); });
+        salvar('guias',atuais);
+      }
+      if(r.emps.length){
+        const totalLotes={...(cfg.totalLotes||{})}, venal={...(cfg.venal||{})};
+        r.emps.forEach(e=>{ if(e.totalLotes!=null) totalLotes[e.emp]=e.totalLotes; if(e.venal!=null||e.mercado!=null) venal[e.emp]={venal:e.venal,mercado:e.mercado}; });
+        salvarConfig({totalLotes,venal});
+      }
+      setMsg('Planilha importada.');
+    }).catch(err=>{ setImportando(false); setMsg('Erro ao ler a planilha: '+(err.message||err)); });
+  };
+
+  const TABS=[
+    {k:'geral',t:'Visão geral',i:'layout-dashboard'},
+    {k:'processos',t:'Processos na prefeitura',i:'file-search',n:abertos},
+    {k:'guias',t:'Guias e pagamentos',i:'cash-banknote'},
+    {k:'registros',t:'Registros de unidades',i:'home-check'}
+  ];
+  return (
+    <div className="pdi-wrap iptu-wrap">
+      <div className="iptu-head">
+        <button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button>
+        <div className="fin-tabs iptu-tabs">{TABS.map(t=><button key={t.k} className={'fin-tab'+(tab===t.k?' active':'')} onClick={()=>setTab(t.k)}><i className={'ti ti-'+t.i}/> {t.t}{t.n?<span className="iptu-tab-n">{t.n}</span>:null}</button>)}</div>
+        {tab!=='registros' && <div className="iptu-head-actions">
+          <button className="pdi-btn ghost" onClick={()=>setShowCfg(true)}><i className="ti ti-settings"/> Configurar</button>
+          <button className="pdi-btn ghost" onClick={()=>iptuExportar(dados,cfg,true)} title="Planilha modelo, já com os processos abertos no ClickUp"><i className="ti ti-download"/> Baixar modelo</button>
+          <button className="pdi-btn ghost" onClick={()=>iptuExportar(dados,cfg,false)}><i className="ti ti-file-export"/> Exportar</button>
+          <label className="pdi-btn" style={{cursor:'pointer'}}><i className="ti ti-file-spreadsheet"/> {importando?'Importando…':'Importar planilha'}
+            <input type="file" accept=".xlsx,.xls" style={{display:'none'}} onChange={e=>{ const f=e.target.files[0]; if(f) importar(f); e.target.value=''; }}/></label>
+        </div>}
+      </div>
+      {msg && <div className="venc-note" style={{maxWidth:'none',marginTop:0,marginBottom:12,color:msg.startsWith('Erro')||msg.startsWith('Nada')?'var(--red)':'var(--green)'}}>{msg}</div>}
+      {DEMO_MODE && <div className="venc-note" style={{maxWidth:'none',marginTop:0,marginBottom:12}}>Modo demonstração: dados de exemplo, nada é gravado.</div>}
+
+      {tab==='geral' && <IptuGeral dados={dados} cfg={cfg} unidades={unidades} exercicio={exercicio} setTab={setTab} salvarConfig={salvarConfig}/>}
+      {tab==='processos' && <IptuProcessos dados={dados} cfg={cfg} projNames={projNames} salvar={salvar}/>}
+      {tab==='guias' && <IptuGuias dados={dados} cfg={cfg} empNames={empNames} exercicio={exercicio} setExercicio={setExercicio} exercicios={exercicios} salvar={salvar}/>}
+      {tab==='registros' && (<>
+        {iptuCompradoresAtrasados(unidades).length>0 && <div className="venc-note iptu-alert-bar"><i className="ti ti-alert-triangle"/> <b>{iptuCompradoresAtrasados(unidades).length} compradores</b> compraram há mais de 90 dias e ainda não transferiram. O IPTU deles segue no nome da empresa.</div>}
+        <RegistrosUnidades registros={registros} salvarUnidades={salvarUnidades} salvarCertidoesEmps={salvarCertidoesEmps} salvarEmpData={salvarEmpData} projects={projects} onBack={()=>setTab('geral')} uid={uid}/>
+      </>)}
+
+      {showCfg && <IptuConfigModal cfg={cfg} empNames={empNames} onSave={p=>{ salvarConfig(p); setShowCfg(false); }} onClose={()=>setShowCfg(false)}/>}
+    </div>
+  );
+}
 function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssuntos,updateProjectOficio,vencimentos,setVencimentos,empreendimentosAvulsos,setEmpreendimentosAvulsos,painelTarefas,setPainelTarefas,dadosGerais,contratoModelos,setContratoModelos,contratoConfig,setContratoConfig,contatos,setContatos,prazosAprovacao,setPrazosAprovacao,finContratos,setFinContratos,fornecedores,setFornecedores,finGastos,setFinGastos,finNfEmail,setFinNfEmail,regCreditos,setRegCreditos,uid,userName,view,setView,onOpenTask,finOpenReq,abas}){
   const ativos=(projects||[]).filter(p=>!p.archived&&!p.deleted).sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt',{sensitivity:'base'}));
   const avulsosSalvos=(Array.isArray(empreendimentosAvulsos)?[...empreendimentosAvulsos]:[]).sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt',{sensitivity:'base'}));
@@ -13647,6 +14697,11 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
             <div className="tt">Registros de Unidades</div>
             <div className="dd">Unidades vendidas por empreendimento (cliente, quadra, lote), controle de registro e transferência na prefeitura, e — via robô — IPTU das não transferidas.</div>
           </div>
+          <div className="pdi-tool" onClick={()=>setView('iptu')}>
+            <i className="ti ti-receipt-2"/>
+            <div className="tt">IPTU</div>
+            <div className="dd">Processos na prefeitura (redução, impugnação, isenção), guias e pagamentos por empreendimento, decisão à vista × parcelado e visão geral das unidades.</div>
+          </div>
           <div className="pdi-tool" onClick={()=>setView('certidoes')}>
             <i className="ti ti-certificate"/>
             <div className="tt">Certidões negativas</div>
@@ -13662,6 +14717,10 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
     );
   }
 
+  /* ─── Ferramenta: IPTU (processos, guias e pagamentos; Registros de Unidades continua como card próprio) ─── */
+  if(view==='iptu'){
+    return <IptuView projects={projects} registros={registros} salvarUnidades={salvarUnidades} salvarCertidoesEmps={salvarCertidoesEmps} salvarEmpData={salvarEmpData} onBack={()=>setView('home')} uid={uid}/>;
+  }
   /* ─── Ferramenta: Registros de Unidades ─── */
   if(view==='registros'){
     return <RegistrosUnidades registros={registros} salvarUnidades={salvarUnidades} salvarCertidoesEmps={salvarCertidoesEmps} salvarEmpData={salvarEmpData} projects={projects} onBack={()=>setView('home')} uid={uid}/>;
@@ -15625,8 +16684,8 @@ function PortalPRJ({ projects, currentUser, view, setView, finContratos, setFinC
 const SCREEN_TO_PATH={dashboard:'/dashboard',projects:'/projetos',project:'/projetos',checklists:'/checklist',ferramentas:'/ferramentas',dados:'/dados',portaldi:'/portal-di',portaldiretoria:'/portal-diretoria',portalpcp:'/portal-pcp',portalprj:'/portal-prj',map:'/mapa',tarefas:'/tarefas',inicio:'/inicio',settings:'/configuracoes'};
 const PATH_TO_SCREEN={'/':'inicio','/inicio':'inicio','/tarefas':'tarefas','/dashboard':'dashboard','/projetos':'projects','/checklist':'checklists','/checklists':'checklists','/ferramentas':'ferramentas','/dados':'dados','/portal-di':'portaldi','/portaldi':'portaldi','/portal-diretoria':'portaldiretoria','/portaldiretoria':'portaldiretoria','/diretoria':'portaldiretoria','/portal-pcp':'portalpcp','/portalpcp':'portalpcp','/pcp':'portalpcp','/portal-prj':'portalprj','/portalprj':'portalprj','/prj':'portalprj','/mapa':'map','/map':'map','/configuracoes':'settings','/config':'settings','/settings':'settings'};
 /* Sub-ambientes do Portal DI também têm endereço próprio, ex.: /portal-di/painel-semanal */
-const PORTAL_VIEW_TO_SLUG={painel:'painel-semanal',oficio:'oficios',contratos:'contratos',financeiro:'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',certidoes:'certidoes',parceiros:'parceiros'};
-const SLUG_TO_PORTAL_VIEW={'painel-semanal':'painel','painel':'painel',oficios:'oficio',oficio:'oficio','gerador-oficios':'oficio',contratos:'contratos',financeiro:'financeiro','controle-financeiro':'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',certidoes:'certidoes','certidoes-negativas':'certidoes',parceiros:'parceiros'};
+const PORTAL_VIEW_TO_SLUG={painel:'painel-semanal',oficio:'oficios',contratos:'contratos',financeiro:'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',certidoes:'certidoes',parceiros:'parceiros'};
+const SLUG_TO_PORTAL_VIEW={'painel-semanal':'painel','painel':'painel',oficios:'oficio',oficio:'oficio','gerador-oficios':'oficio',contratos:'contratos',financeiro:'financeiro','controle-financeiro':'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',certidoes:'certidoes','certidoes-negativas':'certidoes',parceiros:'parceiros'};
 function pathToPortalId(){ try{ const m=(location.pathname||'').match(/^\/portal\/([^\/]+)/i); return m?decodeURIComponent(m[1]):''; }catch(e){ return ''; } }
 function pathToPortalXView(){ try{ const m=(location.pathname||'').replace(/\/+$/,'').match(/^\/portal\/[^\/]+\/(.+)$/i); return m?(SLUG_TO_PORTAL_VIEW[m[1].toLowerCase()]||(m[1].toLowerCase()==='financeiro-projetos'?'financeiro':'home')):'home'; }catch(e){ return 'home'; } }
 function pathToScreen(){ try{ const p=(location.pathname||'/').replace(/\/+$/,'')||'/'; if(/^\/portal\/[^\/]+/i.test(p)) return 'portal'; if(/^\/portal-?di(\/|$)/i.test(p)) return 'portaldi'; if(/^\/projetos\/[^\/]+/i.test(p)) return 'project'; return PATH_TO_SCREEN[p]||'inicio'; }catch(e){ return 'inicio'; } }
