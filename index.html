@@ -1331,6 +1331,26 @@
   .sch-table thead th{position:sticky;top:0;z-index:2;background:var(--surface2);color:var(--text2);text-align:left;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
   /* Alça de redimensionamento da coluna (arraste a borda direita do cabeçalho).
      position:sticky do th já serve de contexto para a alça absoluta. */
+  .sch-colsbox{position:relative;display:inline-flex;}
+  .sch-tbtn.on{border-color:var(--accent);color:var(--accent);}
+  .sch-colsmenu{position:absolute;top:calc(100% + 6px);left:0;z-index:60;width:290px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.35);padding:10px;}
+  .sch-colsmenu-h{display:flex;flex-direction:column;gap:2px;margin-bottom:8px;font-size:12.5px;}
+  .sch-colsmenu-h span{font-size:11px;color:var(--text3);}
+  .sch-colsmenu-l{max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
+  .sch-colsmenu-i{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;font-size:12.5px;cursor:grab;}
+  .sch-colsmenu-i:hover{background:var(--surface2);}
+  .sch-colsmenu-i.arr{opacity:.45;}
+  .sch-colsmenu-i label{flex:1;display:flex;align-items:center;gap:7px;cursor:pointer;min-width:0;}
+  .sch-colsmenu-i small{color:var(--text3);}
+  .sch-colsmenu-i button{width:22px;height:22px;border:none;background:none;color:var(--text3);cursor:pointer;padding:0;border-radius:4px;}
+  .sch-colsmenu-i button:hover:not(:disabled){color:var(--text);background:var(--surface3);}
+  .sch-colsmenu-i button:disabled{opacity:.3;cursor:default;}
+  .sch-colsmenu-grip{color:var(--text3);}
+  .sch-colsmenu-f{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+  .sch-thmov{cursor:grab;}
+  .sch-thmov.coldragging{opacity:.45;}
+  .sch-thmov.coldrop-antes{box-shadow:inset 3px 0 0 var(--accent);}
+  .sch-thmov.coldrop-depois{box-shadow:inset -3px 0 0 var(--accent);}
   .sch-colgrip{position:absolute;top:0;right:-4px;width:9px;height:100%;cursor:col-resize;z-index:5;}
   .sch-colgrip:hover{background:var(--accent);opacity:.55;}
   .sch-editinp,.sch-table td select.sch-editinp{width:100%;box-sizing:border-box;font:inherit;font-size:12px;text-transform:none;letter-spacing:0;font-weight:400;padding:2px 5px;border:1px solid var(--accent);border-radius:5px;background:var(--surface);color:var(--text);height:22px;}
@@ -5943,6 +5963,37 @@ const SCH_COLS=[
   {key:'pred',label:'Predecessoras',cls:'sch-c-pred'},
 ];
 const DEFAULT_COLW={flow:62,num:34,pct:96,meta:56,name:260,mst:118,mbt:116,dur:78,start:80,end:80,blS:108,blE:122,blD:94,sector:82,peso:64,pred:150};
+/* Menu "Colunas" do Cronograma (estilo ClickUp): marcar/desmarcar quais
+   colunas aparecem e arrastar (ou usar as setas) para mudar a ordem. */
+function SchColunasMenu({cols,order,hidden,onChange,onClose,onReset}){
+  const ref=useRef(null);
+  const[dragK,setDragK]=useState(null);
+  useEffect(()=>{ const h=e=>{ if(ref.current&&!ref.current.contains(e.target)) onClose(); }; document.addEventListener('mousedown',h); return ()=>document.removeEventListener('mousedown',h); },[onClose]);
+  const lab=k=>(cols.find(c=>c.key===k)||{}).label||k;
+  const mover=(k,d)=>{ const o=order.slice(); const i=o.indexOf(k), j=i+d; if(j<0||j>=o.length) return; o.splice(i,1); o.splice(j,0,k); onChange({order:o,hidden}); };
+  const soltarEm=(alvo)=>{ if(!dragK||dragK===alvo) return; const o=order.filter(k=>k!==dragK); o.splice(o.indexOf(alvo),0,dragK); onChange({order:o,hidden}); };
+  const alternar=k=>{ if(k==='name') return; onChange({order,hidden:hidden.includes(k)?hidden.filter(x=>x!==k):hidden.concat(k)}); };
+  return(
+    <div className="sch-colsmenu" ref={ref}>
+      <div className="sch-colsmenu-h"><b>Colunas</b><span>marque as que aparecem · arraste para ordenar</span></div>
+      <div className="sch-colsmenu-l">
+        {order.map((k,i)=>(
+          <div key={k} className={'sch-colsmenu-i'+(dragK===k?' arr':'')} draggable={true}
+            onDragStart={e=>{ e.stopPropagation(); setDragK(k); try{e.dataTransfer.setData('text/plain','colm:'+k);}catch(_){} }}
+            onDragOver={e=>{ if(dragK){ e.preventDefault(); e.stopPropagation(); } }}
+            onDrop={e=>{ e.preventDefault(); e.stopPropagation(); soltarEm(k); setDragK(null); }}
+            onDragEnd={()=>setDragK(null)}>
+            <i className="ti ti-grip-vertical sch-colsmenu-grip"/>
+            <label><input type="checkbox" checked={!hidden.includes(k)} disabled={k==='name'} onChange={()=>alternar(k)}/> {lab(k)}{k==='name'?<small> (sempre)</small>:null}</label>
+            <button type="button" disabled={i===0} onClick={()=>mover(k,-1)} title="Mover para a esquerda"><i className="ti ti-chevron-up"/></button>
+            <button type="button" disabled={i===order.length-1} onClick={()=>mover(k,1)} title="Mover para a direita"><i className="ti ti-chevron-down"/></button>
+          </div>
+        ))}
+      </div>
+      <div className="sch-colsmenu-f"><button type="button" className="sch-linkbtn" onClick={onReset}>restaurar padrão</button><button type="button" className="sch-tbtn" onClick={onClose}>Fechar</button></div>
+    </div>
+  );
+}
 /* Campo de edição inline do Cronograma: aparece no lugar da célula ao dar duplo
    clique. Enter/perde o foco = salva; Esc = cancela. Guarda-se de salvar duas
    vezes (blur após Enter/Esc) com o doneRef. */
@@ -6065,6 +6116,19 @@ function ScheduleView({project, onTaskField, onSetMetaPeso, onAddDep, onEditDep,
   useEffect(()=>{ if(DEMO_MODE||!uid) return; const unsub=USERPREFS_COL.doc(uid).onSnapshot(snap=>{ const d=snap.exists?snap.data():{}; if(d&&d.schedColW&&typeof d.schedColW==='object'){ setColW({...DEFAULT_COLW,...d.schedColW}); } },()=>{}); return unsub; },[uid]);
   const saveColW=(w)=>{ if(!DEMO_MODE&&uid) USERPREFS_COL.doc(uid).set({schedColW:w},{merge:true}).catch(e=>console.error('Erro ao salvar larguras das colunas:',e)); };
   const cw=k=>(colW&&colW[k])||DEFAULT_COLW[k]||60;
+  /* Colunas configuráveis (estilo ClickUp): cada pessoa escolhe quais aparecem
+     e em que ordem. Guardado em fluxoapp_userprefs/<uid>.schedCols
+     ({order:[...], hidden:[...]}). "Nome da tarefa" não pode ser escondida. */
+  const SCH_KEYS=SCH_COLS.map(c=>c.key);
+  const normOrder=o=>{ const v=(Array.isArray(o)?o:[]).filter(k=>SCH_KEYS.includes(k)); SCH_KEYS.forEach(k=>{ if(!v.includes(k)) v.push(k); }); return v; };
+  const [colCfg,setColCfg]=useState({order:SCH_KEYS,hidden:[]});
+  useEffect(()=>{ if(DEMO_MODE||!uid) return; const unsub=USERPREFS_COL.doc(uid).onSnapshot(snap=>{ const d=snap.exists?snap.data():{}; if(d&&d.schedCols&&typeof d.schedCols==='object'){ setColCfg({order:normOrder(d.schedCols.order),hidden:(d.schedCols.hidden||[]).filter(k=>k!=='name')}); } },()=>{}); return unsub; },[uid]);
+  const saveColCfg=(c)=>{ setColCfg(c); if(!DEMO_MODE&&uid) USERPREFS_COL.doc(uid).set({schedCols:{order:c.order,hidden:c.hidden}},{merge:true}).catch(e=>console.error('Erro ao salvar colunas:',e)); };
+  const colsVis=normOrder(colCfg.order).filter(k=>!colCfg.hidden.includes(k)).map(k=>SCH_COLS.find(c=>c.key===k));
+  const moverCol=(key,alvo,depois)=>{ const o=normOrder(colCfg.order).filter(k=>k!==key); let i=o.indexOf(alvo); if(i<0) i=o.length; else if(depois) i++; o.splice(i,0,key); saveColCfg({...colCfg,order:o}); };
+  const [colDrag,setColDrag]=useState(null);   /* coluna sendo arrastada pelo cabeçalho */
+  const [colDropAt,setColDropAt]=useState(null);
+  const [showCols,setShowCols]=useState(false);
   const startColResize=(key,e)=>{ e.preventDefault(); e.stopPropagation(); const startX=e.clientX; const startW=cw(key); let last=startW;
     const onMove=(ev)=>{ let w=startW+(ev.clientX-startX); if(w<32) w=32; last=w; setColW(prev=>({...prev,[key]:w})); };
     const onUp=()=>{ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); document.body.style.userSelect=''; setColW(prev=>{ const next={...prev,[key]:Math.round(last)}; saveColW(next); return next; }); };
@@ -6206,6 +6270,12 @@ function ScheduleView({project, onTaskField, onSetMetaPeso, onAddDep, onEditDep,
         </label>
         <button className="sch-tbtn" onClick={expandAll} title="Expandir tudo"><i className="ti ti-fold-down"/></button>
         <button className="sch-tbtn" onClick={collapseAll} title="Recolher tudo"><i className="ti ti-fold-up"/></button>
+        <span className="sch-colsbox">
+          <button className={'sch-tbtn'+(showCols?' on':'')} onClick={()=>setShowCols(v=>!v)} title="Escolher quais colunas aparecem e a ordem delas"><i className="ti ti-columns-3"/> Colunas</button>
+          {showCols&&<SchColunasMenu cols={SCH_COLS} order={normOrder(colCfg.order)} hidden={colCfg.hidden}
+            onChange={c=>saveColCfg(c)} onClose={()=>setShowCols(false)}
+            onReset={()=>{ saveColCfg({order:SCH_KEYS,hidden:[]}); setColW(DEFAULT_COLW); saveColW(DEFAULT_COLW); }}/>}
+        </span>
         <button className="sch-linkbtn" onClick={()=>{ setColW(DEFAULT_COLW); saveColW(DEFAULT_COLW); }} title="Voltar às larguras padrão das colunas (mostra o nome de todas as colunas)"><i className="ti ti-arrow-autofit-width"/> larguras padrão</button>
         <span className="sch-tbsep"/>
         <button className="sch-tbtn" onClick={()=>onSaveBaseline&&onSaveBaseline()} title="Guarda as datas meta atuais como Linha de Base (foto do plano)"><i className="ti ti-camera"/> Salvar linha de base</button>
@@ -6217,11 +6287,16 @@ function ScheduleView({project, onTaskField, onSetMetaPeso, onAddDep, onEditDep,
         {multi&&<span className="sch-selbar"><b>{selIds.size}</b> selecionadas <button className="sch-linkbtn" onClick={()=>{setSelIds(new Set());setSelId(null);}}>limpar</button> <button className="sch-linkbtn danger" onClick={bulkDelete}>excluir</button></span>}
       </div>
       <div className="sch-gridscroll">
-        <table className="sch-table" style={{tableLayout:'fixed',width:'100%',minWidth:SCH_COLS.reduce((a,c)=>a+cw(c.key),0)+'px'}}>
-          <colgroup>{SCH_COLS.map(c=><col key={c.key} style={{width:cw(c.key)+'px'}}/>)}<col className="sch-fillcol"/></colgroup>
+        <table className="sch-table" style={{tableLayout:'fixed',width:'100%',minWidth:colsVis.reduce((a,c)=>a+cw(c.key),0)+'px'}}>
+          <colgroup>{colsVis.map(c=><col key={c.key} style={{width:cw(c.key)+'px'}}/>)}<col className="sch-fillcol"/></colgroup>
           <thead><tr>
-            {SCH_COLS.map(c=>(
-              <th key={c.key} className={c.cls}>{c.label}
+            {colsVis.map(c=>(
+              <th key={c.key} className={c.cls+' sch-thmov'+(colDropAt&&colDropAt.key===c.key?(' coldrop-'+colDropAt.side):'')+(colDrag===c.key?' coldragging':'')}
+                draggable={true} title="Arraste para mudar a coluna de lugar"
+                onDragStart={e=>{ e.stopPropagation(); e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain','col:'+c.key);}catch(_){} setColDrag(c.key); }}
+                onDragOver={e=>{ if(!colDrag) return; e.preventDefault(); e.stopPropagation(); const rc=e.currentTarget.getBoundingClientRect(); setColDropAt({key:c.key,side:(e.clientX-rc.left)<rc.width/2?'antes':'depois'}); }}
+                onDrop={e=>{ if(!colDrag) return; e.preventDefault(); e.stopPropagation(); if(colDrag!==c.key) moverCol(colDrag,c.key,colDropAt&&colDropAt.key===c.key&&colDropAt.side==='depois'); setColDrag(null); setColDropAt(null); }}
+                onDragEnd={()=>{ setColDrag(null); setColDropAt(null); }}>{c.label}
                 <span className="sch-colgrip" title="Arraste para ajustar a largura desta coluna" onMouseDown={e=>startColResize(c.key,e)} onClick={e=>e.stopPropagation()} onDoubleClick={e=>e.stopPropagation()}/>
               </th>
             ))}
@@ -6232,21 +6307,23 @@ function ScheduleView({project, onTaskField, onSetMetaPeso, onAddDep, onEditDep,
           <tr className={'sch-row sch-projrow'+(dropAt&&dropAt.root?' drop-into':'')}
               onDragOver={e=>{ if(drag){ e.preventDefault(); setDropAt({root:true}); } }}
               onDrop={e=>{ if(drag){ e.preventDefault(); doDrop(null,'after'); } }}>
-            <td className="sch-c-flow"></td>
-            <td className="sch-c-num"><i className="ti ti-building-community"/></td>
-            <td className="sch-pctcell"><Pctbar v={projR.pct}/></td>
-            <td className="sch-c-meta"></td>
-            <td className="sch-name"><span className="sch-twist sp"/><i className="ti ti-building-community" style={{color:'var(--accent)'}}/> <span>{project.name||'Empreendimento'}</span></td>
-            <td className="sch-c-mst"></td><td className="sch-c-mbt"></td>
-            <td>{projR.dur?projR.dur+' d':'—'}</td>
-            <td>{fmt(projR.s)}</td><td>{fmt(projR.e)}</td>
-            <td className="sch-bl">{fmt(projBL.s)}</td><td className="sch-bl">{fmt(projBL.e)}</td><td className="sch-bl">{projBL.dur?projBL.dur+' d':'—'}</td>
-            <td className="sch-sector"></td>
-            <td className="sch-c-peso"></td>
-            <td className="sch-pred"></td>
+            {(()=>{ const C={
+              flow:<td className="sch-c-flow"></td>,
+              num:<td className="sch-c-num"><i className="ti ti-building-community"/></td>,
+              pct:<td className="sch-pctcell"><Pctbar v={projR.pct}/></td>,
+              meta:<td className="sch-c-meta"></td>,
+              name:<td className="sch-name"><span className="sch-twist sp"/><i className="ti ti-building-community" style={{color:'var(--accent)'}}/> <span>{project.name||'Empreendimento'}</span></td>,
+              mst:<td className="sch-c-mst"></td>, mbt:<td className="sch-c-mbt"></td>,
+              dur:<td>{projR.dur?projR.dur+' d':'—'}</td>,
+              start:<td>{fmt(projR.s)}</td>, end:<td>{fmt(projR.e)}</td>,
+              blS:<td className="sch-bl">{fmt(projBL.s)}</td>, blE:<td className="sch-bl">{fmt(projBL.e)}</td>, blD:<td className="sch-bl">{projBL.dur?projBL.dur+' d':'—'}</td>,
+              sector:<td className="sch-sector"></td>,
+              peso:<td className="sch-c-peso"></td>,
+              pred:<td className="sch-pred"></td>,
+            }; return colsVis.map(c=><React.Fragment key={c.key}>{C[c.key]}</React.Fragment>); })()}
             <td className="sch-c-fill"></td>
           </tr>
-          {flat.length===0&&<tr><td className="sch-c-flow"/><td className="sch-c-num"/><td/><td/><td colSpan="13" className="sch-grpemptytxt">Nenhuma tarefa ainda. Clique em "Nova Tarefa" para começar.</td></tr>}
+          {flat.length===0&&<tr><td colSpan={colsVis.length+1} className="sch-grpemptytxt">Nenhuma tarefa ainda. Clique em "Nova Tarefa" para começar.</td></tr>}
           {flat.map(({t,level,wbs,sm})=>{ const id=String(t.id); const r=sm?rollup(t):null; const bl=sm?blRollup(t):null;
             const startV=sm?r.s:dstart(t); const endV=sm?r.e:dend(t);
             const pctV=sm?r.pct:schedAutoPct(t,hol);
@@ -6263,15 +6340,16 @@ function ScheduleView({project, onTaskField, onSetMetaPeso, onAddDep, onEditDep,
               onDragOver={e=>{ if(drag){ e.preventDefault(); const rc=e.currentTarget.getBoundingClientRect(); const place=(e.clientY-rc.top)<rc.height/2?'before':'after'; setDropAt({id,place}); } }}
               onDrop={e=>{ if(drag){ e.preventDefault(); const pl=(dropAt&&dropAt.id===id)?dropAt.place:'before'; doDrop(t.id,pl); } }}
               onDragEnd={()=>{ setDrag(null); setDropAt(null); }}>
-              <td className="sch-c-flow" onClick={e=>e.stopPropagation()}>
+              {(()=>{ const C={
+flow:<td className="sch-c-flow" onClick={e=>e.stopPropagation()}>
                 <input type="checkbox" className="sch-metachk" checked={t.inFlow!==false} onChange={e=>onTaskField(t.id,{inFlow:e.target.checked})} title="Aparece no Fluxograma"/>
-              </td>
-              <td className="sch-c-num">{wbs}</td>
-              <td className="sch-pctcell"><Pctbar v={pctV} color={sm?undefined:statusColor(t.status)}/></td>
-              <td className="sch-c-meta" onClick={e=>e.stopPropagation()}>
+              </td>,
+num:<td className="sch-c-num">{wbs}</td>,
+pct:<td className="sch-pctcell"><Pctbar v={pctV} color={sm?undefined:statusColor(t.status)}/></td>,
+meta:<td className="sch-c-meta" onClick={e=>e.stopPropagation()}>
                 <input type="checkbox" className="sch-metachk" checked={!!t.isMeta} onChange={e=>onTaskField(t.id,{isMeta:e.target.checked})} title="Marcar esta tarefa como meta"/>
-              </td>
-              <td className="sch-name" style={{paddingLeft:(8+(level-1)*20)+'px'}} onDoubleClick={e=>beginEdit(t.id,'label',e)} title="Duplo clique para editar o nome">
+              </td>,
+name:<td className="sch-name" style={{paddingLeft:(8+(level-1)*20)+'px'}} onDoubleClick={e=>beginEdit(t.id,'label',e)} title="Duplo clique para editar o nome">
                 {isEditing(id,'label')
                   ? <SchInlineInput type="text" value={t.label||''} onSave={v=>{ onTaskField(t.id,{label:v}); endEdit(); }} onCancel={endEdit}/>
                   : <React.Fragment>
@@ -6281,42 +6359,43 @@ function ScheduleView({project, onTaskField, onSetMetaPeso, onAddDep, onEditDep,
                     <span className="sch-nametxt">{t.label}</span>
                     {t.inFlow===false&&<i className="ti ti-eye-off sch-noflowico" title="Não aparece no Fluxograma"/>}
                   </React.Fragment>}
-              </td>
-              <td className="sch-c-mst" onClick={e=>e.stopPropagation()}>
+              </td>,
+mst:<td className="sch-c-mst" onClick={e=>e.stopPropagation()}>
                 {t.isMeta?<MetaStatusCell t={t} onTaskField={onTaskField} onValidate={setValidateTask}/>:<span className="sch-mst-empty">—</span>}
-              </td>
-              <td className="sch-c-mbt" onClick={e=>e.stopPropagation()}>
+              </td>,
+mbt:<td className="sch-c-mbt" onClick={e=>e.stopPropagation()}>
                 {t.isMeta?<MetaBatidaCell t={t}/>:<span className="sch-mst-empty">—</span>}
-              </td>
-              <td onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'dur',e))} title={sm?undefined:'Duplo clique para editar a duração'}>
+              </td>,
+dur:<td onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'dur',e))} title={sm?undefined:'Duplo clique para editar a duração'}>
                 {(isEditing(id,'dur')&&!sm)
                   ? <SchInlineInput type="number" value={durOf(t)} onSave={v=>{ onTaskField(t.id,{duration:Math.max(1,Number(v)||1)}); endEdit(); }} onCancel={endEdit}/>
                   : (sm?(r.dur?r.dur+' d':'—'):(durOf(t)+' d'))}
-              </td>
-              <td className={(!sm&&(hasP||t.startMetaFixed))?'sch-auto':''} onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'start',e))} title={sm?undefined:'Duplo clique para fixar a data de início'}>
+              </td>,
+start:<td className={(!sm&&(hasP||t.startMetaFixed))?'sch-auto':''} onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'start',e))} title={sm?undefined:'Duplo clique para fixar a data de início'}>
                 {(isEditing(id,'start')&&!sm)
                   ? <SchInlineInput type="date" value={t.startMetaFixed||t.startMeta||''} onSave={v=>{ const cur=t.startMetaFixed||t.startMeta||''; if((v||'')!==(cur||'')) onTaskField(t.id,{startMetaFixed:v||null}); endEdit(); }} onCancel={endEdit}/>
                   : <React.Fragment>{fmt(startV)}{(!sm&&t.startMetaFixed)?<i className="ti ti-lock sch-lockico" title="Data fixada manualmente"/>:null}</React.Fragment>}
-              </td>
-              <td className={sm?'':'sch-auto'} onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'end',e))} title={sm?undefined:'Duplo clique para fixar a data de término'}>
+              </td>,
+end:<td className={sm?'':'sch-auto'} onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'end',e))} title={sm?undefined:'Duplo clique para fixar a data de término'}>
                 {(isEditing(id,'end')&&!sm)
                   ? <SchInlineInput type="date" value={t.endMetaFixed||t.endMeta||''} onSave={v=>{ const cur=t.endMetaFixed||t.endMeta||''; if((v||'')!==(cur||'')) onTaskField(t.id,{endMetaFixed:v||null}); endEdit(); }} onCancel={endEdit}/>
                   : <React.Fragment>{fmt(endV)}{(!sm&&t.endMetaFixed)?<i className="ti ti-lock sch-lockico" title="Data fixada manualmente"/>:null}</React.Fragment>}
-              </td>
-              <td className="sch-bl">{fmt(blS)}</td>
-              <td className="sch-bl">{fmt(blE)}</td>
-              <td className="sch-bl">{blD?blD+' d':'—'}</td>
-              <td className="sch-sector" onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'sector',e))} title={sm?undefined:'Duplo clique para editar o setor'}>
+              </td>,
+blS:<td className="sch-bl">{fmt(blS)}</td>,
+blE:<td className="sch-bl">{fmt(blE)}</td>,
+blD:<td className="sch-bl">{blD?blD+' d':'—'}</td>,
+sector:<td className="sch-sector" onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'sector',e))} title={sm?undefined:'Duplo clique para editar o setor'}>
                 {(isEditing(id,'sector')&&!sm)
                   ? <SchInlineInput type="select" value={t.sector||''} options={<React.Fragment>{[''].concat(SECTORS_ALL).map(s=><option key={s||'_'} value={s}>{s?setorSigla(s):'—'}</option>)}{t.sector&&!SECTORS_ALL.includes(t.sector)?<option value={t.sector}>{setorSigla(t.sector)}</option>:null}</React.Fragment>} onSave={v=>{ onTaskField(t.id,{sector:v}); endEdit(); }} onCancel={endEdit}/>
                   : (sm?'':(t.sector?setorSigla(t.sector):'—'))}
-              </td>
-              <td className="sch-peso" onDoubleClick={t.isMeta?(e=>beginEdit(t.id,'peso',e)):undefined} title={t.isMeta?(sm?'Peso da meta — ao salvar, é distribuído igualmente entre as subtarefas marcadas como meta':'Duplo clique para editar o peso da meta'):undefined}>
+              </td>,
+peso:<td className="sch-peso" onDoubleClick={t.isMeta?(e=>beginEdit(t.id,'peso',e)):undefined} title={t.isMeta?(sm?'Peso da meta — ao salvar, é distribuído igualmente entre as subtarefas marcadas como meta':'Duplo clique para editar o peso da meta'):undefined}>
                 {(isEditing(id,'peso')&&t.isMeta)
                   ? <SchInlineInput type="number" value={t.metaPeso!=null?t.metaPeso:''} onSave={v=>{ const n=(v===''||v==null)?null:Number(v); onSetMetaPeso(t.id,(n==null||isNaN(n))?null:n); endEdit(); }} onCancel={endEdit}/>
                   : (t.isMeta?(t.metaPeso!=null?t.metaPeso:<span className="sch-mst-empty">—</span>):'')}
-              </td>
-              <td className="sch-pred">{sm?'':depSummary(t.id)}</td>
+              </td>,
+              pred:<td className="sch-pred">{sm?'':depSummary(t.id)}</td>,
+              }; return colsVis.map(c=><React.Fragment key={c.key}>{C[c.key]}</React.Fragment>); })()}
               <td className="sch-c-fill"></td>
             </tr>); })}
           </tbody>
