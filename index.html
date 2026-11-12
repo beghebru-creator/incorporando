@@ -3197,7 +3197,7 @@ function ewAutoSides(a,b){
   return dy>=0?['S','N']:['N','S'];
 }
 function ewAnchor(r,sd,t){
-  if(t==null||r.type==='decisao'||r.type==='conector') t=.5;
+  if(t==null||((r.type==='decisao'||r.type==='conector')&&Math.abs(t-.5)>1e-6)) t=.5;
   return sd==='N'?{x:r.x+r.w*t,y:r.y}: sd==='S'?{x:r.x+r.w*t,y:r.y+r.h}: sd==='E'?{x:r.x+r.w,y:r.y+r.h*t}:{x:r.x,y:r.y+r.h*t};
 }
 function ewBlocked(ax,v,a1,a2,obst){
@@ -3240,6 +3240,23 @@ function ewClean(pts){
 }
 /* a, b = retângulos; s1/s2 = lados; t1/t2 = posição no lado; mid = ajuste manual */
 function ewRoute(a,b,s1,s2,t1,t2,obst,manualMid,manualAx){
+  /* Sem degrauzinho: se as duas tarefas estão frente a frente e as faixas
+     delas se sobrepõem, as duas pontas usam a MESMA altura (ou o mesmo x) →
+     linha 100% reta. Só quando os pontos não foram fixados pela pessoa
+     (t1/t2 = null). Losango/conector continuam saindo pela ponta. */
+  const oposto={S:'N',N:'S',E:'W',W:'E'}[s1]===s2;
+  if(t1==null&&t2==null&&oposto){
+    const horiz=s1==='E'||s1==='W';
+    const faixa=r=>{ const fix=r.type==='decisao'||r.type==='conector';
+      const c=horiz?r.y+r.h/2:r.x+r.w/2, m=12;
+      return fix?[c,c]:(horiz?[r.y+m,r.y+r.h-m]:[r.x+m,r.x+r.w-m]); };
+    const A=faixa(a), B=faixa(b), lo=Math.max(A[0],B[0]), hi=Math.min(A[1],B[1]);
+    if(lo<=hi){
+      const ca=horiz?a.y+a.h/2:a.x+a.w/2, cb=horiz?b.y+b.h/2:b.x+b.w/2;
+      const v=(ca>=lo&&ca<=hi)?ca:(cb>=lo&&cb<=hi)?cb:(lo+hi)/2;
+      t1=horiz?(v-a.y)/a.h:(v-a.x)/a.w; t2=horiz?(v-b.y)/b.h:(v-b.x)/b.w;
+    }
+  }
   const p1=ewAnchor(a,s1,t1), p2=ewAnchor(b,s2,t2);
   let L=18;
   const facing={S:'N',N:'S',E:'W',W:'E'}[s1]===s2;
@@ -3322,7 +3339,7 @@ function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePo
     if(!a||!b) return {pts:[{x:sourceX,y:sourceY},{x:targetX,y:targetY}],mid:null,midPt:null};
     const sd=sides.get(id)||{s1:'E',s2:'W',t1:.5,t2:.5};
     const manual=typeof d.mid==='number'||!!d.sa||!!d.ta;
-    const r=ewRoute(a,b,sd.s1,sd.s2,d.sa&&d.t1!=null?d.t1:.5,d.ta&&d.t2!=null?d.t2:.5,obstacles,d.mid,d.midAx);
+    const r=ewRoute(a,b,sd.s1,sd.s2,d.sa&&d.t1!=null?d.t1:null,d.ta&&d.t2!=null?d.t2:null,obstacles,d.mid,d.midAx);
     if(manual||ewPathClear(r.pts,obstacles)) return r;
     /* Só rotas no estilo EW (no máximo 3 trechos, sem zigue-zague). Se a
        combinação automática raspa numa tarefa, testa os outros lados e fica
@@ -3330,7 +3347,7 @@ function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePo
        mantém a automática (como o EW faz). */
     let best=null, bestScore=Infinity;
     for(const s1 of ['E','W','N','S']) for(const s2 of ['E','W','N','S']){
-      const c=ewRoute(a,b,s1,s2,.5,.5,obstacles);
+      const c=ewRoute(a,b,s1,s2,null,null,obstacles);
       if(!ewPathClear(c.pts,obstacles)) continue;
       let len=0; for(let k=1;k<c.pts.length;k++) len+=Math.abs(c.pts[k].x-c.pts[k-1].x)+Math.abs(c.pts[k].y-c.pts[k-1].y);
       const sc=len+(c.pts.length-2)*90;
