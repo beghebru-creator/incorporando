@@ -3989,6 +3989,54 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
           const pos=modo==='top'?{x:n.position.x,y:top}:modo==='left'?{x:left,y:n.position.y}:{x:n.position.x,y:mid-r.h/2};
           return {...n,position:pos}; }));
       },
+      /* Organizar automaticamente por precedência — algoritmo do Fluxograma EW
+         (colunas por nível de precedência, ordem por média das predecessoras,
+         retornos/ciclos ignorados), adaptado às caixas de fase: cada fase
+         vira uma faixa, uma abaixo da outra, e as colunas (níveis) são as
+         mesmas em todas as fases. Compatibilização não conta. Desfazível. */
+      autoLayout:()=>{
+        const tasks=nodesRef.current.filter(n=>n.type==='task'&&!n.hidden);
+        if(!tasks.length) return;
+        pushHistory();
+        const ids=new Set(tasks.map(n=>n.id));
+        const R=new Map(tasks.map(n=>[n.id,ewRectOf(n)]));
+        const out={}, inc={}; tasks.forEach(n=>{ out[n.id]=[]; inc[n.id]=[]; });
+        edgesRef.current.forEach(e=>{ const k=e.data&&e.data.kind; if(k==='compat') return; if(ids.has(e.source)&&ids.has(e.target)&&e.source!==e.target){ out[e.source].push(e); inc[e.target].push(e); } });
+        /* ciclos (retornos) */
+        const st={}, back=new Set();
+        const roots=tasks.filter(n=>!inc[n.id].length).sort((a,b)=>a.position.x-b.position.x).concat([...tasks].sort((a,b)=>a.position.x-b.position.x));
+        const dfs=u=>{ st[u]=1; for(const e of out[u]){ if(st[e.target]===1) back.add(e.id); else if(!st[e.target]) dfs(e.target); } st[u]=2; };
+        roots.forEach(n=>{ if(!st[n.id]) dfs(n.id); });
+        tasks.forEach(n=>{ out[n.id].forEach(e=>{ if((e.data&&e.data.kind)==='retorno') back.add(e.id); }); });
+        /* níveis (ordem topológica) */
+        const lvl={}, indeg={};
+        tasks.forEach(n=>{ indeg[n.id]=inc[n.id].filter(e=>!back.has(e.id)).length; lvl[n.id]=0; });
+        const q=tasks.filter(n=>!indeg[n.id]).map(n=>n.id);
+        while(q.length){ const u=q.shift(); for(const e of out[u]){ if(back.has(e.id)) continue; lvl[e.target]=Math.max(lvl[e.target],lvl[u]+1); if(--indeg[e.target]===0) q.push(e.target); } }
+        const maxW=Math.max(...tasks.map(n=>R.get(n.id).w)), maxH=Math.max(...tasks.map(n=>R.get(n.id).h));
+        const colW=Math.ceil((maxW+70)/10)*10, gap=Math.ceil((maxH+32)/10)*10;
+        const x0=Math.round(Math.min(...tasks.map(n=>n.position.x))/10)*10;
+        let bandTop=Math.round(Math.min(...tasks.map(n=>n.position.y))/10)*10;
+        const fases=PHASES.map(p=>p.id); tasks.forEach(n=>{ const f=(n.data&&n.data.phase)||'fase1'; if(!fases.includes(f)) fases.push(f); });
+        const cy={}, pos={};
+        fases.forEach(f=>{
+          const fs=tasks.filter(n=>((n.data&&n.data.phase)||'fase1')===f); if(!fs.length) return;
+          const cols={}; fs.forEach(n=>{ (cols[lvl[n.id]]=cols[lvl[n.id]]||[]).push(n); });
+          const keys=Object.keys(cols).map(Number).sort((a,b)=>a-b);
+          const rows=Math.max(...keys.map(k=>cols[k].length));
+          keys.forEach(k=>{
+            const col=cols[k];
+            col.forEach(n=>{ const ps=inc[n.id].filter(e=>!back.has(e.id)).map(e=>cy[e.source]).filter(v=>v!=null); n._b=ps.length?ps.reduce((a,b)=>a+b,0)/ps.length:n.position.y; });
+            col.sort((a,b)=>a._b-b._b);
+            const top=bandTop+(rows-col.length)*gap/2;
+            col.forEach((n,i)=>{ const r=R.get(n.id), c=top+i*gap+gap/2; pos[n.id]={x:Math.round((x0+k*colW)/10)*10,y:Math.round((c-r.h/2)/10)*10}; cy[n.id]=c; delete n._b; });
+          });
+          bandTop+=rows*gap+LANE_PAD*2+PHASE_GAP;
+        });
+        setNodes(ns=>ns.map(n=>pos[n.id]?{...n,position:pos[n.id]}:n));
+        setEdges(eds=>eds.map(e=>{ if(!ids.has(e.source)) return e; const d={...e.data}; delete d.sa; delete d.ta; delete d.t1; delete d.t2; delete d.mid; delete d.midAx; return {...e,data:d}; }));
+        setTimeout(()=>{ if(rfi.current) rfi.current.fitView({padding:0.08,duration:300}); },60);
+      },
       /* SVG do fluxograma (com legenda) — usado pelo Exportar PNG/SVG. */
       exportSvg:(titulo)=>buildFlowSvg(nodesRef.current,edgesRef.current,swimlaneDataRef.current,titulo),
       /* Vínculo editado no modal da tarefa → atualiza as linhas do desenho. */
@@ -17856,6 +17904,7 @@ function App({currentUser}){
                   <button className="tb-btn" onClick={()=>apiRef.current.undo()} title="Desfazer (Ctrl+Z)"><i className="ti ti-arrow-back-up"/> Desfazer</button>
                   <button className="tb-btn" disabled={sel.nodes!==2} onClick={()=>apiRef.current.connectSelected()}><i className="ti ti-git-merge"/> Conectar 2 nós</button>
                   <button className="tb-btn" disabled={sel.edges!==1} onClick={()=>apiRef.current.reverseSelected()}><i className="ti ti-arrow-back-up"/> Inverter</button>
+                  <button className="tb-btn" onClick={()=>{ if(window.confirm('Organizar automaticamente todas as tarefas por precedência (como no fluxograma da EW)? As posições atuais e os ajustes manuais das linhas serão substituídos. Dá para desfazer.')) apiRef.current.autoLayout(); }} title="Organizar automaticamente por precedência"><i className="ti ti-sitemap"/> Organizar</button>
                   <span className="tb-align" title="Alinhar as tarefas selecionadas (selecione 2 ou mais com Shift)">
                     <button className="tb-btn" disabled={sel.nodes<2} onClick={()=>apiRef.current.alignSelected('top')} title="Alinhar pelo topo"><i className="ti ti-layout-align-top"/></button>
                     <button className="tb-btn" disabled={sel.nodes<2} onClick={()=>apiRef.current.alignSelected('middle')} title="Alinhar pelo centro (mesma altura)"><i className="ti ti-layout-align-middle"/></button>
