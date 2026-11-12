@@ -3995,36 +3995,22 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
      os pontos estão alinhados). Interceptamos a mudança de posição do próprio
      React Flow (padrão oficial das "helper lines"), então não há tremor. */
   const alignInfoRef=useRef({x:null,y:null});
+  /* Posicionamento igual ao Fluxograma EW: a tarefa encaixa numa grade de
+     10px enquanto é arrastada (uma ou várias selecionadas) e fica EXATAMENTE
+     onde foi solta. Não há mais "ímã" puxando a tarefa para alinhar com as
+     vizinhas/conectadas — era isso que a fazia pular de lugar. */
   const handleNodesChange=useCallback((changes)=>{
-    const only = changes.length===1 ? changes[0] : null;
-    if(only && only.type==='position' && only.dragging && only.position){
-      const node=nodesRef.current.find(n=>n.id===only.id);
-      if(node && node.type==='task'){
-        const dd=nodeDims(node);
-        const cx=only.position.x+dd.w/2, cy=only.position.y+dd.h/2;
-        const connIds=new Set();
-        edgesRef.current.forEach(e=>{ if(e.source===only.id)connIds.add(e.target); if(e.target===only.id)connIds.add(e.source); });
-        let bestX=null,bestXs=Infinity, bestY=null,bestYs=Infinity;
-        nodesRef.current.forEach(n=>{
-          if(n.id===only.id||n.type!=='task') return;
-          const nd=nodeDims(n);
-          const ncx=n.position.x+nd.w/2, ncy=n.position.y+nd.h/2;
-          const conn=connIds.has(n.id);
-          const thr=conn?42:16;                 /* tarefa conectada tem ímã mais forte (alinhar = linha reta) */
-          const bonus=conn?1000:0;              /* e prioridade absoluta */
-          const dX=Math.abs(ncx-cx); if(dX<=thr){ const s=dX-bonus; if(s<bestXs){bestXs=s;bestX=ncx;} }
-          const dY=Math.abs(ncy-cy); if(dY<=thr){ const s=dY-bonus; if(s<bestYs){bestYs=s;bestY=ncy;} }
-        });
-        /* Grade de 10px (motor EW): sem ímã de alinhamento, a tarefa encaixa na grade. */
-        const nx = bestX!==null ? bestX-dd.w/2 : Math.round(only.position.x/10)*10;
-        const ny = bestY!==null ? bestY-dd.h/2 : Math.round(only.position.y/10)*10;
-        only.position={x:nx,y:ny};
-        if(only.positionAbsolute) only.positionAbsolute={x:nx,y:ny};
-        alignInfoRef.current={x:bestX,y:bestY};
+    changes.forEach(ch=>{
+      if(ch.type==='position'&&ch.dragging&&ch.position){
+        const node=nodesRef.current.find(n=>n.id===ch.id);
+        if(node&&node.type==='task'){
+          const nx=Math.round(ch.position.x/10)*10, ny=Math.round(ch.position.y/10)*10;
+          ch.position={x:nx,y:ny};
+          if(ch.positionAbsolute) ch.positionAbsolute={x:nx,y:ny};
+        }
       }
-    } else if(only && only.type==='position' && only.dragging===false){
-      alignInfoRef.current={x:null,y:null};
-    }
+    });
+    alignInfoRef.current={x:null,y:null};
     onNodesChange(changes);
   },[onNodesChange]);
 
