@@ -1725,12 +1725,35 @@
   /* Alças de dobra da linha (edição manual da rota) — só aparecem com a
      linha selecionada em modo edição; arrastam sempre perpendicular ao
      próprio segmento, então a linha nunca vira diagonal. */
-  .tt-picker{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;}
-  @media (max-width:640px){.tt-picker{grid-template-columns:repeat(3,minmax(0,1fr));}}
-  .tt-opt{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text2);font-size:10.5px;line-height:1.15;cursor:pointer;font-family:inherit;text-align:center;}
-  .tt-opt:hover:not(:disabled){border-color:var(--accent);color:var(--text);}
-  .tt-opt.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--text);font-weight:600;}
-  .tt-opt:disabled{opacity:.55;cursor:default;}
+  .node-code{position:absolute;top:5px;left:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.3px;pointer-events:none;}
+  .rf-predef .node-code{left:16px;}
+  /* Modal da tarefa: seções recolhíveis (Detalhes, Datas, Vínculos, Atas, Contratos) */
+  .nm-sec{border:1px solid var(--border);border-radius:9px;margin-bottom:8px;background:var(--surface2);overflow:hidden;}
+  .nm-sec-h{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;background:transparent;border:none;color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left;}
+  .nm-sec-h:hover{background:color-mix(in srgb,var(--accent) 7%,transparent);}
+  .nm-sec-h .ti{color:var(--text2);font-size:15px;}
+  .nm-sec-res{flex:1;min-width:0;font-weight:400;font-size:11.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .nm-sec-h .nm-chev{transition:transform .15s;}
+  .nm-sec.aberta .nm-chev{transform:rotate(180deg);}
+  .nm-sec-b{padding:4px 12px 10px;border-top:1px solid var(--border);}
+  .nm-sec-b .fin-vinc-box{margin:6px 0 0;border:none;padding:0;background:transparent;}
+  .nodemodal .cmt-box{max-height:none;}
+  .nodemodal .cmt-novo textarea{min-height:110px;}
+  /* Vínculos (predecessoras / sucessoras / compatibiliza com) — igual ao EW */
+  .vk-grp{margin-top:8px;}
+  .vk-tit{font-size:11px;color:var(--text2);margin-bottom:4px;letter-spacing:.3px;}
+  .vk-row{display:flex;gap:6px;align-items:center;margin-bottom:5px;}
+  .vk-row select{min-width:0;}
+  .vk-row .vk-task{flex:1;}
+  .vk-row .vk-kind{width:118px;flex-shrink:0;}
+  .vk-btn{width:28px;height:28px;flex-shrink:0;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+  .vk-btn:hover:not(:disabled){color:var(--text);border-color:var(--accent);}
+  .vk-btn:disabled{opacity:.4;cursor:default;}
+  .vk-add select{border-style:dashed;}
+  .vk-prop{font-size:10px;color:var(--amber);margin-left:4px;}
+  .tt-sel{position:relative;}
+  .tt-sel-ic{position:absolute;left:8px;top:50%;transform:translateY(-50%);display:flex;color:var(--text2);pointer-events:none;}
+  .tt-sel select.form-input{padding-left:30px;}
   .tb-select{appearance:auto;padding-right:6px;}
   .edge-mid-handle{fill:var(--accent);stroke:var(--surface);stroke-width:1.5px;pointer-events:all;}
   .edge-mid-handle:hover{fill:var(--edge-sel);}
@@ -2181,15 +2204,16 @@ function TaskTypeIcon({type,size=26}){
     default: return svg(<rect {...c} x="3" y="4" width="30" height="16" rx="1"/>);
   }
 }
+/* Campo "Tipo": a mesma lista de sempre, com o símbolo pequeno da forma ao
+   lado do nome (desenho à esquerda do campo + caractere na lista). */
+const TASK_TYPE_GLIFO={'processo':'▭','decisao':'◇','terminacao':'⬭','documentos':'▤','processo-predefinido':'◫','conector':'○'};
 function TaskTypePicker({value,onChange,disabled}){
   return(
-    <div className="tt-picker" role="radiogroup" aria-label="Tipo da tarefa">
-      {TASK_TYPES.map(t=>(
-        <button key={t.id} type="button" role="radio" aria-checked={value===t.id} disabled={disabled}
-          className={'tt-opt'+(value===t.id?' on':'')} onClick={()=>!disabled&&onChange(t.id)} title={t.label}>
-          <TaskTypeIcon type={t.id}/><span>{t.label}</span>
-        </button>
-      ))}
+    <div className="tt-sel">
+      <span className="tt-sel-ic"><TaskTypeIcon type={value} size={13}/></span>
+      <select className="form-input" value={value} disabled={disabled} onChange={e=>onChange(e.target.value)}>
+        {TASK_TYPES.map(t=><option key={t.id} value={t.id}>{(TASK_TYPE_GLIFO[t.id]||'')+'  '+t.label}</option>)}
+      </select>
     </div>
   );
 }
@@ -2801,6 +2825,7 @@ function ChecklistIndicator({checklist}){
 
 function TaskCardBody({id,data}){
   return(<>
+    {data.code&&<span className="node-code" title="Código da tarefa">{data.code}</span>}
     <div className="node-top-right-icons">
       <ChecklistIndicator checklist={data.checklist}/>
       <NotesIndicator notes={data.notes} comentarios={data.comentarios}/>
@@ -3532,7 +3557,7 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
       return{
         id:t.id, type:'task', zIndex:1000, position:{x:t.x??0,y:t.y??0},
         width:t.w||dims.w, height:t.h||dims.h,
-        data:{label:t.label,sector:t.sector,status:t.status,notes:t.notes||'',
+        data:{label:t.label,code:t.code||'',sector:t.sector,status:t.status,notes:t.notes||'',
               phase:t.phase||'fase1',taskType:t.taskType||'processo',
               clickupDate:t.clickupDate||'',startDate:t.startDate||'',endDate:t.endDate||'',
               baselineStart:t.baselineStart||'',baselineEnd:t.baselineEnd||'',isMeta:!!t.isMeta,
@@ -3754,6 +3779,25 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
                  data:{...e.data, manualPts:mp, sa:e.data&&e.data.ta, ta:e.data&&e.data.sa, t1:e.data&&e.data.t2, t2:e.data&&e.data.t1}};
         }));
         setSelEdges([]);
+      },
+      /* Vínculo editado no modal da tarefa → atualiza as linhas do desenho. */
+      linkOp:(op)=>{
+        const S=String;
+        const sem=(eds,a,b)=>eds.filter(e=>!(S(e.source)===S(a)&&S(e.target)===S(b)));
+        const nova=(from,to,kind)=>{
+          const sn=nodesRef.current.find(n=>S(n.id)===S(from)), tn=nodesRef.current.find(n=>S(n.id)===S(to));
+          if(!sn||!tn) return null;
+          const pr=buildEdgeParams(sn,tn);
+          return {id:`e-${sn.id}-${tn.id}`,source:sn.id,target:tn.id,sourceHandle:pr.sourceHandle,targetHandle:pr.targetHandle,type:pr.type,
+            ...edgeMarkers(kind),style:{...EDGE_STYLE,zIndex:0},data:{...pr.data,...(kind&&kind!=='prec'?{kind}:{})},reconnectable:true};
+        };
+        setEdges(eds=>{
+          if(op.type==='add'){ const e=nova(op.from,op.to,op.kind); return e?stripEdgePair(eds,op.from,op.to).concat(e):eds; }
+          if(op.type==='remove') return sem(eds,op.from,op.to);
+          if(op.type==='kind') return eds.map(e=>(S(e.source)===S(op.from)&&S(e.target)===S(op.to))?{...e,...(e.data&&e.data.proposto?{}:edgeMarkers(op.kind)),data:{...e.data,kind:op.kind==='prec'?undefined:op.kind}}:e);
+          if(op.type==='move'){ const e=nova(op.nfrom,op.nto,op.kind); const r=sem(eds,op.from,op.to); return e?r.concat(e):r; }
+          return eds;
+        });
       },
       /* Tipo da linha selecionada (Precedência/Retorno/Compatibilização/Oculto) */
       setSelectedEdgeKind:(kind)=>{
@@ -4148,8 +4192,91 @@ function ComentariosTarefa({lista,notaAntiga,onChange}){
     </div>
   );
 }
-function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contratosVinc,onOpenContrato,onComentarios,pedidosTarefa,projId,projects}){
+/* Seção recolhível do modal da tarefa: fica fechada e mostra um resumo; a
+   pessoa abre só quando quer editar — sobra espaço para os comentários. */
+function NmSecao({icone,titulo,resumo,children,inicial}){
+  const[aberta,setAberta]=useState(!!inicial);
+  return(
+    <div className={'nm-sec'+(aberta?' aberta':'')}>
+      <button type="button" className="nm-sec-h" onClick={()=>setAberta(v=>!v)} aria-expanded={aberta}>
+        <i className={'ti '+icone}/><span>{titulo}</span>
+        <span className="nm-sec-res">{resumo||''}</span>
+        <i className="ti ti-chevron-down nm-chev"/>
+      </button>
+      {aberta&&<div className="nm-sec-b">{children}</div>}
+    </div>
+  );
+}
+const VINC_TIPOS=[['prec','Preced.'],['retorno','Retorno'],['oculto','Oculto'],['compat','Compat.']];
+/* Predecessoras, Sucessoras e Compatibiliza com — listas editáveis como no
+   Fluxograma EW (v5): ir para o item, trocar o item vinculado, trocar o tipo,
+   remover e adicionar. As mudanças valem na hora (fluxo e cronograma). */
+function VinculosTarefa({taskId,tarefas,conexoes,onVinculo,onAbrirTarefa,editavel}){
+  const id=String(taskId);
+  const lista=(tarefas||[]).filter(t=>t&&!t.deleted&&String(t.id)!==id)
+    .map(t=>({id:String(t.id),nome:(t.code?t.code+' · ':'')+(t.label||'(sem nome)')}))
+    .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR',{numeric:true}));
+  const nomeDe=x=>{ const t=lista.find(o=>o.id===String(x)); return t?t.nome:'(tarefa removida)'; };
+  const cs=(conexoes||[]).filter(c=>c&&c.from!=null&&c.to!=null);
+  const kindOf=c=>c.kind||'prec';
+  const pre=cs.filter(c=>String(c.to)===id&&kindOf(c)!=='compat');
+  const suc=cs.filter(c=>String(c.from)===id&&kindOf(c)!=='compat');
+  const cmp=cs.filter(c=>kindOf(c)==='compat'&&(String(c.from)===id||String(c.to)===id));
+  const existe=(a,b)=>cs.some(c=>(String(c.from)===String(a)&&String(c.to)===String(b))||(String(c.from)===String(b)&&String(c.to)===String(a)));
+  const outro=(c)=>String(c.from)===id?String(c.to):String(c.from);
+  const Linha=({c})=>{
+    const o=outro(c);
+    return(
+      <div className="vk-row">
+        <button type="button" className="vk-btn" title="Ir para esta tarefa" onClick={()=>onAbrirTarefa&&onAbrirTarefa(o)}><i className="ti ti-arrow-up-right"/></button>
+        <select className="form-input vk-task" value={o} disabled={!editavel} onChange={e=>{
+          const n=e.target.value; if(n===o) return;
+          if(existe(n,id)){ window.alert('Essas tarefas já estão ligadas.'); return; }
+          const nf=String(c.from)===id?id:n, nt=String(c.from)===id?n:id;
+          onVinculo({type:'move',from:c.from,to:c.to,nfrom:nf,nto:nt,kind:kindOf(c)});
+        }}>
+          {!lista.some(t=>t.id===o)&&<option value={o}>{nomeDe(o)}</option>}
+          {lista.map(t=><option key={t.id} value={t.id}>{t.nome}</option>)}
+        </select>
+        <select className="form-input vk-kind" value={kindOf(c)} disabled={!editavel} onChange={e=>onVinculo({type:'kind',from:c.from,to:c.to,kind:e.target.value})}>
+          {VINC_TIPOS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+        </select>
+        <button type="button" className="vk-btn" title="Remover vínculo" disabled={!editavel} onClick={()=>onVinculo({type:'remove',from:c.from,to:c.to})}><i className="ti ti-x"/></button>
+        {c.status==='proposto'&&<span className="vk-prop">proposto</span>}
+      </div>
+    );
+  };
+  const Add=({papel})=>{
+    const[tp,setTp]=useState('prec');
+    if(!editavel) return null;
+    const txt=papel==='pre'?'+ Adicionar predecessora…':papel==='suc'?'+ Adicionar sucessora…':'+ Adicionar compatibilização…';
+    return(
+      <div className="vk-row vk-add">
+        {papel!=='cmp'&&<select className="form-input vk-kind" value={tp} onChange={e=>setTp(e.target.value)}>
+          {VINC_TIPOS.slice(0,3).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+        </select>}
+        <select className="form-input vk-task" value="" onChange={e=>{
+          const n=e.target.value; if(!n) return;
+          if(existe(n,id)){ window.alert('Essas tarefas já estão ligadas.'); return; }
+          const from=papel==='suc'?id:n, to=papel==='suc'?n:id;
+          onVinculo({type:'add',from,to,kind:papel==='cmp'?'compat':tp});
+        }}>
+          <option value="">{txt}</option>
+          {lista.map(t=><option key={t.id} value={t.id}>{t.nome}</option>)}
+        </select>
+      </div>
+    );
+  };
+  return(<>
+    <div className="vk-grp"><div className="vk-tit">Predecessoras ({pre.length})</div>{pre.map(c=><Linha key={'p'+c.from+'-'+c.to} c={c}/>)}<Add papel="pre"/></div>
+    <div className="vk-grp"><div className="vk-tit">Sucessoras ({suc.length})</div>{suc.map(c=><Linha key={'s'+c.from+'-'+c.to} c={c}/>)}<Add papel="suc"/></div>
+    <div className="vk-grp"><div className="vk-tit">Compatibiliza com ({cmp.length})</div>{cmp.map(c=><Linha key={'c'+c.from+'-'+c.to} c={c}/>)}<Add papel="cmp"/></div>
+  </>);
+}
+
+function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contratosVinc,onOpenContrato,onComentarios,pedidosTarefa,projId,projects,tarefas,conexoes,onVinculo,onAbrirTarefa}){
   const[label,setLabel]=useState(node.data.label);
+  const[code,setCode]=useState(node.data.code||'');
   const[status,setStatus]=useState(node.data.status);
   const[sector,setSector]=useState(node.data.sector);
   const[taskType,setTaskType]=useState(node.data.taskType||'processo');
@@ -4194,84 +4321,109 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
           </div>
         )}
         <div className="modal-field" style={{display:'flex',gap:10}}>
-          <div style={{flex:2}}>
+          <div style={{flex:'0 0 110px'}}>
+            <label className="modal-field-label">Código</label>
+            <input className="form-input" value={code} disabled={!pEstrutura} onChange={e=>setCode(e.target.value.toUpperCase())} placeholder="Ex.: URB01" maxLength={12}/>
+          </div>
+          <div style={{flex:1}}>
             <label className="modal-field-label">Nome da tarefa</label>
             <input className="form-input" value={label} disabled={!pEstrutura} onChange={e=>setLabel(e.target.value)} placeholder="Nome da tarefa"/>
           </div>
-          <div style={{flex:1}}>
-            <label className="modal-field-label">Fase</label>
-            <select className="form-input" value={phaseId} disabled={!pEstrutura} onChange={e=>setPhaseId(e.target.value)}>
-              {PHASES.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
         </div>
-        <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-          <div style={{flex:1}}>
-            <label className="modal-field-label">Setor</label>
-            <select className="form-input" value={sector} disabled={!pMeta} onChange={e=>setSector(e.target.value)} title={!pMeta?'Só administradores mudam o setor':''}>
-              {SECTORS_ALL.map(s=><option key={s} value={s}>{setorSigla(s)}</option>)}
-              {sector&&!SECTORS_ALL.includes(sector)?<option value={sector}>{setorSigla(sector)}</option>:null}
-            </select>
-          </div>
-          <div style={{flex:'1 1 100%',order:3}}>
-            <label className="modal-field-label">Tipo</label>
-            <TaskTypePicker value={taskType} disabled={!pEstrutura} onChange={setTaskType}/>
-          </div>
-          <div style={{flex:1}}>
-            <label className="modal-field-label">Status</label>
-            <select className="form-input" value={status} disabled={!pStatus} onChange={e=>setStatus(e.target.value)}>
-              {STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="modal-field">
-          <label className="modal-field-label">Responsável</label>
-          <select className="form-input" value={respEmail} disabled={!pMeta} onChange={e=>setRespEmail(e.target.value)} title={!pMeta?'Só administradores mudam o responsável':''}>
-            <option value="">— Sem responsável —</option>
-            {listaUsers.map(u=><option key={u.email} value={u.email}>{u.nome||u.email}</option>)}
-            {respForaLista?<option value={respEmail}>{node.data.responsavelNome||respEmail}</option>:null}
-          </select>
-        </div>
-        <div className="modal-field" style={{display:'flex',gap:10}}>
-          <div style={{flex:1}}>
-            <label className="modal-field-label">Data de início</label>
-            <input type="date" className="form-input" value={startDate} disabled={!pDatas} onChange={e=>setStartDate(e.target.value)}/>
-          </div>
-          <div style={{flex:1}}>
-            <label className="modal-field-label">Data de fim</label>
-            <input type="date" className="form-input" value={endDate} disabled={!pDatas} onChange={e=>setEndDate(e.target.value)}/>
-          </div>
-        </div>
-        <div className="modal-field" style={{display:'flex',gap:10}}>
-          <div style={{flex:1}}>
-            <label className="modal-field-label">Início meta</label>
-            <input type="date" className="form-input" value={startMeta} disabled={!metaEditable||!pDatas} onChange={e=>setStartMeta(e.target.value)} title={metaEditable?'Digite para fixar; deixe em branco para o motor calcular':'A data meta é editada nas abas Cronograma e Gantt'}/>
-          </div>
-          <div style={{flex:1}}>
-            <label className="modal-field-label">Término meta</label>
-            <input type="date" className="form-input" value={endMeta} disabled={!metaEditable||!pDatas} onChange={e=>setEndMeta(e.target.value)} title={metaEditable?'Digite para fixar o término; deixe em branco para o motor calcular':'Calculado no Cronograma — igual em todas as abas'}/>
-          </div>
-        </div>
-        <div className="modal-field">
+        {(()=>{
+          const fase=(PHASES.find(p=>p.id===phaseId)||{}).name||'';
+          const tipo=(TASK_TYPES.find(t=>t.id===taskType)||{}).label||'';
+          const resumoDet=[fase.split(' – ')[0],setorSigla(sector),status,tipo,respNome].filter(Boolean).join(' · ');
+          const fd=d=>d?fmtISOBR(d):'—';
+          const resumoDatas=(startDate||endDate)?('Início '+fd(startDate)+' · Fim '+fd(endDate)):(endMeta?'Meta '+fd(endMeta):'Sem datas');
+          const cs=(conexoes||[]).filter(c=>c&&c.from!=null&&c.to!=null), sid=String(node.id);
+          const nP=cs.filter(c=>String(c.to)===sid&&c.kind!=='compat').length, nS=cs.filter(c=>String(c.from)===sid&&c.kind!=='compat').length, nC=cs.filter(c=>c.kind==='compat'&&(String(c.from)===sid||String(c.to)===sid)).length;
+          return(<>
+            <NmSecao icone="ti-adjustments-horizontal" titulo="Detalhes" resumo={resumoDet}>
+              <div className="modal-field" style={{marginTop:8}}>
+                <label className="modal-field-label">Fase</label>
+                <select className="form-input" value={phaseId} disabled={!pEstrutura} onChange={e=>setPhaseId(e.target.value)}>
+                  {PHASES.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="modal-field" style={{display:'flex',gap:10}}>
+                <div style={{flex:1}}>
+                  <label className="modal-field-label">Setor</label>
+                  <select className="form-input" value={sector} disabled={!pMeta} onChange={e=>setSector(e.target.value)} title={!pMeta?'Só administradores mudam o setor':''}>
+                    {SECTORS_ALL.map(s=><option key={s} value={s}>{setorSigla(s)}</option>)}
+                    {sector&&!SECTORS_ALL.includes(sector)?<option value={sector}>{setorSigla(sector)}</option>:null}
+                  </select>
+                </div>
+                <div style={{flex:1}}>
+                  <label className="modal-field-label">Tipo</label>
+                  <TaskTypePicker value={taskType} disabled={!pEstrutura} onChange={setTaskType}/>
+                </div>
+                <div style={{flex:1}}>
+                  <label className="modal-field-label">Status</label>
+                  <select className="form-input" value={status} disabled={!pStatus} onChange={e=>setStatus(e.target.value)}>
+                    {STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="modal-field">
+                <label className="modal-field-label">Responsável</label>
+                <select className="form-input" value={respEmail} disabled={!pMeta} onChange={e=>setRespEmail(e.target.value)} title={!pMeta?'Só administradores mudam o responsável':''}>
+                  <option value="">— Sem responsável —</option>
+                  {listaUsers.map(u=><option key={u.email} value={u.email}>{u.nome||u.email}</option>)}
+                  {respForaLista?<option value={respEmail}>{node.data.responsavelNome||respEmail}</option>:null}
+                </select>
+              </div>
+              <label className="chk-inflow"><input type="checkbox" checked={inFlow} disabled={!pEstrutura} onChange={e=>setInFlow(e.target.checked)}/> <span>Mostrar esta tarefa também no <b>Fluxograma</b></span></label>
+            </NmSecao>
+            <NmSecao icone="ti-calendar" titulo="Datas" resumo={resumoDatas}>
+              <div className="modal-field" style={{display:'flex',gap:10,marginTop:8}}>
+                <div style={{flex:1}}>
+                  <label className="modal-field-label">Data de início</label>
+                  <input type="date" className="form-input" value={startDate} disabled={!pDatas} onChange={e=>setStartDate(e.target.value)}/>
+                </div>
+                <div style={{flex:1}}>
+                  <label className="modal-field-label">Data de fim</label>
+                  <input type="date" className="form-input" value={endDate} disabled={!pDatas} onChange={e=>setEndDate(e.target.value)}/>
+                </div>
+              </div>
+              <div className="modal-field" style={{display:'flex',gap:10}}>
+                <div style={{flex:1}}>
+                  <label className="modal-field-label">Início meta</label>
+                  <input type="date" className="form-input" value={startMeta} disabled={!metaEditable||!pDatas} onChange={e=>setStartMeta(e.target.value)} title={metaEditable?'Digite para fixar; deixe em branco para o motor calcular':'A data meta é editada nas abas Cronograma e Gantt'}/>
+                </div>
+                <div style={{flex:1}}>
+                  <label className="modal-field-label">Término meta</label>
+                  <input type="date" className="form-input" value={endMeta} disabled={!metaEditable||!pDatas} onChange={e=>setEndMeta(e.target.value)} title={metaEditable?'Digite para fixar o término; deixe em branco para o motor calcular':'Calculado no Cronograma — igual em todas as abas'}/>
+                </div>
+              </div>
+            </NmSecao>
+            {onVinculo&&<NmSecao icone="ti-git-branch" titulo="Vínculos" resumo={nP+' predecessora(s) · '+nS+' sucessora(s) · '+nC+' compat.'}>
+              <VinculosTarefa taskId={node.id} tarefas={tarefas} conexoes={conexoes} onVinculo={onVinculo} onAbrirTarefa={onAbrirTarefa} editavel={pEstrutura}/>
+            </NmSecao>}
+            {!DEMO_MODE&&<NmSecao icone="ti-notes" titulo="Atas de reunião" resumo="registrar e consultar as atas desta tarefa">
+              <AtasDaTarefa projId={projId} taskId={node.id} taskLabel={node.data.label} projects={projects}/>
+            </NmSecao>}
+            {Array.isArray(contratosVinc)&&contratosVinc.length>0&&(
+              <NmSecao icone="ti-file-dollar" titulo="Contratos vinculados" resumo={String(contratosVinc.length)}>
+                <div className="fin-vinc-box">
+                  {contratosVinc.map(c=>{ const k=finContratoKPIs(c); return (
+                    <div key={c.id} className="fin-vinc-item">
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c._origem&&<span style={{fontSize:10,fontWeight:700,color:'var(--text2)',border:'1px solid var(--border)',borderRadius:6,padding:'0 5px',marginRight:6}}>{c._origem==='prj'?'PRJ':'DI'}</span>}{c.fornecedorNome||'—'} · {c.assunto||'—'}</div>
+                        <div style={{fontSize:11.5,color:'var(--text2)'}}>{finFmtBRL(k.total)} · pago {finFmtBRL(k.pago)} ({k.pct}%){k.prox?` · próx.: ${finParcelaVencLabel(k.prox)}`:''}</div>
+                      </div>
+                      <span className={'fin-badge '+k.status}>{k.status==='quitado'?'Quitado':k.status==='atraso'?'Em atraso':'Ativo'}</span>
+                      {onOpenContrato && <button className="btn-modal ghost" style={{padding:'5px 10px'}} onClick={()=>onOpenContrato(c.id,c._origem)} title={'Abrir o contrato no Controle Financeiro do '+(c._origem==='prj'?'Portal PRJ':'Portal DI')}><i className="ti ti-external-link"/> Abrir</button>}
+                    </div>); })}
+                </div>
+              </NmSecao>
+            )}
+          </>);
+        })()}
+        <div className="modal-field" style={{marginTop:10}}>
           <label className="modal-field-label">Comentários</label>
           <ComentariosTarefa lista={comentarios} notaAntiga={notes} onChange={mudarComentarios}/>
         </div>
-        <label className="chk-inflow"><input type="checkbox" checked={inFlow} disabled={!pEstrutura} onChange={e=>setInFlow(e.target.checked)}/> <span>Mostrar esta tarefa também no <b>Fluxograma</b></span></label>
-        {!DEMO_MODE&&<AtasDaTarefa projId={projId} taskId={node.id} taskLabel={node.data.label} projects={projects}/>}
-        {Array.isArray(contratosVinc)&&contratosVinc.length>0&&(
-          <div className="fin-vinc-box">
-            <div className="modal-field-label" style={{marginBottom:6}}><i className="ti ti-file-dollar"/> Contratos vinculados ({contratosVinc.length})</div>
-            {contratosVinc.map(c=>{ const k=finContratoKPIs(c); return (
-              <div key={c.id} className="fin-vinc-item">
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c._origem&&<span style={{fontSize:10,fontWeight:700,color:'var(--text2)',border:'1px solid var(--border)',borderRadius:6,padding:'0 5px',marginRight:6}}>{c._origem==='prj'?'PRJ':'DI'}</span>}{c.fornecedorNome||'—'} · {c.assunto||'—'}</div>
-                  <div style={{fontSize:11.5,color:'var(--text2)'}}>{finFmtBRL(k.total)} · pago {finFmtBRL(k.pago)} ({k.pct}%){k.prox?` · próx.: ${finParcelaVencLabel(k.prox)}`:''}</div>
-                </div>
-                <span className={'fin-badge '+k.status}>{k.status==='quitado'?'Quitado':k.status==='atraso'?'Em atraso':'Ativo'}</span>
-                {onOpenContrato && <button className="btn-modal ghost" style={{padding:'5px 10px'}} onClick={()=>onOpenContrato(c.id,c._origem)} title={'Abrir o contrato no Controle Financeiro do '+(c._origem==='prj'?'Portal PRJ':'Portal DI')}><i className="ti ti-external-link"/> Abrir</button>}
-              </div>); })}
-          </div>
-        )}
         <div className="modal-footer" style={{justifyContent:'space-between'}}>
           {(onResetSize&&pEstrutura)
             ? <button className="btn-modal ghost" onClick={()=>{onResetSize(node.id);onClose();}} title="Volta a tarefa ao tamanho padrão do tipo"><i className="ti ti-ruler-2"/> Redefinir tamanho</button>
@@ -4281,7 +4433,7 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
             {(pEstrutura||pMeta||pDatas||pStatus) && <button className="btn-modal" onClick={()=>{
               const patch={};
               if(destravada&&deOutro) patch._destravadaPor=EU.nome||EU.email;
-              if(pEstrutura){ patch.label=label.trim()||node.data.label; patch.taskType=taskType; patch.phase=phaseId; patch.inFlow=inFlow; }
+              if(pEstrutura){ patch.label=label.trim()||node.data.label; patch.code=code.trim(); patch.taskType=taskType; patch.phase=phaseId; patch.inFlow=inFlow; }
               if(pMeta){ patch.sector=sector; patch.responsavel=respEmail||''; patch.responsavelNome=respNome; }
               if(pStatus){ patch.status=status; }
               if(pDatas){ patch.startDate=startDate; patch.endDate=endDate; patch.clickupDate=metaDate;
@@ -6173,14 +6325,14 @@ function GanttNewTaskModal({onClose,onCreate,subOf}){
             {PHASES.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
-        <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+        <div className="modal-field" style={{display:'flex',gap:10}}>
           <div style={{flex:1}}>
             <label className="modal-field-label">Setor</label>
             <select className="form-input" value={sector} onChange={e=>setSector(e.target.value)}>
               {SECTORS_ALL.map(s=><option key={s} value={s}>{setorSigla(s)}</option>)}
             </select>
           </div>
-          <div style={{flex:'1 1 100%',order:3}}>
+          <div style={{flex:1}}>
             <label className="modal-field-label">Tipo</label>
             <TaskTypePicker value={taskType} onChange={setTaskType}/>
           </div>
@@ -16165,6 +16317,29 @@ function App({currentUser}){
       return agendarComPedidos(p,{...p,connections:conns});
     }));
   };
+  /* Vínculos editados no modal da tarefa (estilo EW): grava nas conexões do
+     projeto (cronograma) e espelha no Fluxograma aberto. */
+  const vinculoOp=(op)=>{
+    if(PERM.isViewer||!project) return;
+    const S=String, mesma=(c,a,b)=>S(c.from)===S(a)&&S(c.to)===S(b);
+    schedPushHistory();
+    setProjects(ps=>ps.map(p=>{ if(S(p.id)!==S(curId)) return p;
+      const byId={}; (p.tasks||[]).forEach(t=>byId[S(t.id)]=t);
+      let conns=(p.connections||[]).slice();
+      const novo=(from,to,kind)=>{
+        const A=byId[S(from)],B=byId[S(to)]; if(!A||!B) return null;
+        let h={sourceHandle:'sb',targetHandle:'tt'};
+        try{ h=semanticEdge({id:S(A.id),type:'task',data:{phase:A.phase,taskType:A.taskType},position:{x:A.x||0,y:A.y||0},width:A.w,height:A.h},{id:S(B.id),type:'task',data:{phase:B.phase,taskType:B.taskType},position:{x:B.x||0,y:B.y||0},width:B.w,height:B.h}); }catch(e){}
+        return {from:A.id,to:B.id,sourceHandle:h.sourceHandle,targetHandle:h.targetHandle,depType:'TI',lag:0,...(kind&&kind!=='prec'?{kind}:{})};
+      };
+      if(op.type==='add'){ const c=novo(op.from,op.to,op.kind); if(c) conns=conns.filter(x=>!mesma(x,op.from,op.to)&&!mesma(x,op.to,op.from)).concat(c); }
+      else if(op.type==='remove'){ conns=conns.filter(x=>!mesma(x,op.from,op.to)); }
+      else if(op.type==='kind'){ conns=conns.map(x=>mesma(x,op.from,op.to)?{...x,kind:op.kind==='prec'?undefined:op.kind}:x); }
+      else if(op.type==='move'){ const old=conns.find(x=>mesma(x,op.from,op.to)); const c=novo(op.nfrom,op.nto,op.kind); conns=conns.filter(x=>!mesma(x,op.from,op.to)); if(c) conns=conns.concat(old?{...c,depType:old.depType||'TI',lag:old.lag||0}:c); }
+      return agendarComPedidos(p,{...p,connections:conns});
+    }));
+    if(apiRef.current&&apiRef.current.linkOp) apiRef.current.linkOp(op);
+  };
   const schedEditDep=(fromId,toId,patch)=>{
     schedPushHistory();
     setProjects(ps=>ps.map(p=>{ if(String(p.id)!==String(curId)) return p;
@@ -17338,7 +17513,9 @@ function App({currentUser}){
 
       {showPedidos&&project&&<PedidosModal pedidos={project.pedidos||[]} onDecidir={(id,ok)=>decidirPedido(project.id,id,ok)} onClose={()=>setShowPedidos(false)}/>}
       {modalNode&&(
-        <NodeModal node={modalNode} metaEditable={!!modalNode.metaEditable} usuarios={usuarios} onClose={()=>setModalNode(null)} projId={curId} projects={projects}
+        <NodeModal key={modalNode.id} node={modalNode} metaEditable={!!modalNode.metaEditable} usuarios={usuarios} onClose={()=>setModalNode(null)} projId={curId} projects={projects}
+          tarefas={(project&&project.tasks)||[]} conexoes={(project&&project.connections)||[]} onVinculo={vinculoOp}
+          onAbrirTarefa={(tid)=>{ const t=project&&(project.tasks||[]).find(x=>String(x.id)===String(tid)); if(t) setModalNode({id:t.id,data:t,metaEditable:!!modalNode.metaEditable}); }}
           pedidosTarefa={((project&&project.pedidos)||[]).filter(pd=>pd.status==='pendente'&&(String(pd.taskId)===String(modalNode.id)||String(pd.from)===String(modalNode.id)||String(pd.to)===String(modalNode.id)))}
           onComentarios={(id,lista)=>{ setProjects(ps=>ps.map(p=>p.id!==curId?p:{...p,tasks:p.tasks.map(t=>t.id===id?{...t,comentarios:lista}:t)})); if(apiRef.current&&apiRef.current.updateNode) apiRef.current.updateNode(id,{comentarios:lista}); }}
           contratosVinc={[...(finContratos||[]).map(c=>({...c,_origem:'di'})),...(prjFinContratos||[]).map(c=>({...c,_origem:'prj'}))].filter(c=>c&&c.tarefaId!=null&&c.tarefaId!==''&&String(c.tarefaId)===String(modalNode.id)&&String(c.tarefaProjId!=null&&c.tarefaProjId!==''?c.tarefaProjId:c.empId)===String(curId))}
