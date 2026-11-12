@@ -32,6 +32,7 @@
 <meta name="twitter:description" content="Plataforma para acompanhar fluxogramas, cronogramas e checklists de empreendimentos imobiliários.">
 <meta name="twitter:image" content="/logo-conecta.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="https://esm.sh/@xyflow/react@12.3.5/dist/style.css">
@@ -1086,6 +1087,36 @@
   .pn-cards-compact .venc-card{padding:12px 14px;text-align:left;}
   .pn-cards-compact .venc-card-label{justify-content:flex-start;font-size:13px;margin-bottom:6px;gap:6px;}
   .pn-cards-compact .venc-card-value{font-size:24px;text-align:left;}
+  /* ═══ Painel Semanal — visual novo (teste, nov/2026) ═══
+     Mesmas cores; muda só o FORMATO e a FONTE: fonte técnica (IBM Plex Sans),
+     cantos retos, resumo numa faixa única dividida, status como texto com
+     ponto (sem pílula), abas sublinhadas, cabeçalhos sem maiúsculas. */
+  .pn-v2{font-family:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;}
+  .pn-v2 .pdi-btn,.pn-v2 .venc-add-btn,.pn-v2 .pn-today-btn,.pn-v2 .pn-nav-btn,.pn-v2 .filtro-btn{border-radius:4px;font-weight:500;}
+  .pn-v2 .pdi-tabs{gap:18px;}
+  .pn-v2 .pdi-tabs .pdi-tab{border-radius:0;padding:6px 0;background:none !important;font-weight:500;}
+  .pn-v2 .pdi-tabs .pdi-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+  .pn-v2 .venc-cards{gap:0;border:1px solid var(--border);border-radius:4px;background:var(--surface);overflow:hidden;}
+  .pn-v2 .venc-cards .venc-card{border:none;border-right:1px solid var(--border);border-radius:0;background:transparent;box-shadow:none;padding:12px 16px 13px;position:relative;}
+  .pn-v2 .venc-cards .venc-card:last-child{border-right:none;}
+  .pn-v2 .venc-cards .venc-card:hover{background:color-mix(in srgb,var(--surface2) 60%,transparent);}
+  .pn-v2 .venc-cards .venc-card.active{background:var(--surface2);box-shadow:inset 0 -2px 0 var(--accent);}
+  .pn-v2 .venc-cards .venc-card-label{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px;}
+  .pn-v2 .venc-cards .venc-card-label i{display:none;}
+  .pn-v2 .venc-cards .venc-card-value{font-family:inherit;font-size:26px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;}
+  .pn-v2 .venc-table-wrap{border-radius:4px;}
+  .pn-v2 .venc-table thead th{text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:var(--text2);background:var(--surface);border-bottom:1px solid var(--border2);}
+  .pn-v2 .venc-table tbody td{padding:10px 14px;}
+  .pn-v2 .venc-emp{font-weight:600;}
+  .pn-v2 .pn-badge{background:none !important;border:none !important;padding:0;border-radius:0;font-size:12.5px;font-weight:500;gap:7px;}
+  .pn-v2 .pn-badge::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
+  .pn-v2 .pn-badge.planejada{color:var(--text2);}
+  .pn-v2 .pn-week-title{font-weight:600;}
+  .pn-v2 .venc-act-btn{border-radius:3px;}
+  .pn-v2 .pn-chart-card{border-radius:4px;}
+  .pn-v2 .pn-section h3{font-weight:600;}
+  .pn-v2 .pn-section h3 i{display:none;}
+  .pn-v2 .pn-bar,.pn-v2 .pn-bar>span{border-radius:1px;}
   /* Impressão em PDF do Portal DI (Painel Semanal) — fontes menores/compacto */
   @media print{
     body.print-pdi .app-nav,body.print-pdi .topbar{display:none !important;}
@@ -7897,7 +7928,7 @@ function PainelSemanal({tarefas,setTarefas,projects,avulsos,onBack,uid}){
   );
 
   return (
-    <div className="pdi-wrap">
+    <div className="pdi-wrap pn-v2">
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',maxWidth:'none',marginBottom:14,gap:12,flexWrap:'wrap'}}>
         <button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button>
         <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
