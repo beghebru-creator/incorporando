@@ -1594,7 +1594,7 @@
      React Flow dimensiona, em vez de usar um tamanho fixo em px. */
   .rf-node{background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;padding:8px 13px;width:100%;height:100%;position:relative;display:flex;flex-direction:column;justify-content:space-between;}
   .rf-node.selected,.rf-node.sel-outline{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent);}
-  .node-meta{font-size:9px;color:var(--text2);font-weight:600;padding-right:30px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .node-meta{font-size:9px;color:var(--text2);font-weight:600;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* Setor: só texto, sem cor de fundo — mesma tipografia do status, pra padronizar. */
   .node-sector{font-size:8px;color:var(--text2);display:inline-flex;align-items:center;gap:5px;flex-shrink:0;text-transform:uppercase;letter-spacing:.4px;}
   /* Bolinha do responsável no card da tarefa (iniciais, cor do setor). */
@@ -1608,8 +1608,9 @@
   /* O bloco do título cresce para ocupar o espaço livre do card e centraliza
      o nome na vertical E na horizontal — assim a tarefa fica com o nome
      centralizado mesmo quando não tem data de meta nem datas de início/fim. */
-  .node-title-wrap{display:flex;align-items:center;justify-content:center;min-height:0;flex:1 1 auto;overflow:hidden;}
-  .node-title{font-size:14px;font-weight:700;line-height:1.3;word-wrap:break-word;text-align:center;width:100%;}
+  .node-title-wrap{display:flex;align-items:center;align-items:safe center;justify-content:center;min-height:0;flex:1 1 auto;overflow:hidden;}
+  .node-title-wrap .node-title{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .node-title{font-size:13px;font-weight:700;line-height:1.22;word-wrap:break-word;text-align:center;width:100%;}
   .node-title-wrap .node-title{margin-bottom:0;}
   .node-status{display:inline-flex;align-items:center;gap:4px;font-size:8px;color:var(--text2);flex-shrink:0;cursor:pointer;}
   .node-status:hover{color:var(--text);}
@@ -1621,8 +1622,8 @@
   .status-picker-item:hover{background:var(--surface2);}
   .status-picker-item.active{background:var(--surface2);color:var(--text);font-weight:600;}
   /* Datas de início/fim */
-  .node-dates-row{display:flex;gap:16px;flex-shrink:0;}
-  .node-date-block{display:flex;flex-direction:column;gap:2px;}
+  .node-dates-row{display:flex;gap:12px;flex-shrink:0;margin:2px 0 1px;}
+  .node-date-block{display:flex;flex-direction:row;align-items:baseline;gap:4px;} /* datas numa linha só: sobra espaço para o nome */
   .node-date-label{font-size:7px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text3);}
   .node-date-value{font-size:8.5px;font-weight:600;color:var(--text2);}
   /* Indicador de observação: badge discreto no canto, fora do fluxo normal.
@@ -1735,8 +1736,9 @@
   /* Alças de dobra da linha (edição manual da rota) — só aparecem com a
      linha selecionada em modo edição; arrastam sempre perpendicular ao
      próprio segmento, então a linha nunca vira diagonal. */
-  .node-code{position:absolute;top:5px;left:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.3px;pointer-events:none;}
-  .rf-predef .node-code{left:16px;}
+  .node-head{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:13px;margin:-2px -4px 3px;flex-shrink:0;}
+  .node-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .node-head-icons{display:flex;align-items:center;gap:7px;flex-shrink:0;}
   /* Modal da tarefa: seções recolhíveis (Detalhes, Datas, Vínculos, Atas, Contratos) */
   .nm-sub{display:flex;align-items:center;gap:6px;margin:14px 0 6px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text);}
   .nm-sub .ti{color:var(--text2);font-size:14px;}
@@ -2835,11 +2837,17 @@ function ChecklistIndicator({checklist}){
 
 function TaskCardBody({id,data}){
   return(<>
-    {data.code&&<span className="node-code" title="Código da tarefa">{data.code}</span>}
-    <div className="node-top-right-icons">
-      <ChecklistIndicator checklist={data.checklist}/>
-      <NotesIndicator notes={data.notes} comentarios={data.comentarios}/>
-    </div>
+    {/* Cabeçalho do card: código à esquerda, checklist/comentários à direita —
+        numa linha própria, para nunca ficar por cima do nome da tarefa. */}
+    {(data.code||(data.checklist&&data.checklist.length)||(data.notes&&data.notes.trim())||(data.comentarios&&data.comentarios.length))?(
+      <div className="node-head">
+        <span className="node-code" title="Código da tarefa">{data.code||''}</span>
+        <span className="node-head-icons">
+          <ChecklistIndicator checklist={data.checklist}/>
+          <NotesIndicator notes={data.notes} comentarios={data.comentarios}/>
+        </span>
+      </div>
+    ):null}
     {data.isMeta&&(data.baselineEnd||data.clickupDate)&&<div className="node-meta">🎯 Meta: {formatDateShort(data.baselineEnd||data.clickupDate)}</div>}
     <div className="node-title-wrap"><div className="node-title">{data.label}</div></div>
     {(data.startDate||data.endDate)&&(
