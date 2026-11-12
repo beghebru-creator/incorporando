@@ -1672,6 +1672,16 @@
   }
   .react-flow.editing .react-flow__handle{opacity:1;}
   .react-flow.editing .react-flow__handle:hover{transform:scale(1.4);background:var(--accent2);}
+  /* Pontos de conexão estilo EW: pequenos, aparecem no hover da tarefa (modo edição). */
+  .react-flow__handle.rf-legacy-h{opacity:0 !important;pointer-events:none !important;}
+  .react-flow__handle.ew-port{width:11px;height:11px;background:var(--surface);border:1.6px solid var(--accent);opacity:0 !important;cursor:crosshair;}
+  .react-flow__handle.ew-port.sm{width:9px;height:9px;}
+  .react-flow.editing .react-flow__node:hover .react-flow__handle.ew-port,
+  .react-flow.editing .react-flow__node.selected .react-flow__handle.ew-port{opacity:1 !important;}
+  .react-flow.editing .react-flow__handle.ew-port:hover{background:var(--accent);}
+  .react-flow.editing .react-flow__handle.ew-port.react-flow__handle-top:hover,.react-flow.editing .react-flow__handle.ew-port.react-flow__handle-left:hover{transform:translate(-50%,-50%) scale(1.3);}
+  .react-flow.editing .react-flow__handle.ew-port.react-flow__handle-bottom:hover{transform:translate(-50%,50%) scale(1.3);}
+  .react-flow.editing .react-flow__handle.ew-port.react-flow__handle-right:hover{transform:translate(50%,-50%) scale(1.3);}
   /* Os pontos de conexão ficam ACIMA das áreas de redimensionar (bordas), pra
      que puxar do ponto sempre crie a linha — e nunca dispare um redimensionamento
      por engano no meio do lado. O redimensionamento continua pelos cantos. */
@@ -1715,6 +1725,13 @@
   /* Alças de dobra da linha (edição manual da rota) — só aparecem com a
      linha selecionada em modo edição; arrastam sempre perpendicular ao
      próprio segmento, então a linha nunca vira diagonal. */
+  .tt-picker{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;}
+  @media (max-width:640px){.tt-picker{grid-template-columns:repeat(3,minmax(0,1fr));}}
+  .tt-opt{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text2);font-size:10.5px;line-height:1.15;cursor:pointer;font-family:inherit;text-align:center;}
+  .tt-opt:hover:not(:disabled){border-color:var(--accent);color:var(--text);}
+  .tt-opt.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--text);font-weight:600;}
+  .tt-opt:disabled{opacity:.55;cursor:default;}
+  .tb-select{appearance:auto;padding-right:6px;}
   .edge-mid-handle{fill:var(--accent);stroke:var(--surface);stroke-width:1.5px;pointer-events:all;}
   .edge-mid-handle:hover{fill:var(--edge-sel);}
   .edge-bend-handle{fill:var(--accent);stroke:var(--surface);stroke-width:1.5px;cursor:grab;pointer-events:all;}
@@ -2151,6 +2168,31 @@ const TASK_TYPES = [
   { id:'processo-predefinido',label:'Proc. Pré-definido'},
   { id:'conector',            label:'Conector'          },
 ];
+/* Seletor do tipo da tarefa com o símbolo de cada forma (igual ao EW). */
+function TaskTypeIcon({type,size=26}){
+  const c={fill:'none',stroke:'currentColor',strokeWidth:1.6};
+  const svg=(ch)=><svg width={size*1.5} height={size} viewBox="0 0 36 24" aria-hidden="true">{ch}</svg>;
+  switch(type){
+    case 'decisao': return svg(<path {...c} d="M18 2 L33 12 L18 22 L3 12 Z"/>);
+    case 'terminacao': return svg(<rect {...c} x="3" y="5" width="30" height="14" rx="7"/>);
+    case 'documentos': return svg(<path {...c} d="M4 3 H32 V18 Q25 14 18 18 T4 18 Z"/>);
+    case 'processo-predefinido': return svg(<><rect {...c} x="3" y="4" width="30" height="16" rx="1"/><line {...c} x1="7.5" y1="4" x2="7.5" y2="20"/><line {...c} x1="28.5" y1="4" x2="28.5" y2="20"/></>);
+    case 'conector': return svg(<circle {...c} cx="18" cy="12" r="8"/>);
+    default: return svg(<rect {...c} x="3" y="4" width="30" height="16" rx="1"/>);
+  }
+}
+function TaskTypePicker({value,onChange,disabled}){
+  return(
+    <div className="tt-picker" role="radiogroup" aria-label="Tipo da tarefa">
+      {TASK_TYPES.map(t=>(
+        <button key={t.id} type="button" role="radio" aria-checked={value===t.id} disabled={disabled}
+          className={'tt-opt'+(value===t.id?' on':'')} onClick={()=>!disabled&&onChange(t.id)} title={t.label}>
+          <TaskTypeIcon type={t.id}/><span>{t.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 /* Setores: os padrões abaixo são só o ponto de partida. O que vale é a
    configuração em Configurações → Gerenciar → Setores (sigla, nome, cor,
    métricas, remover/adicionar). SECTORS e SECTORS_ALL são atualizados em
@@ -2650,18 +2692,32 @@ function SwimlaneLayer({swimlanes}){
    nenhuma organização automática prévia. ─── */
 
 /* ─── NODE SHAPES ─── */
-function NodeHandles(){
-  /* Cada lado tem source + target → a linha pode sair/entrar por qualquer
-     extremidade, permitindo o menor caminho. semanticEdge decide quais usar. */
+/* Pontos de conexão como no Fluxograma EW: 3 por lado (25%, 50%, 75%);
+   no losango (decisão) e no conector só a ponta/centro do lado. Ficam
+   visíveis no modo edição ao passar o mouse na tarefa. Puxar de um ponto
+   e soltar sobre outro ponto fixa os lados/posições da linha (data.sa/ta,
+   t1/t2); soltar no corpo da tarefa deixa o destino automático.
+   Os 8 handles antigos (st/sl/...) continuam existindo, invisíveis, só para
+   as linhas já salvas continuarem renderizando. */
+const EW_PORT_SIDES=[['N',Position.Top],['E',Position.Right],['S',Position.Bottom],['W',Position.Left]];
+function ewPortOf(hid){
+  const m=/^p-([NESW])-(\d+)$/.exec(hid||''); return m?{s:m[1],t:Number(m[2])/100}:null;
+}
+function NodeHandles({type}){
+  const ts=(type==='decisao'||type==='conector')?[50]:[25,50,75];
   return(<>
-    <Handle type="source" position={Position.Top}    id="st"/>
-    <Handle type="target" position={Position.Top}    id="tt"/>
-    <Handle type="source" position={Position.Left}   id="sl"/>
-    <Handle type="target" position={Position.Left}   id="tl"/>
-    <Handle type="source" position={Position.Bottom} id="sb"/>
-    <Handle type="target" position={Position.Bottom} id="tb"/>
-    <Handle type="source" position={Position.Right}  id="sr"/>
-    <Handle type="target" position={Position.Right}  id="tr"/>
+    <Handle className="rf-legacy-h" type="source" position={Position.Top}    id="st"/>
+    <Handle className="rf-legacy-h" type="target" position={Position.Top}    id="tt"/>
+    <Handle className="rf-legacy-h" type="source" position={Position.Left}   id="sl"/>
+    <Handle className="rf-legacy-h" type="target" position={Position.Left}   id="tl"/>
+    <Handle className="rf-legacy-h" type="source" position={Position.Bottom} id="sb"/>
+    <Handle className="rf-legacy-h" type="target" position={Position.Bottom} id="tb"/>
+    <Handle className="rf-legacy-h" type="source" position={Position.Right}  id="sr"/>
+    <Handle className="rf-legacy-h" type="target" position={Position.Right}  id="tr"/>
+    {EW_PORT_SIDES.map(([sd,pos])=>ts.map(t=>(
+      <Handle key={sd+t} className={'ew-port'+(t===50?'':' sm')} type="source" position={pos} id={'p-'+sd+'-'+t}
+        style={(sd==='N'||sd==='S')?{left:t+'%'}:{top:t+'%'}}/>
+    )))}
   </>);
 }
 
@@ -2791,7 +2847,7 @@ function TaskNode({id,data,selected}){
     <>
       <NodeResizer isVisible={selected} minWidth={110} minHeight={40} color="var(--accent)"/>
       <div className={'rf-terminacao'+sel} style={cardStyleDim}>
-        <NodeHandles/>{tags}<div className="node-title">{data.label}</div>
+        <NodeHandles type={type}/>{tags}<div className="node-title">{data.label}</div>
       </div>
     </>
   );
@@ -2799,7 +2855,7 @@ function TaskNode({id,data,selected}){
     <>
       <NodeResizer isVisible={selected} minWidth={80} minHeight={80} keepAspectRatio color="var(--accent)"/>
       <div className={'rf-decisao-outer'+sel} style={dimStyle}>
-        <NodeHandles/>{tags}
+        <NodeHandles type={type}/>{tags}
         <div className="rf-decisao-shape" style={cardStyle}/>
         <div className="rf-decisao-text">
           {data.isMeta&&(data.baselineEnd||data.clickupDate)&&<div className="node-meta" style={{fontSize:8}}>🎯 {formatDateShort(data.baselineEnd||data.clickupDate)}</div>}
@@ -2812,7 +2868,7 @@ function TaskNode({id,data,selected}){
     <>
       <NodeResizer isVisible={selected} minWidth={40} minHeight={40} keepAspectRatio color="var(--accent)"/>
       <div className={'rf-conector-outer'+sel} style={dimStyle}>
-        <NodeHandles/>{tags}
+        <NodeHandles type={type}/>{tags}
         <div className="rf-conector-shape" style={cardStyle}/>
         <div className="rf-conector-text">
           <div className="node-title">{data.label}</div>
@@ -2824,7 +2880,7 @@ function TaskNode({id,data,selected}){
     <>
       <NodeResizer isVisible={selected} minWidth={120} minHeight={44} color="var(--accent)"/>
       <div className={'rf-documentos-outer'+(selected?' selected':'')} style={dimStyle}>
-        <NodeHandles/>{tags}
+        <NodeHandles type={type}/>{tags}
         <div className="rf-doc-shadow"/>
         <div className="rf-doc-main" style={cardStyle}>
           <TaskCardBody id={id} data={data}/>
@@ -2836,7 +2892,7 @@ function TaskNode({id,data,selected}){
     <>
       <NodeResizer isVisible={selected} minWidth={120} minHeight={44} color="var(--accent)"/>
       <div className={'rf-predef'+sel} style={cardStyleDim}>
-        <NodeHandles/>{tags}
+        <NodeHandles type={type}/>{tags}
         <TaskCardBody id={id} data={data}/>
       </div>
     </>
@@ -2845,7 +2901,7 @@ function TaskNode({id,data,selected}){
     <>
       <NodeResizer isVisible={selected} minWidth={120} minHeight={44} color="var(--accent)"/>
       <div className={'rf-node'+sel} style={cardStyleDim}>
-        <NodeHandles/>{tags}
+        <NodeHandles type={type}/>{tags}
         <TaskCardBody id={id} data={data}/>
       </div>
     </>
@@ -3033,7 +3089,7 @@ function ewRectOf(n){
   if(!n) return null;
   const p=(n.internals&&n.internals.positionAbsolute)||n.position||{x:0,y:0};
   const d=nodeDims(n);
-  return {id:n.id,x:p.x,y:p.y,w:(n.measured&&n.measured.width)||d.w,h:(n.measured&&n.measured.height)||d.h};
+  return {id:n.id,x:p.x,y:p.y,w:(n.measured&&n.measured.width)||d.w,h:(n.measured&&n.measured.height)||d.h,type:n.data&&n.data.taskType};
 }
 const ewCenter=r=>({x:r.x+r.w/2,y:r.y+r.h/2});
 function ewAutoSides(a,b){
@@ -3044,7 +3100,7 @@ function ewAutoSides(a,b){
   return dy>=0?['S','N']:['N','S'];
 }
 function ewAnchor(r,sd,t){
-  if(t==null) t=.5;
+  if(t==null||r.type==='decisao'||r.type==='conector') t=.5;
   return sd==='N'?{x:r.x+r.w*t,y:r.y}: sd==='S'?{x:r.x+r.w*t,y:r.y+r.h}: sd==='E'?{x:r.x+r.w,y:r.y+r.h*t}:{x:r.x,y:r.y+r.h*t};
 }
 function ewBlocked(ax,v,a1,a2,obst){
@@ -3141,7 +3197,7 @@ function ewSidesFor(edges,nodeLookup){
 }
 
 /* Aresta única (todas as linhas do fluxograma usam esta). */
-function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,markerEnd,selected,data,style}){
+function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,markerEnd,markerStart,selected,data,style}){
   const nodeLookup = useStore(s=>s.nodeLookup);
   const allEdges = useStore(s=>s.edges);
   const {zoom} = useViewport();
@@ -3169,7 +3225,7 @@ function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePo
     if(!a||!b) return {pts:[{x:sourceX,y:sourceY},{x:targetX,y:targetY}],mid:null,midPt:null};
     const sd=sides.get(id)||{s1:'E',s2:'W',t1:.5,t2:.5};
     const manual=typeof d.mid==='number'||!!d.sa||!!d.ta;
-    const r=ewRoute(a,b,sd.s1,sd.s2,.5,.5,obstacles,d.mid,d.midAx);
+    const r=ewRoute(a,b,sd.s1,sd.s2,d.sa&&d.t1!=null?d.t1:.5,d.ta&&d.t2!=null?d.t2:.5,obstacles,d.mid,d.midAx);
     if(manual||ewPathClear(r.pts,obstacles)) return r;
     /* Só rotas no estilo EW (no máximo 3 trechos, sem zigue-zague). Se a
        combinação automática raspa numa tarefa, testa os outros lados e fica
@@ -3186,6 +3242,8 @@ function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePo
     return best||r;
   },[nodeLookup,sides,obstacles,id,source,target,d.mid,d.midAx,sourceX,sourceY,targetX,targetY]);
 
+  const kind=d.kind||'prec';
+  if(kind==='oculto'&&!(edgeEdit&&edgeEdit.isEditMode)) return null; /* vínculo oculto: só aparece editando */
   const pts=R.pts;
   const path = pts.reduce((acc,p,i)=> i===0?('M '+p.x+','+p.y):(acc+' L '+p.x+','+p.y),'');
 
@@ -3209,12 +3267,13 @@ function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePo
   const ajustada = typeof d.mid==='number'||!!d.sa||!!d.ta;
   /* ponto para o botão "Rota automática": meio do maior trecho */
   let lab=pts[0]; { let best=-1; for(let i=1;i<pts.length;i++){ const L=Math.abs(pts[i].x-pts[i-1].x)+Math.abs(pts[i].y-pts[i-1].y); if(L>best){best=L; lab={x:(pts[i].x+pts[i-1].x)/2,y:(pts[i].y+pts[i-1].y)/2};} } }
-  const cor = selected?'var(--edge-sel)':((style&&style.stroke)||'var(--edge)');
+  const cor = selected?'var(--edge-sel)':kind==='compat'?EDGE_COMPAT_COLOR:((style&&style.stroke)||'var(--edge)');
+  const dash = kind==='retorno'?'6 5':kind==='compat'?'1 5':kind==='oculto'?'2 4':(style&&style.strokeDasharray);
 
   return (
     <>
-      <BaseEdge id={id} path={path} markerEnd={markerEnd}
-        style={{stroke:cor,strokeWidth:selected?2.5:2,strokeDasharray:style&&style.strokeDasharray,strokeLinejoin:'round',pointerEvents:'none'}}/>
+      <BaseEdge id={id} path={path} markerEnd={markerEnd} markerStart={markerStart}
+        style={{stroke:cor,strokeWidth:selected?2.5:2,strokeDasharray:dash,strokeLinecap:kind==='compat'?'round':undefined,strokeLinejoin:'round',opacity:kind==='oculto'?.45:1,pointerEvents:'none'}}/>
       {editando&&R.midPt&&(
         <rect x={R.midPt.x-7} y={R.midPt.y-7} width={14} height={14} rx={3} className="edge-mid-handle"
           style={{cursor:R.mid.ax==='x'?'ew-resize':'ns-resize'}} onPointerDown={onMidPointerDown}>
@@ -3225,7 +3284,7 @@ function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePo
         <foreignObject x={(R.midPt||lab).x-11} y={(R.midPt||lab).y-34} width={22} height={22} style={{overflow:'visible'}}>
           <div className="edge-reset-btn" title="Rota automática (desfaz o ajuste manual desta linha)"
             onPointerDown={e=>e.stopPropagation()}
-            onClick={e=>{e.stopPropagation();edgeEdit.setEdgeData(id,{mid:undefined,midAx:undefined,sa:undefined,ta:undefined});}}>
+            onClick={e=>{e.stopPropagation();edgeEdit.setEdgeData(id,{mid:undefined,midAx:undefined,sa:undefined,ta:undefined,t1:undefined,t2:undefined});}}>
             <i className="ti ti-arrow-back-up"/>
           </div>
         </foreignObject>
@@ -3239,6 +3298,13 @@ const edgeTypes={ crossphase:ObstacleEdge, safeintra:ObstacleEdge, ortho:Obstacl
 
 const MARKER={type:MarkerType.Arrow,color:'rgba(94,154,132,0.85)',width:10,height:10}; /* pinho médio — legível nos dois temas */
 const EDGE_STYLE={stroke:'var(--edge)',strokeWidth:2};
+const EDGE_COMPAT_COLOR='#9b7fd1';
+const MARKER_COMPAT={type:MarkerType.Arrow,color:EDGE_COMPAT_COLOR,width:10,height:10};
+/* Tipos de linha (iguais ao Fluxograma EW). Retorno e Compatibilização NÃO
+   entram no cálculo do cronograma; Oculto conta como predecessora mas não
+   é desenhado fora do modo edição. */
+const EDGE_KINDS=[['prec','Precedência'],['retorno','Retorno'],['compat','Compatibilização'],['oculto','Vínculo oculto']];
+function edgeMarkers(kind){ return kind==='compat'?{markerEnd:MARKER_COMPAT,markerStart:MARKER_COMPAT}:{markerEnd:MARKER,markerStart:undefined}; }
 const MARKER_PROPOSTO={type:MarkerType.Arrow,color:'rgba(194,101,42,0.9)',width:10,height:10}; /* vínculo proposto (aguardando aceite) */
 function makeEdge(from,to){
   return{id:`e-${from}-${to}`,source:from,target:to,type:'smoothstep',markerEnd:MARKER,style:{...EDGE_STYLE,zIndex:0}};
@@ -3429,7 +3495,7 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
   }
 
   /* ── Helper: cria aresta ── */
-  const createEdge=useCallback((srcId, handleId, tgtNode)=>{
+  const createEdge=useCallback((srcId, handleId, tgtNode, toHandleId)=>{
     const srcNode=nodesRef.current.find(n=>n.id===srcId);
     if(!srcNode||srcNode.type!=='task') return;
     if(tgtNode.id===srcId||tgtNode.type!=='task') return;
@@ -3449,7 +3515,7 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
       targetHandle:params.targetHandle,
       type:params.type,
       markerEnd:MARKER, style:{...EDGE_STYLE,zIndex:0},
-      data:params.data, reconnectable:true
+      data:{...params.data,...portData(handleId,toHandleId)}, reconnectable:true
     }));
   },[setEdges,pushHistory]);
 
@@ -3516,10 +3582,12 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
          a linha volta à rota automática. Carrega o ajuste novo (mid/sa/ta). */
       if(typeof c.mid==='number'&&(c.midAx==='x'||c.midAx==='y')){ data.mid=c.mid; data.midAx=c.midAx; }
       if(c.sa) data.sa=c.sa; if(c.ta) data.ta=c.ta;
+      if(typeof c.t1==='number') data.t1=c.t1; if(typeof c.t2==='number') data.t2=c.t2;
+      if(c.kind&&c.kind!=='prec') data.kind=c.kind;
       const proposto=c.status==='proposto';
       if(proposto) data={...data,proposto:true,propostoPor:c.propostoPor||''};
       finalEdges.push({id:`e-${c.from}-${c.to}`, source:c.from, target:c.to,
-        sourceHandle, targetHandle, type, markerEnd:proposto?MARKER_PROPOSTO:MARKER, style:proposto?{...EDGE_STYLE,stroke:'var(--amber)',strokeDasharray:'6 5',zIndex:0}:{...EDGE_STYLE,zIndex:0}, data, reconnectable:true});
+        sourceHandle, targetHandle, type, markerEnd:proposto?MARKER_PROPOSTO:edgeMarkers(data.kind).markerEnd, markerStart:proposto?undefined:edgeMarkers(data.kind).markerStart, style:proposto?{...EDGE_STYLE,stroke:'var(--amber)',strokeDasharray:'6 5',zIndex:0}:{...EDGE_STYLE,zIndex:0}, data, reconnectable:true});
     });
     setNodes(taskNs);
     swimlaneDataRef.current=newSwimlanes;
@@ -3652,6 +3720,9 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
           mid:(e.data&&typeof e.data.mid==='number')?e.data.mid:null,
           midAx:(e.data&&typeof e.data.mid==='number')?(e.data.midAx||null):null,
           sa:(e.data&&e.data.sa)||null, ta:(e.data&&e.data.ta)||null,
+          t1:(e.data&&e.data.sa&&typeof e.data.t1==='number')?e.data.t1:null,
+          t2:(e.data&&e.data.ta&&typeof e.data.t2==='number')?e.data.t2:null,
+          kind:(e.data&&e.data.kind&&e.data.kind!=='prec')?e.data.kind:null,
         })), nodesRef.current);
         return{tasks,connections};
       },
@@ -3679,10 +3750,18 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
           return{...e, id:`e-${e.target}-${e.source}`,
                  source:e.target, target:e.source,
                  sourceHandle:toSource(e.targetHandle), targetHandle:toTarget(e.sourceHandle),
-                 markerEnd:MARKER, style:{...EDGE_STYLE,zIndex:0},
-                 data:{...e.data, manualPts:mp, sa:e.data&&e.data.ta, ta:e.data&&e.data.sa}};
+                 ...edgeMarkers(e.data&&e.data.kind), style:{...EDGE_STYLE,zIndex:0},
+                 data:{...e.data, manualPts:mp, sa:e.data&&e.data.ta, ta:e.data&&e.data.sa, t1:e.data&&e.data.t2, t2:e.data&&e.data.t1}};
         }));
         setSelEdges([]);
+      },
+      /* Tipo da linha selecionada (Precedência/Retorno/Compatibilização/Oculto) */
+      setSelectedEdgeKind:(kind)=>{
+        if(!selEdges.length) return;
+        pushHistory();
+        const ids=new Set(selEdges);
+        setEdges(eds=>eds.map(e=>ids.has(e.id)?{...e,...(e.data&&e.data.proposto?{}:edgeMarkers(kind)),data:{...e.data,kind:kind==='prec'?undefined:kind}}:e));
+        onSelChange({nodes:selNodes.length,edges:selEdges.length,edgeKind:kind});
       },
       removeSelectedEdge:()=>{
         if(!selEdges.length)return;
@@ -3777,6 +3856,13 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
     });
   },[nodes,edges,selNodes,selEdges,standardChecklists,project.city]);
 
+  /* Pontos EW: lado/posição de cada ponta quando a pessoa puxa/solta num ponto. */
+  function portData(fromHid,toHid){
+    const a=ewPortOf(fromHid), b=ewPortOf(toHid), o={};
+    if(a){ o.sa=a.s; o.t1=a.t; }
+    if(b){ o.ta=b.s; o.t2=b.t; }
+    return o;
+  }
   /* ─── CONEXÃO: 3 camadas ─── */
   const onConnectStart=useCallback((_,{nodeId,handleId})=>{
     connectingRef.current={nodeId,handleId};
@@ -3843,6 +3929,8 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
     const tgtN=nodesRef.current.find(n=>n.id===tgtId);
     if(!srcN||!tgtN||srcN.type!=='task'||tgtN.type!=='task') return;
     const p=buildEdgeParams(srcN,tgtN);
+    const hStart=srcId===params.source?params.sourceHandle:params.targetHandle;
+    const hEnd=srcId===params.source?params.targetHandle:params.sourceHandle;
     pushHistory();
     /* Substitui qualquer linha antiga entre as duas tarefas (mesmo uma
        "fantasma" que não aparecia) e cria a nova limpa — assim a conexão SEMPRE
@@ -3850,7 +3938,7 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
     setEdges(eds=>stripEdgePair(eds,srcId,tgtId).concat({
       id:`e-${srcId}-${tgtId}`, source:srcId, target:tgtId,
       sourceHandle:p.sourceHandle, targetHandle:p.targetHandle,
-      type:p.type, markerEnd:MARKER, style:{...EDGE_STYLE,zIndex:0}, data:p.data, reconnectable:true
+      type:p.type, markerEnd:MARKER, style:{...EDGE_STYLE,zIndex:0}, data:{...p.data,...portData(hStart,hEnd)}, reconnectable:true
     }));
   },[setEdges,pushHistory]);
 
@@ -3871,7 +3959,7 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
     const rfToNode=connectionState?.toNode;
     if(rfToNode&&rfToNode.id!==nodeId&&rfToNode.type==='task'){
       connectionDoneRef.current=true;
-      createEdge(nodeId,handleId,rfToNode);
+      createEdge(nodeId,handleId,rfToNode,connectionState?.toHandle?.id);
       return;
     }
     const{clientX,clientY}=('changedTouches' in event&&event.changedTouches.length>0)
@@ -3894,7 +3982,7 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
      (ela foi desenhada pensando no destino anterior) — volta a recalcular
      automaticamente a partir da nova ligação. */
   const onReconnect=useCallback((oldEdge,newConn)=>{
-    setEdges(eds=>reconnectEdge({...oldEdge,data:{...oldEdge.data,manualPts:undefined,mid:undefined,midAx:undefined,sa:undefined,ta:undefined}},newConn,eds));
+    setEdges(eds=>reconnectEdge({...oldEdge,data:{...oldEdge.data,manualPts:undefined,mid:undefined,midAx:undefined,sa:undefined,ta:undefined,t1:undefined,t2:undefined}},newConn,eds));
   },[setEdges]);
 
   /* ── Edição manual da rota da linha (arrastar dobras) ── */
@@ -3914,7 +4002,7 @@ function FlowCanvas({project,isEditMode,theme,onNodeOpen,onChecklistOpen,registe
   const onSelectionChange=useCallback(({nodes:ns,edges:es})=>{
     setSelNodes(ns.map(n=>n.id));
     setSelEdges(es.map(e=>e.id));
-    onSelChange({nodes:ns.length,edges:es.length});
+    onSelChange({nodes:ns.length,edges:es.length,edgeKind:es.length===1?((es[0].data&&es[0].data.kind)||'prec'):null});
   },[onSelChange]);
 
   /* Clique simples (botão esquerdo) numa tarefa: comportamento padrão do
@@ -4117,7 +4205,7 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
             </select>
           </div>
         </div>
-        <div className="modal-field" style={{display:'flex',gap:10}}>
+        <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
           <div style={{flex:1}}>
             <label className="modal-field-label">Setor</label>
             <select className="form-input" value={sector} disabled={!pMeta} onChange={e=>setSector(e.target.value)} title={!pMeta?'Só administradores mudam o setor':''}>
@@ -4125,11 +4213,9 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
               {sector&&!SECTORS_ALL.includes(sector)?<option value={sector}>{setorSigla(sector)}</option>:null}
             </select>
           </div>
-          <div style={{flex:1}}>
+          <div style={{flex:'1 1 100%',order:3}}>
             <label className="modal-field-label">Tipo</label>
-            <select className="form-input" value={taskType} disabled={!pEstrutura} onChange={e=>setTaskType(e.target.value)}>
-              {TASK_TYPES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
-            </select>
+            <TaskTypePicker value={taskType} disabled={!pEstrutura} onChange={setTaskType}/>
           </div>
           <div style={{flex:1}}>
             <label className="modal-field-label">Status</label>
@@ -4878,7 +4964,7 @@ const SCHED=(function(){
   function nextWorkday(d,hol){ const x=new Date(d); let n=0; while(!isWorkday(x,hol)&&n<3660){ x.setDate(x.getDate()+1); n++; } return x; }
   function addWorkdays(d,n,hol){ let x=nextWorkday(d,hol); let step=n>=0?1:-1,left=Math.abs(n),g=0; while(left>0&&g<36600){ x.setDate(x.getDate()+step); g++; if(isWorkday(x,hol)) left--; } return x; }
   function topoOrder(ids,edges){ const indeg={},adj={}; ids.forEach(id=>{indeg[id]=0;adj[id]=[];}); edges.forEach(e=>{ if(adj[e.from]&&indeg[e.to]!=null){adj[e.from].push(e.to);indeg[e.to]++;} }); const q=ids.filter(id=>indeg[id]===0),order=[]; while(q.length){ const id=q.shift(); order.push(id); adj[id].forEach(t=>{ if(--indeg[t]===0) q.push(t); }); } const oset=new Set(order); const cyclic=ids.filter(id=>!oset.has(id)); return {order,cyclic}; }
-  function computeSchedule(tasks,connections,opts){ opts=opts||{}; const hol=opts.holidays||new Set(); const byId={}; tasks.forEach(t=>byId[t.id]=t); const preds={}; tasks.forEach(t=>preds[t.id]=[]); (connections||[]).forEach(c=>{ if(byId[c.from]&&byId[c.to]) preds[c.to].push({from:c.from,depType:(c.depType||'TI'),lag:Number(c.lag)||0}); }); const edges=(connections||[]).filter(c=>byId[c.from]&&byId[c.to]).map(c=>({from:c.from,to:c.to})); const {order,cyclic}=topoOrder(tasks.map(t=>t.id),edges); const res={}; const dur=t=>Math.max(1,Math.round(Number(t.duration))||1); for(const id of order){ const t=byId[id],d=dur(t),ps=preds[id]; let start=null; const fs=parseISO(t.fixedStart), fe=parseISO(t.fixedEnd); if(fs){ start=nextWorkday(fs,hol); } else if(fe){ start=addWorkdays(fe,-(d-1),hol); } else if(!ps.length){ const s=parseISO(t.startDate); if(s) start=nextWorkday(s,hol); } else { const cand=[]; for(const p of ps){ const pr=res[p.from]; if(!pr) continue; if(p.depType==='II') cand.push(addWorkdays(pr.start,p.lag,hol)); else if(p.depType==='TT') cand.push(addWorkdays(addWorkdays(pr.end,p.lag,hol),-(d-1),hol)); else if(p.depType==='IT') cand.push(addWorkdays(addWorkdays(pr.start,p.lag,hol),-(d-1),hol)); else cand.push(addWorkdays(pr.end,1+p.lag,hol)); } if(cand.length) start=new Date(Math.max(...cand.map(x=>x.getTime()))); } if(!start) continue; const end=addWorkdays(start,d-1,hol); res[id]={start,end}; } const out={}; Object.keys(res).forEach(id=>{ out[id]={start:iso(res[id].start),end:iso(res[id].end)}; }); return {schedule:out,cyclic}; }
+  function computeSchedule(tasks,connections,opts){ opts=opts||{}; const hol=opts.holidays||new Set(); const byId={}; tasks.forEach(t=>byId[t.id]=t); const preds={}; tasks.forEach(t=>preds[t.id]=[]); connections=(connections||[]).filter(c=>c&&c.kind!=='retorno'&&c.kind!=='compat'); /* tipos EW que não são dependência */ (connections||[]).forEach(c=>{ if(byId[c.from]&&byId[c.to]) preds[c.to].push({from:c.from,depType:(c.depType||'TI'),lag:Number(c.lag)||0}); }); const edges=(connections||[]).filter(c=>byId[c.from]&&byId[c.to]).map(c=>({from:c.from,to:c.to})); const {order,cyclic}=topoOrder(tasks.map(t=>t.id),edges); const res={}; const dur=t=>Math.max(1,Math.round(Number(t.duration))||1); for(const id of order){ const t=byId[id],d=dur(t),ps=preds[id]; let start=null; const fs=parseISO(t.fixedStart), fe=parseISO(t.fixedEnd); if(fs){ start=nextWorkday(fs,hol); } else if(fe){ start=addWorkdays(fe,-(d-1),hol); } else if(!ps.length){ const s=parseISO(t.startDate); if(s) start=nextWorkday(s,hol); } else { const cand=[]; for(const p of ps){ const pr=res[p.from]; if(!pr) continue; if(p.depType==='II') cand.push(addWorkdays(pr.start,p.lag,hol)); else if(p.depType==='TT') cand.push(addWorkdays(addWorkdays(pr.end,p.lag,hol),-(d-1),hol)); else if(p.depType==='IT') cand.push(addWorkdays(addWorkdays(pr.start,p.lag,hol),-(d-1),hol)); else cand.push(addWorkdays(pr.end,1+p.lag,hol)); } if(cand.length) start=new Date(Math.max(...cand.map(x=>x.getTime()))); } if(!start) continue; const end=addWorkdays(start,d-1,hol); res[id]={start,end}; } const out={}; Object.keys(res).forEach(id=>{ out[id]={start:iso(res[id].start),end:iso(res[id].end)}; }); return {schedule:out,cyclic}; }
   /* nº de dias úteis entre duas datas (inclusivo) — usado p/ estimar duração a partir de datas existentes */
   function workdaysBetween(a,b,hol){ let x=parseISO(a),y=parseISO(b); if(!x||!y) return null; if(x>y){const t=x;x=y;y=t;} let n=0,g=0; const z=new Date(x); while(z<=y&&g<36600){ if(isWorkday(z,hol)) n++; z.setDate(z.getDate()+1); g++; } return n; }
   return {iso,parseISO,easter,nationalHolidays,buildHolidaySet,isWorkday,nextWorkday,addWorkdays,computeSchedule,workdaysBetween};
@@ -6087,18 +6173,16 @@ function GanttNewTaskModal({onClose,onCreate,subOf}){
             {PHASES.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
-        <div className="modal-field" style={{display:'flex',gap:10}}>
+        <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
           <div style={{flex:1}}>
             <label className="modal-field-label">Setor</label>
             <select className="form-input" value={sector} onChange={e=>setSector(e.target.value)}>
               {SECTORS_ALL.map(s=><option key={s} value={s}>{setorSigla(s)}</option>)}
             </select>
           </div>
-          <div style={{flex:1}}>
+          <div style={{flex:'1 1 100%',order:3}}>
             <label className="modal-field-label">Tipo</label>
-            <select className="form-input" value={taskType} onChange={e=>setTaskType(e.target.value)}>
-              {TASK_TYPES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
-            </select>
+            <TaskTypePicker value={taskType} onChange={setTaskType}/>
           </div>
         </div>
         <div className="modal-field">
@@ -17234,6 +17318,10 @@ function App({currentUser}){
                   <button className="tb-btn" onClick={()=>apiRef.current.undo()} title="Desfazer (Ctrl+Z)"><i className="ti ti-arrow-back-up"/> Desfazer</button>
                   <button className="tb-btn" disabled={sel.nodes!==2} onClick={()=>apiRef.current.connectSelected()}><i className="ti ti-git-merge"/> Conectar 2 nós</button>
                   <button className="tb-btn" disabled={sel.edges!==1} onClick={()=>apiRef.current.reverseSelected()}><i className="ti ti-arrow-back-up"/> Inverter</button>
+                  <select className="tb-btn tb-select" disabled={sel.edges!==1} value={sel.edgeKind||'prec'} title="Tipo da linha selecionada"
+                    onChange={e=>apiRef.current.setSelectedEdgeKind(e.target.value)}>
+                    {EDGE_KINDS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                  </select>
                   <button className="tb-btn" disabled={sel.nodes!==2} onClick={()=>apiRef.current.disconnectSelected()}><i className="ti ti-unlink"/> Desconectar</button>
                   <button className="tb-btn" disabled={sel.edges===0} onClick={()=>apiRef.current.removeSelectedEdge()}><i className="ti ti-unlink"/> {sel.edges>1?`Remover ${sel.edges} conexões`:'Remover conexão'}</button>
                   <button className="tb-btn" disabled={sel.nodes===0} onClick={()=>apiRef.current.removeSelectedNode()}><i className="ti ti-trash"/> {sel.nodes>1?`Remover ${sel.nodes} tarefas`:'Remover tarefa'}</button>
