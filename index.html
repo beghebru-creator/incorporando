@@ -3135,13 +3135,8 @@ function ewSidesFor(edges,nodeLookup){
     const push=(nid,sd,eid,end,other)=>{ const k=nid+'|'+sd; if(!slots.has(k)) slots.set(k,[]); slots.get(k).push({eid,end,sd,o:ewCenter(other)}); };
     push(e.source,s1,e.id,'1',b); push(e.target,s2,e.id,'2',a);
   });
-  slots.forEach(list=>{
-    if(list.length<2) return;
-    const horiz=list[0].sd==='N'||list[0].sd==='S';
-    list.sort((p,q)=>horiz?p.o.x-q.o.x:p.o.y-q.o.y);
-    const k=list.length;
-    list.forEach((it,i)=>{ const r=out.get(it.eid); if(r) r['t'+it.end]=(i+1)/(k+1); });
-  });
+  /* Como no EW: todas as linhas saem/entram pelo CENTRO do lado (no losango,
+     pela ponta). Linhas da mesma tarefa compartilham o tronco, sem paralelas. */
   return out;
 }
 
@@ -3173,12 +3168,22 @@ function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePo
     const a=ewRectOf(nodeLookup.get(source)), b=ewRectOf(nodeLookup.get(target));
     if(!a||!b) return {pts:[{x:sourceX,y:sourceY},{x:targetX,y:targetY}],mid:null,midPt:null};
     const sd=sides.get(id)||{s1:'E',s2:'W',t1:.5,t2:.5};
-    const manual=typeof d.mid==='number';
-    const r=ewRoute(a,b,sd.s1,sd.s2,sd.t1,sd.t2,obstacles,d.mid,d.midAx);
+    const manual=typeof d.mid==='number'||!!d.sa||!!d.ta;
+    const r=ewRoute(a,b,sd.s1,sd.s2,.5,.5,obstacles,d.mid,d.midAx);
     if(manual||ewPathClear(r.pts,obstacles)) return r;
-    /* Reserva: roteador completo que contorna todas as tarefas. */
-    const alt=routeOrthogonal(r.p1.x,r.p1.y,EW_POS[sd.s1], r.p2.x,r.p2.y,EW_POS[sd.s2], obstacles);
-    return {pts:alt,mid:null,midPt:null,auto:true};
+    /* Só rotas no estilo EW (no máximo 3 trechos, sem zigue-zague). Se a
+       combinação automática raspa numa tarefa, testa os outros lados e fica
+       com a rota livre mais curta/com menos dobras. Se nenhuma for livre,
+       mantém a automática (como o EW faz). */
+    let best=null, bestScore=Infinity;
+    for(const s1 of ['E','W','N','S']) for(const s2 of ['E','W','N','S']){
+      const c=ewRoute(a,b,s1,s2,.5,.5,obstacles);
+      if(!ewPathClear(c.pts,obstacles)) continue;
+      let len=0; for(let k=1;k<c.pts.length;k++) len+=Math.abs(c.pts[k].x-c.pts[k-1].x)+Math.abs(c.pts[k].y-c.pts[k-1].y);
+      const sc=len+(c.pts.length-2)*90;
+      if(sc<bestScore){ bestScore=sc; best=c; }
+    }
+    return best||r;
   },[nodeLookup,sides,obstacles,id,source,target,d.mid,d.midAx,sourceX,sourceY,targetX,targetY]);
 
   const pts=R.pts;
