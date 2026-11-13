@@ -2098,6 +2098,7 @@
   .ata-aviso{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12.5px;color:var(--text2);margin-bottom:12px;}
   .ata-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border:1px solid var(--border2);border-radius:20px;padding:2px 9px;color:var(--text2);background:var(--surface);white-space:nowrap;}
   .ata-badge.gemini{color:#1a73e8;border-color:rgba(26,115,232,.35);background:rgba(26,115,232,.08);}
+  .ata-badge.pasta{color:var(--text2);}
   .ata-badge.revisar{color:var(--amber,#b45309);border-color:var(--amber,#f59e0b);background:var(--amber-bg,rgba(245,158,11,.1));}
   .ata-ta{min-height:70px;resize:vertical;font-family:inherit;}
   .ata-ta.grande{min-height:260px;font-size:12.5px;line-height:1.5;margin-top:6px;}
@@ -13092,7 +13093,7 @@ function rpPdfHtml(p,imgs,logoUrl){
    com os campos de resumo. O TEXTO COMPLETO (ata/transcrição inteira) fica em
    pedaços separados fluxoapp_meta/atatxt_<id>_<n> {tipo:'ataTxt'}, carregados
    só quando a ata é aberta (não estoura o limite de 1 MB por documento).
-   Integração Google Meet (Gemini "Fazer anotações"): cada pessoa instala um
+   Pasta de atas (qualquer app: Gemini/Meet, Zoom, Teams, arquivo): cada pessoa instala um
    Apps Script na PRÓPRIA conta Google (grátis, sem servidor e sem verificação
    do Google). O script lê a pasta escolhida e devolve os documentos novos;
    o app (logado) busca e grava aqui. Fontes em fluxoapp_meta/atas_config. */
@@ -13143,33 +13144,70 @@ async function ataSalvar(ata,textoCompleto){
   await ATA_DOC(ata.id).set(dados,{merge:true});
 }
 
-/* Lê o documento do Gemini e separa as seções (Resumo, Detalhes, Próximas
-   etapas, Transcrição). Não usa IA: só os títulos que o Gemini já escreve. */
+/* Separa as seções da ata pelos títulos que os apps de transcrição/anotação
+   já escrevem (Gemini, Zoom, Teams, tl;dv, Otter, Fireflies, Read.ai…) ou que a
+   pessoa usou na ata feita à mão. Não usa IA. Sem títulos reconhecidos, o
+   começo do texto vira o resumo (o texto inteiro fica guardado na ata). */
+function ataLimparLegenda(texto){
+  const t=String(texto||'').replace(/\r/g,'');
+  const ehLegenda=/^\s*WEBVTT/.test(t)||/\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}/.test(t);
+  if(!ehLegenda) return t;
+  const out=[]; let ant='';
+  t.split('\n').forEach(l=>{ const x=l.trim();
+    if(!x||/^WEBVTT/.test(x)||/^\d+$/.test(x)||/-->/.test(x)||/^(NOTE|STYLE|REGION)\b/.test(x)) return;
+    const limpo=x.replace(/<[^>]+>/g,''); if(limpo&&limpo!==ant){ out.push(limpo); ant=limpo; } });
+  return out.join('\n');
+}
 function ataSepararSecoes(texto){
-  const linhas=String(texto||'').replace(/\r/g,'').split('\n');
+  const linhas=ataLimparLegenda(texto).split('\n');
+  const H=(re)=>new RegExp('^(#+\\s*|\\*\\*)?('+re+')\\s*:?\\s*(\\*\\*)?\\s*:?\\s*$','i');
   const tipos=[
-    ['resumo',/^(#+\s*)?(resumo|summary)\s*:?$/i],
-    ['detalhes',/^(#+\s*)?(detalhes|details)\s*:?$/i],
-    ['proximos',/^(#+\s*)?(pr[óo]ximas etapas( sugeridas)?|pr[óo]ximos passos|suggested next steps|next steps|action items)\s*:?$/i],
-    ['transcricao',/^(#+\s*)?(transcri[çc][ãa]o|transcript)\s*:?$/i],
+    ['resumo',H('resumo( da reuni[ãa]o)?|resumo executivo|sum[áa]rio|summary|meeting summary|quick recap|overview|vis[ãa]o geral|tl;?dr|pontos principais|principais pontos|key points|key takeaways|destaques|highlights')],
+    ['decisoes',H('decis[õo]es( tomadas)?|delibera[çc][õo]es|definido|definições|decisions( made)?|key decisions|acordos')],
+    ['proximos',H('pr[óo]ximas etapas( sugeridas)?|pr[óo]ximos passos|encaminhamentos|pend[êe]ncias|a[çc][õo]es|plano de a[çc][ãa]o|tarefas|suggested next steps|next steps|action items|to-?dos?|tasks|follow-?ups?')],
+    ['detalhes',H('detalhes|details|notas|notes|anota[çc][õo]es|outline|t[óo]picos|topics|pauta|assuntos tratados|discuss[ãa]o|chapters|cap[íi]tulos')],
+    ['participantes',H('participantes|presentes|attendees|participants')],
+    ['transcricao',H('transcri[çc][ãa]o|transcript|transcription')],
   ];
-  const out={resumo:'',detalhes:'',proximos:'',transcricao:''}; let atual=null;
+  const out={resumo:'',decisoes:'',proximos:'',detalhes:'',participantes:'',transcricao:''}; let atual=null, achou=false;
   linhas.forEach(l=>{
-    const t=l.trim(); const hit=tipos.find(([,re])=>re.test(t));
-    if(hit){ atual=hit[0]; return; }
+    const t=l.trim(); const hit=t.length<60&&tipos.find(([,re])=>re.test(t));
+    if(hit){ atual=hit[0]; achou=true; return; }
     if(/^###\s/.test(t)){ atual=null; return; } /* título de aba gravado pelo script */
     if(atual) out[atual]+=l+'\n';
   });
   Object.keys(out).forEach(k=>out[k]=out[k].trim());
+  if(!achou||(!out.resumo&&!out.detalhes&&!out.proximos&&!out.decisoes)){
+    const corpo=linhas.filter(l=>!/^###\s/.test(l.trim())).join('\n').trim();
+    if(!out.resumo) out.resumo=corpo.slice(0,1500)+(corpo.length>1500?'…':'');
+  }
   return out;
 }
-/* "Reunião X - 2026/11/10 14:00 GMT-03:00 - Anotações do Gemini" → título e data. */
+/* Nome do arquivo → título e data. Aceita 2026/11/10, 2026-11-10, 10/11/2026,
+   10-11-2026, 10.11.2026 e 20261110; tira extensão e sufixos dos apps. */
 function ataInfoDoNome(nome,criadoMs){
-  const s=String(nome||''); const m=s.match(/(\d{4})[\/-](\d{2})[\/-](\d{2})/);
-  let data=m?`${m[1]}-${m[2]}-${m[3]}`:'';
+  let s=String(nome||'').replace(/\.(docx?|pdf|txt|md|vtt|srt|sbv|rtf|odt|csv|json)$/i,'').replace(/\.(transcript|transcricao|cc)$/i,'').replace(/^GMT(?=20\d{6})/,'');
+  let data='', ini=-1;
+  let m=s.match(/(20\d{2})[\/\-_.](\d{2})[\/\-_.](\d{2})/);
+  if(m){ data=`${m[1]}-${m[2]}-${m[3]}`; ini=m.index; }
+  else if((m=s.match(/(\d{2})[\/\-_.](\d{2})[\/\-_.](20\d{2})/))){ data=`${m[3]}-${m[2]}-${m[1]}`; ini=m.index; }
+  else if((m=s.match(/(?:^|\D)(20\d{2})(\d{2})(\d{2})(?:\D|$)/))&&Number(m[2])<=12&&Number(m[3])<=31){ data=`${m[1]}-${m[2]}-${m[3]}`; ini=m.index; }
   if(!data&&criadoMs){ const d=new Date(criadoMs); data=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-  let titulo=m?s.slice(0,m.index).replace(/[\s\-–]+$/,''):s.replace(/\s*[-–]\s*(anota[çc][õo]es do gemini|notes by gemini)\s*$/i,'');
-  return {titulo:titulo.trim()||s,data};
+  const suf=/\s*[-–|]?\s*(anota[çc][õo]es do gemini|notes by gemini|transcri[çc][ãa]o|transcript|recording|grava[çc][ãa]o|meeting notes|ata)\s*$/i;
+  let titulo=ini>0?s.slice(0,ini):(ini===0?s.slice(m[0].length+(m[0].match(/^\D/)?0:0)):s);
+  titulo=titulo.replace(/^[\s\-–_|]*\d{4,6}(?=[\s\-–_|]|$)/,'').replace(suf,'').replace(/[\s\-–_|]+$/,'').replace(/^[\s\-–_|]+/,'').replace(suf,'').trim();
+  return {titulo:titulo||(data?'Reunião':s),data};
+}
+/* De onde veio a ata importada (só para o selo na lista). */
+function ataOrigemDe(nome,texto){
+  const x=(String(nome||'')+' '+String(texto||'').slice(0,4000)).toLowerCase();
+  if(/gemini|anota[çc][õo]es do gemini|notes by gemini/.test(x)) return 'gemini';
+  return 'pasta';
+}
+function AtaOrigemBadge({a,curto}){
+  if(a.origem==='gemini') return <span className="ata-badge gemini"><i className="ti ti-sparkles"/> {curto?'Meet':'Google Meet'}</span>;
+  if(a.origem==='pasta') return <span className="ata-badge pasta"><i className="ti ti-folder"/> {curto?'Pasta':'Pasta de atas'}</span>;
+  return null;
 }
 /* Sugere vínculos: empreendimentos cujo nome aparece no título/resumo. */
 function ataSugerirVinculos(projects,texto){
@@ -13180,41 +13218,75 @@ function ataSugerirVinculos(projects,texto){
 
 /* Código do Apps Script que a pessoa cola na própria conta Google. */
 function ataScriptCodigo(token){
-  return `/* Incorporando — leitor de atas do Google Meet (Gemini)
-   Instale na SUA conta Google. Ele só lê a pasta que você escolher no app. */
+  return `/* Incorporando — leitor da PASTA DE ATAS (versão 2)
+   Instale na SUA conta Google. Ele só lê a pasta que você escolher no app
+   (e as subpastas dela). Serve para qualquer app que salve a ata ali:
+   Google Meet/Gemini, Zoom, Teams, tl;dv, Otter, Fireflies, ou ata feita à mão.
+   Lê: Google Docs, Word (.docx/.doc), PDF, RTF/ODT e texto (.txt .md .vtt .srt). */
 const CODIGO = '${token}';
+const VERSAO = 2;
+const EXT_TEXTO = /\\.(txt|md|vtt|srt|sbv|csv|json)$/i;
+const CONVERTER = {
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 1,
+  'application/msword': 1, 'application/pdf': 1, 'application/rtf': 1, 'text/rtf': 1,
+  'application/vnd.oasis.opendocument.text': 1
+};
 
 function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.codigo !== CODIGO) return saida({ ok: false, erro: 'Código de conexão inválido.' });
   try {
     const pasta = DriveApp.getFolderById(p.pasta);
-    if (p.acao === 'teste') return saida({ ok: true, pasta: pasta.getName() });
+    if (p.acao === 'teste') return saida({ ok: true, versao: VERSAO, pasta: pasta.getName() });
     const desde = Number(p.desde || 0);
     const limite = Math.min(Number(p.limite || 5), 10);
     const filtro = String(p.filtro || '').toLowerCase();
-    const it = pasta.getFilesByType(MimeType.GOOGLE_DOCS);
     const lista = [];
-    while (it.hasNext()) {
-      const f = it.next();
-      const t = f.getLastUpdated().getTime();
-      if (t <= desde) continue;
-      if (filtro && f.getName().toLowerCase().indexOf(filtro) < 0) continue;
-      lista.push({ f: f, t: t });
-    }
+    coletar(pasta, 0, desde, filtro, lista);
     lista.sort(function (a, b) { return a.t - b.t; });
     const itens = lista.slice(0, limite).map(function (x) {
-      return { id: x.f.getId(), nome: x.f.getName(), url: x.f.getUrl(),
-               criado: x.f.getDateCreated().getTime(), atualizado: x.t, texto: lerTexto(x.f.getId()) };
+      return { id: x.f.getId(), nome: x.f.getName(), url: x.f.getUrl(), tipo: x.f.getMimeType(),
+               criado: x.f.getDateCreated().getTime(), atualizado: x.t, texto: lerArquivo(x.f) };
     });
-    return saida({ ok: true, itens: itens, restantes: Math.max(0, lista.length - itens.length) });
+    return saida({ ok: true, versao: VERSAO, itens: itens, restantes: Math.max(0, lista.length - itens.length) });
   } catch (err) {
-    return saida({ ok: false, erro: String(err) });
+    return saida({ ok: false, versao: VERSAO, erro: String(err) });
   }
 }
 
-/* Lê o documento inteiro, inclusive as abas (Anotações e Transcrição). */
-function lerTexto(id) {
+function aceito(f) {
+  const m = f.getMimeType(), n = f.getName();
+  if (n.indexOf('[temp-incorporando]') === 0) return false;
+  return m === MimeType.GOOGLE_DOCS || CONVERTER[m] || EXT_TEXTO.test(n) || m.indexOf('text/') === 0;
+}
+
+function coletar(pasta, nivel, desde, filtro, lista) {
+  const it = pasta.getFiles();
+  while (it.hasNext()) {
+    const f = it.next();
+    const t = f.getLastUpdated().getTime();
+    if (t <= desde || !aceito(f)) continue;
+    if (filtro && f.getName().toLowerCase().indexOf(filtro) < 0) continue;
+    lista.push({ f: f, t: t });
+  }
+  if (nivel >= 2) return;
+  const sub = pasta.getFolders();
+  while (sub.hasNext()) coletar(sub.next(), nivel + 1, desde, filtro, lista);
+}
+
+function lerArquivo(f) {
+  const m = f.getMimeType();
+  try {
+    if (m === MimeType.GOOGLE_DOCS) return lerDoc(f.getId());
+    if (CONVERTER[m]) return converter(f);
+    return f.getBlob().getDataAsString('UTF-8');
+  } catch (err) {
+    return '(Não consegui ler o arquivo "' + f.getName() + '": ' + err + ')';
+  }
+}
+
+/* Lê o Google Docs inteiro, inclusive as abas (ex.: Anotações e Transcrição). */
+function lerDoc(id) {
   const doc = DocumentApp.openById(id);
   try {
     const partes = [];
@@ -13229,6 +13301,22 @@ function lerTexto(id) {
     return partes.join('\\n\\n');
   } catch (e) {
     return doc.getBody().getText();
+  }
+}
+
+/* Word/PDF/RTF: cria uma cópia temporária em Google Docs, lê e apaga. */
+function converter(f) {
+  const auth = { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() };
+  const r = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + f.getId() + '/copy?fields=id', {
+    method: 'post', contentType: 'application/json', headers: auth, muteHttpExceptions: true,
+    payload: JSON.stringify({ name: '[temp-incorporando] ' + f.getName(), mimeType: MimeType.GOOGLE_DOCS, parents: ['root'] })
+  });
+  if (r.getResponseCode() !== 200) throw new Error('conversão recusada pelo Google (' + r.getResponseCode() + ')');
+  const id = JSON.parse(r.getContentText()).id;
+  try {
+    return DocumentApp.openById(id).getBody().getText();
+  } finally {
+    UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + id, { method: 'delete', headers: auth, muteHttpExceptions: true });
   }
 }
 
@@ -13249,25 +13337,29 @@ async function ataChamarScript(fonte,params){
 async function ataSincronizarFonte(fonte,projects,atasExistentes,salvarFonte){
   const jaTem=new Set((atasExistentes||[]).map(a=>a.driveFileId).filter(Boolean));
   let desde=Number(fonte.ultimaSync)||0, novas=0, rodadas=0, restantes=1;
+  let versaoScript=Number(fonte.versaoScript)||1;
   while(restantes>0&&rodadas<12){
     rodadas++;
     const j=await ataChamarScript(fonte,{desde:String(desde),limite:'5',filtro:fonte.filtro||''});
+    versaoScript=Number(j.versao)||1;
     for(const it of (j.itens||[])){
       desde=Math.max(desde,Number(it.atualizado)||0);
       if(jaTem.has(it.id)) continue;
-      const sec=ataSepararSecoes(it.texto); const info=ataInfoDoNome(it.nome,it.criado);
-      const ata={id:ataNovoId(),titulo:info.titulo,data:info.data,tipoReuniao:'online',orgao:'',participantes:'',
-        resumo:sec.resumo||sec.detalhes.slice(0,1500),decisoes:'',proximos:sec.proximos,
+      const textoLimpo=ataLimparLegenda(it.texto);
+      const sec=ataSepararSecoes(textoLimpo); const info=ataInfoDoNome(it.nome,it.criado);
+      const origem=ataOrigemDe(it.nome,textoLimpo);
+      const ata={id:ataNovoId(),titulo:info.titulo,data:info.data,tipoReuniao:origem==='gemini'?'online':'outro',orgao:'',participantes:sec.participantes.slice(0,500),
+        resumo:sec.resumo||sec.detalhes.slice(0,1500),decisoes:sec.decisoes,proximos:sec.proximos,
         vinculos:ataSugerirVinculos(projects,info.titulo+' '+sec.resumo),
-        origem:'gemini',fonteId:fonte.id,fonteNome:fonte.nome||'',driveFileId:it.id,driveUrl:it.url,driveNome:it.nome,
-        status:'revisar',criadoEm:Date.now(),criadoPor:'Google Meet ('+(fonte.nome||'integração')+')'};
-      await ataSalvar(ata,String(it.texto||''));
+        origem,fonteId:fonte.id,fonteNome:fonte.nome||'',driveFileId:it.id,driveUrl:it.url,driveNome:it.nome,driveTipo:it.tipo||'',
+        status:'revisar',criadoEm:Date.now(),criadoPor:'Pasta de atas ('+(fonte.nome||'integração')+')'};
+      await ataSalvar(ata,textoLimpo);
       jaTem.add(it.id); novas++;
     }
     restantes=Number(j.restantes)||0;
     if(!(j.itens||[]).length) break;
   }
-  await salvarFonte({...fonte,ultimaSync:desde,ultimaTentativa:Date.now(),ultimoErro:''});
+  await salvarFonte({...fonte,ultimaSync:desde,ultimaTentativa:Date.now(),ultimoErro:'',versaoScript});
   return novas;
 }
 function useAtasConfig(){
@@ -13317,7 +13409,7 @@ function AtaModal({inicial,projects,onClose,onAbrirTarefa}){
         <div className="ata-modal-h">
           <div style={{fontWeight:700,fontSize:16}}><i className="ti ti-notes"/> {nova?'Nova ata':'Ata da reunião'}</div>
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-            {a.origem==='gemini'&&<span className="ata-badge gemini"><i className="ti ti-sparkles"/> Google Meet</span>}
+            <AtaOrigemBadge a={a}/>
             {a.status==='revisar'&&<span className="ata-badge revisar">Para revisar</span>}
           </div>
         </div>
@@ -13389,31 +13481,32 @@ function AtaModal({inicial,projects,onClose,onAbrirTarefa}){
   );
 }
 
-/* ─── Integração Google Meet: fontes (uma por pessoa/pasta) ─── */
+/* ─── Pasta de atas: fontes (uma por pessoa/pasta) — qualquer app que salve a ata na pasta ─── */
 function AtasIntegracaoModal({fontes,salvarFontes,onClose}){
   const[edit,setEdit]=useState(null);
-  const nova=()=>setEdit({id:'f'+Date.now().toString(36),nome:EU.nome||EU.email||'',dono:EU.email||'',url:'',pasta:'',pastaId:'',filtro:'Gemini',codigo:Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b=>b.toString(16).padStart(2,'0')).join(''),ativo:true,ultimaSync:0});
+  const nova=()=>setEdit({id:'f'+Date.now().toString(36),nome:EU.nome||EU.email||'',dono:EU.email||'',url:'',pasta:'',pastaId:'',filtro:'',codigo:Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b=>b.toString(16).padStart(2,'0')).join(''),ativo:true,ultimaSync:0});
   const[teste,setTeste]=useState(''); const[copiado,setCopiado]=useState(false);
   const up=(k,v)=>setEdit(x=>({...x,[k]:v}));
   const salvar=async()=>{ const pid=ataPastaId(edit.pasta); if(!edit.url.trim()||!pid){ alert('Preencha o endereço do script e o link da pasta do Drive.'); return; }
     const f={...edit,url:edit.url.trim(),pastaId:pid}; const lista=(fontes||[]).some(x=>x.id===f.id)?fontes.map(x=>x.id===f.id?f:x):[...(fontes||[]),f];
     try{ await salvarFontes(lista); setEdit(null); setTeste(''); }catch(e){ alert('Não consegui salvar: '+(e.message||e)); } };
-  const testar=async()=>{ setTeste('Testando…'); try{ const j=await ataChamarScript({...edit,url:edit.url.trim(),pastaId:ataPastaId(edit.pasta)},{acao:'teste'}); setTeste('✓ Conectado. Pasta: '+j.pasta); }catch(e){ setTeste('✗ '+(e.message||e)); } };
+  const testar=async()=>{ setTeste('Testando…'); try{ const j=await ataChamarScript({...edit,url:edit.url.trim(),pastaId:ataPastaId(edit.pasta)},{acao:'teste'}); const v=Number(j.versao)||1; setEdit(x=>({...x,versaoScript:v})); setTeste(v>=2?'✓ Conectado. Pasta: '+j.pasta:'✓ Conectado (pasta: '+j.pasta+'), mas o script é a versão antiga: só lê Google Docs. Atualize o código (passo 2) e faça uma nova versão da implantação.'); }catch(e){ setTeste('✗ '+(e.message||e)); } };
   const remover=async(f)=>{ if(!window.confirm('Remover a conexão "'+(f.nome||'')+'"? As atas já importadas continuam no app.')) return; await salvarFontes((fontes||[]).filter(x=>x.id!==f.id)); };
   const copiar=()=>{ try{ navigator.clipboard.writeText(ataScriptCodigo(edit.codigo)); setCopiado(true); setTimeout(()=>setCopiado(false),2000); }catch(e){ alert('Não consegui copiar — selecione o texto e copie manualmente.'); } };
   return (
     <div className="modal-overlay" onClick={e=>{if(e.target.classList.contains('modal-overlay'))onClose();}}>
       <div className="modal ata-modal">
-        <div style={{fontWeight:700,fontSize:16,marginBottom:6}}><i className="ti ti-brand-google"/> Integração com o Google Meet</div>
-        <div className="ata-aviso" style={{marginBottom:14}}>As atas do Gemini (“Fazer anotações” no Meet) são lidas da pasta do Drive que você escolher. Cada pessoa conecta a própria conta — grátis, por um script que roda na sua conta Google.</div>
+        <div style={{fontWeight:700,fontSize:16,marginBottom:6}}><i className="ti ti-folder"/> Pasta de atas (Google Drive)</div>
+        <div className="ata-aviso" style={{marginBottom:14}}>Toda ata salva na pasta do Drive que você escolher entra no app, venha de onde vier: Gemini no Google Meet, Zoom, Teams, tl;dv, Otter, Fireflies ou uma ata feita à mão. Lê Google Docs, Word, PDF e texto/legenda (.txt, .vtt, .srt). Cada pessoa conecta a própria conta — grátis, por um script que roda na sua conta Google.</div>
         {!edit&&<>
           {(fontes||[]).length===0&&<div className="ata-vazio">Nenhuma conta conectada ainda.</div>}
           {(fontes||[]).map(f=>(
             <div key={f.id} className="ata-fonte">
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontWeight:600}}>{f.nome||'Conexão'}</div>
-                <div className="ata-meta" style={{margin:0}}>Filtro: “{f.filtro||'todos os documentos'}” · {f.ultimaTentativa?'última leitura: '+new Date(f.ultimaTentativa).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'ainda não sincronizou'}</div>
+                <div className="ata-meta" style={{margin:0}}>{f.filtro?<>Só nomes com “{f.filtro}”</>:'Todos os arquivos da pasta'} · {f.ultimaTentativa?'última leitura: '+new Date(f.ultimaTentativa).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'ainda não sincronizou'}</div>
                 {f.ultimoErro&&<div className="ata-meta" style={{margin:0,color:'var(--red,#c0392b)'}}>Erro: {f.ultimoErro}</div>}
+                {f.ultimaTentativa&&!(Number(f.versaoScript)>=2)&&<div className="ata-meta" style={{margin:0,color:'var(--amber,#b7791f)'}}>Script antigo: só lê Google Docs. Clique no lápis e siga “Atualizar o script”.</div>}
               </div>
               <button className="btn-modal ghost" onClick={()=>{setEdit({...f});setTeste('');}}><i className="ti ti-pencil"/></button>
               <button className="btn-modal ghost" onClick={()=>remover(f)}><i className="ti ti-trash"/></button>
@@ -13428,17 +13521,18 @@ function AtasIntegracaoModal({fontes,salvarFontes,onClose}){
             <li>Abra <a href="https://script.google.com/home/projects/create" target="_blank" rel="noopener">script.google.com → Novo projeto</a> (logado na conta Google onde ficam as atas).</li>
             <li>Apague o que estiver lá, cole o código abaixo e salve. <button type="button" className="btn-modal" style={{padding:'3px 10px',marginLeft:4}} onClick={copiar}><i className="ti ti-copy"/> {copiado?'Copiado!':'Copiar código'}</button></li>
             <li>Clique em <b>Implantar → Nova implantação</b>, tipo <b>App da Web</b>. Executar como: <b>Eu</b>. Quem pode acessar: <b>Qualquer pessoa</b>. Autorize quando o Google pedir.</li>
-            <li>Copie o <b>URL do app da Web</b> e cole abaixo, junto com o link da pasta onde o Gemini salva as anotações (normalmente “Meet Recordings”).</li>
+            <li>Copie o <b>URL do app da Web</b> e cole abaixo, junto com o link da <b>pasta onde as atas são salvas</b> (pode ser a “Meet Recordings” do Gemini ou qualquer pasta onde você ou outro app coloque a ata). Subpastas também são lidas.</li>
           </ol>
+          <div className="ata-aviso" style={{marginBottom:10,fontSize:12}}><b>Atualizar o script (quem já tinha conectado):</b> abra o mesmo projeto no script.google.com, troque o código pelo novo e salve; depois <b>Implantar → Gerenciar implantações → lápis → Versão: Nova versão → Implantar</b>. O URL continua o mesmo. Na primeira vez o Google pede de novo a autorização.</div>
           <details className="ata-codigo"><summary>Ver o código</summary><pre>{ataScriptCodigo(edit.codigo)}</pre></details>
           <div className="modal-field"><label className="modal-field-label">Nome da conexão</label>
-            <input className="form-input" value={edit.nome} onChange={e=>up('nome',e.target.value)} placeholder="Ex.: Brunna — Meet"/></div>
+            <input className="form-input" value={edit.nome} onChange={e=>up('nome',e.target.value)} placeholder="Ex.: Brunna — atas"/></div>
           <div className="modal-field"><label className="modal-field-label">URL do app da Web (Apps Script)</label>
             <input className="form-input" value={edit.url} onChange={e=>up('url',e.target.value)} placeholder="https://script.google.com/macros/s/…/exec"/></div>
           <div className="modal-field"><label className="modal-field-label">Link da pasta do Drive</label>
             <input className="form-input" value={edit.pasta||edit.pastaId||''} onChange={e=>up('pasta',e.target.value)} placeholder="https://drive.google.com/drive/folders/…"/></div>
-          <div className="modal-field"><label className="modal-field-label">Ler só documentos cujo nome contém</label>
-            <input className="form-input" value={edit.filtro} onChange={e=>up('filtro',e.target.value)} placeholder="Gemini (deixe vazio para ler todos)"/></div>
+          <div className="modal-field"><label className="modal-field-label">Ler só arquivos cujo nome contém (opcional)</label>
+            <input className="form-input" value={edit.filtro||''} onChange={e=>up('filtro',e.target.value)} placeholder="Deixe vazio para ler todos os arquivos da pasta"/></div>
           {teste&&<div className="ata-aviso" style={{marginBottom:10}}>{teste}</div>}
           <div className="modal-footer" style={{justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
             <button className="btn-modal ghost" onClick={testar} disabled={!edit.url||!ataPastaId(edit.pasta||edit.pastaId)}><i className="ti ti-plug-connected"/> Testar conexão</button>
@@ -13492,20 +13586,20 @@ function AtasView({onBack,projects,onOpenTask}){
         <select className="pdi-select" style={{maxWidth:220}} value={fProj} onChange={e=>setFProj(e.target.value)}><option value="">Todos os empreendimentos</option>{ativos.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
         <select className="pdi-select" style={{maxWidth:180}} value={fStatus} onChange={e=>setFStatus(e.target.value)}><option value="">Todas</option><option value="revisar">Para revisar{nRevisar?` (${nRevisar})`:''}</option><option value="ok">Revisadas</option></select>
         <div style={{marginLeft:'auto',display:'flex',gap:8,flexWrap:'wrap'}}>
-          <button className="pdi-btn ghost" onClick={()=>setInteg(true)}><i className="ti ti-brand-google"/> Google Meet</button>
+          <button className="pdi-btn ghost" onClick={()=>setInteg(true)}><i className="ti ti-folder"/> Pasta de atas</button>
           {minhas.length>0&&<button className="pdi-btn ghost" disabled={sincronizando} onClick={()=>sincronizar(false)}><i className={'ti ti-refresh'+(sincronizando?' ata-gira':'')}/> Sincronizar</button>}
           {permEditarNotas()&&<button className="venc-add-btn" onClick={()=>setAberta({})}><i className="ti ti-plus"/> Nova ata</button>}
         </div>
       </div>
       {sync&&<div className="ata-aviso" style={{marginBottom:12}}>{sync}</div>}
-      {filtradas.length===0&&<div className="pdi-empty">{atas.length?'Nenhuma ata encontrada com esses filtros.':'Nenhuma ata registrada ainda. Clique em “Nova ata” ou conecte o Google Meet.'}</div>}
+      {filtradas.length===0&&<div className="pdi-empty">{atas.length?'Nenhuma ata encontrada com esses filtros.':'Nenhuma ata registrada ainda. Clique em “Nova ata” ou conecte a pasta de atas.'}</div>}
       <div className="ata-lista">
         {filtradas.map(a=>(
           <div key={a.id} className={'ata-card'+(a.status==='revisar'?' revisar':'')} onClick={()=>setAberta(a)}>
             <div className="ata-card-h">
               <span className="ata-data">{fmtISOBR(a.data)}</span>
               <span className="ata-badge">{ataTipoNome(a.tipoReuniao)}</span>
-              {a.origem==='gemini'&&<span className="ata-badge gemini"><i className="ti ti-sparkles"/> Meet</span>}
+              <AtaOrigemBadge a={a} curto/>
               {a.status==='revisar'&&<span className="ata-badge revisar">Para revisar</span>}
             </div>
             <div className="ata-card-t">{a.titulo||'(sem título)'}</div>
@@ -14675,7 +14769,7 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
           <div className="pdi-tool" onClick={()=>setView('atas')}>
             <i className="ti ti-notes"/>
             <div className="tt">Atas de Reunião</div>
-            <div className="dd">Registro das reuniões vinculado às tarefas, com a ata completa — inclusive importada do Google Meet.</div>
+            <div className="dd">Registro das reuniões vinculado às tarefas, com a ata completa — inclusive importada da pasta de atas (Meet, Zoom, Teams, arquivo…).</div>
           </div>
           <div className="pdi-tool" onClick={()=>setView('financeiro')}>
             <i className="ti ti-cash-banknote"/>
