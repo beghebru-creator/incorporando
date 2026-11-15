@@ -10410,11 +10410,28 @@ function regConta(x){
   };
 }
 function regReportCfg(x){ return {enabled:!!(x&&x.enabled), emails:(x&&x.emails)||'', url:(x&&x.url)||'', sentYm:(x&&x.sentYm)||''}; }
+/* Logins editáveis (nov/2026): a lista fica em regCreditos.logins =
+   [{id,nome,removido?}]. Sem lista salva, vale o padrão antigo FEW e W&W.
+   Excluir um login só o esconde (removido:true) — os lançamentos dele
+   continuam guardados em contas[id] e o login pode ser restaurado. */
+const REG_LOGINS_PADRAO=[{id:'FEW',nome:'FEW'},{id:'WW',nome:'W&W'}];
+function regLogins(x){
+  const arr=Array.isArray(x)&&x.length?x:REG_LOGINS_PADRAO;
+  const vistos=new Set();
+  return arr.filter(l=>l&&l.id&&!vistos.has(String(l.id))&&vistos.add(String(l.id))).map(l=>({id:String(l.id),nome:String(l.nome||l.id),...(l.removido?{removido:true}:{})}));
+}
+function regLoginsAtivos(norm){ return (norm.logins||[]).filter(l=>!l.removido); }
+function regLoginNome(norm,id){ const l=(norm.logins||[]).find(x=>x.id===id); return l?l.nome:(id==='WW'?'W&W':String(id||'')); }
 function regNormalize(rc){
   const report=regReportCfg(rc&&rc.report);
-  if(rc&&rc.contas) return {contas:{FEW:regConta(rc.contas.FEW),WW:regConta(rc.contas.WW)},report};
-  if(rc&&(Array.isArray(rc.recargas)||Array.isArray(rc.gastos))) return {contas:{FEW:regConta(rc),WW:regConta(null)},report};
-  return {contas:{FEW:regConta(null),WW:regConta(null)},report};
+  const logins=regLogins(rc&&rc.logins);
+  let contasIn={};
+  if(rc&&rc.contas) contasIn=rc.contas;
+  else if(rc&&(Array.isArray(rc.recargas)||Array.isArray(rc.gastos))) contasIn={FEW:rc};
+  const contas={};
+  Object.keys(contasIn).forEach(k=>{ contas[k]=regConta(contasIn[k]); });   /* guarda todas, inclusive de logins excluídos */
+  logins.forEach(l=>{ if(!contas[l.id]) contas[l.id]=regConta(null); });
+  return {contas,logins,report};
 }
 /* Rótulo de mês "AAAA-MM" → "mês/AAAA" em pt. */
 function regMesLabel(ym){ const p=String(ym).split('-'); const mes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][Number(p[1])-1]||p[1]; return mes+'/'+p[0]; }
@@ -10438,7 +10455,7 @@ function regMonthSummary(conta,ym){
   const fim=Math.round((ini+recM-gasM)*100)/100;
   return {ini,rec:recM,gas:gasM,fim,items};
 }
-/* Monta o corpo (HTML) do e-mail mensal, com um bloco por login (FEW e W&W). */
+/* Monta o corpo (HTML) do e-mail mensal, com um bloco por login ativo. */
 function regBuildReportHTML(regCreditos,ym){
   const norm=regNormalize(regCreditos); const brl=v=>finFmtBRL(Math.round((Number(v)||0)*100)/100);
   const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -10460,8 +10477,7 @@ function regBuildReportHTML(regCreditos,ym){
   const html=`<div style="font-family:Arial,Helvetica,sans-serif;color:#1b2230;max-width:640px">
    <h1 style="font-size:18px;margin:0 0 2px">Registradores — resumo mensal</h1>
    <div style="color:#6b7280;font-size:13px;margin-bottom:18px">Mês de referência: <b>${esc(regMesLabel(ym))}</b></div>
-   ${bloco('Login FEW',norm.contas.FEW)}
-   ${bloco('Login W&W',norm.contas.WW)}
+   ${regLoginsAtivos(norm).map(l=>bloco('Login '+l.nome,norm.contas[l.id])).join('')}
    <div style="color:#9aa2b4;font-size:11px;margin-top:22px">Enviado automaticamente pelo Incorporando.</div>
    <style>
     h2{font-size:13px;text-transform:uppercase;letter-spacing:.03em;color:#1E3A2F;margin:22px 0 6px;border-bottom:2px solid #eef1f6;padding-bottom:4px;}
@@ -10624,7 +10640,7 @@ function RegReportConfig({norm,setReport}){
           <input type="checkbox" checked={rep.enabled} onChange={e=>setReport({enabled:e.target.checked,emails:emails.trim()})}/> Enviar automaticamente
         </label>
       </div>
-      <div style={{fontSize:11.5,color:'var(--text3)',marginBottom:10}}>Quando ligado, no 1º dia útil de cada mês é enviado o resumo do mês anterior (FEW e W&amp;W) para os e-mails abaixo.</div>
+      <div style={{fontSize:11.5,color:'var(--text3)',marginBottom:10}}>Quando ligado, no 1º dia útil de cada mês é enviado o resumo do mês anterior (um bloco por login) para os e-mails abaixo.</div>
       <div style={{maxWidth:520}}>
         <label className="pdi-label">E-mail(s) que recebem <span style={{color:'var(--text3)'}}>(separe por vírgula)</span></label>
         <input className="pdi-input" value={emails} onChange={e=>setEmails(e.target.value)} onBlur={save} placeholder="voce@empresa.com, financeiro@empresa.com"/>
@@ -10632,10 +10648,66 @@ function RegReportConfig({norm,setReport}){
     </div>
   );
 }
+/* Gerenciar os logins do Registradores: adicionar, renomear, excluir (esconde,
+   mantendo os lançamentos) e restaurar. */
+function RegLoginsModal({norm,onSave,onClose}){
+  const[lista,setLista]=useState(()=>norm.logins.map(l=>({...l})));
+  const[novo,setNovo]=useState('');
+  const qtd=id=>{ const c=norm.contas[id]; return c?(c.recargas.length+c.gastos.length):0; };
+  const nomeUsado=(nome,id)=>lista.some(l=>!l.removido&&l.id!==id&&l.nome.trim().toLowerCase()===nome.trim().toLowerCase());
+  const renomear=(id,nome)=>setLista(ls=>ls.map(l=>l.id===id?{...l,nome}:l));
+  const excluir=l=>{ const n=qtd(l.id);
+    if(!window.confirm(n>0?`Excluir o login "${l.nome}"? Ele tem ${n} lançamento(s) — eles NÃO são apagados: ficam guardados e o login pode ser restaurado aqui depois.`:`Excluir o login "${l.nome}"?`)) return;
+    setLista(ls=>ls.map(x=>x.id===l.id?{...x,removido:true}:x)); };
+  const restaurar=id=>setLista(ls=>ls.map(x=>{ if(x.id!==id) return x; const {removido,...r}=x; return r; }));
+  const adicionar=()=>{ const nome=novo.trim(); if(!nome) return; if(nomeUsado(nome,null)){ alert('Já existe um login com esse nome.'); return; }
+    setLista(ls=>[...ls,{id:'L'+Date.now().toString(36),nome}]); setNovo(''); };
+  const salvar=()=>{
+    const ativos=lista.filter(l=>!l.removido);
+    if(ativos.some(l=>!l.nome.trim())){ alert('Todo login precisa de um nome.'); return; }
+    const nomes=ativos.map(l=>l.nome.trim().toLowerCase()); if(new Set(nomes).size!==nomes.length){ alert('Há dois logins com o mesmo nome.'); return; }
+    onSave(lista.map(l=>({...l,nome:l.nome.trim()})));
+  };
+  const ativos=lista.filter(l=>!l.removido), excluidos=lista.filter(l=>l.removido);
+  return (
+    <div className="modal-overlay" onClick={e=>{ if(e.target.classList.contains('modal-overlay')) onClose(); }}>
+      <div className="modal" style={{width:460,maxWidth:'94vw'}}>
+        <div style={{fontWeight:700,fontSize:16,marginBottom:4}}><i className="ti ti-user-cog"/> Logins do Registradores</div>
+        <div style={{fontSize:12,color:'var(--text3)',marginBottom:14}}>Cada login tem seus próprios créditos, gastos e saldo. Renomear não mexe nos lançamentos.</div>
+        {ativos.length===0&&<div style={{fontSize:12.5,color:'var(--text3)',marginBottom:10}}>Nenhum login ativo.</div>}
+        {ativos.map(l=>(
+          <div key={l.id} style={{display:'flex',gap:8,alignItems:'center',marginBottom:8}}>
+            <input className="pdi-input" style={{flex:1}} value={l.nome} onChange={e=>renomear(l.id,e.target.value)} placeholder="Nome do login"/>
+            <span style={{fontSize:11,color:'var(--text3)',whiteSpace:'nowrap',minWidth:74,textAlign:'right'}}>{qtd(l.id)} lançam.</span>
+            <button className="venc-act-btn" title="Excluir login" onClick={()=>excluir(l)}><i className="ti ti-trash"/></button>
+          </div>))}
+        <div style={{display:'flex',gap:8,marginTop:6,marginBottom:12}}>
+          <input className="pdi-input" style={{flex:1}} value={novo} onChange={e=>setNovo(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') adicionar(); }} placeholder="Nome do novo login"/>
+          <button className="btn-modal" onClick={adicionar} disabled={!novo.trim()}><i className="ti ti-plus"/> Adicionar</button>
+        </div>
+        {excluidos.length>0&&<div style={{borderTop:'1px solid var(--border)',paddingTop:10,marginBottom:6}}>
+          <div style={{fontSize:11.5,fontWeight:700,color:'var(--text3)',marginBottom:6}}>Excluídos (lançamentos guardados)</div>
+          {excluidos.map(l=>(
+            <div key={l.id} style={{display:'flex',alignItems:'center',gap:8,fontSize:12.5,marginBottom:4}}>
+              <span style={{flex:1,color:'var(--text2)'}}>{l.nome} <span style={{color:'var(--text3)'}}>· {qtd(l.id)} lançam.</span></span>
+              <button className="venc-act-btn" onClick={()=>restaurar(l.id)}><i className="ti ti-arrow-back-up"/> Restaurar</button>
+            </div>))}
+        </div>}
+        <div className="modal-footer">
+          <button className="btn-modal ghost" onClick={onClose}>Cancelar</button>
+          <button className="btn-modal" onClick={salvar}>Salvar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 function RegistradoresCreditos({regCreditos,setRegCreditos,projects,regTab}){
   const norm=regNormalize(regCreditos);
-  /* Qual login esta selecionado: 'FEW' ou 'WW' (W&W). */
-  const[conta,setConta]=useState('FEW');
+  /* Qual login está selecionado (id da lista de logins editável). */
+  const ativosLogin=regLoginsAtivos(norm);
+  const[contaSel,setConta]=useState(null);
+  const conta=ativosLogin.some(l=>l.id===contaSel)?contaSel:(ativosLogin[0]?ativosLogin[0].id:'FEW');
+  const[gerLogins,setGerLogins]=useState(false);
   const cur=norm.contas[conta]||regConta(null);
   const recargas=cur.recargas;
   const gastos=cur.gastos;
@@ -10662,9 +10734,10 @@ function RegistradoresCreditos({regCreditos,setRegCreditos,projects,regTab}){
   const empresasAll=[...new Set([...empProj,...recargas.map(r=>r.empresa),...gastos.map(gEmpresa)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
   const tiposAll=[...new Set([...REG_TIPOS,...gastos.map(g=>g.tipoServico)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
 
-  const setRC=patch=>setRegCreditos({contas:{...norm.contas,[conta]:{recargas,gastos,ajuste,...patch}},report:norm.report});
+  const setRC=patch=>setRegCreditos({contas:{...norm.contas,[conta]:{recargas,gastos,ajuste,...patch}},logins:norm.logins,report:norm.report});
   /* Config do relatório mensal por e-mail (compartilhada entre os logins). */
-  const setReport=patch=>setRegCreditos({contas:norm.contas,report:{...norm.report,...patch}});
+  const setReport=patch=>setRegCreditos({contas:norm.contas,logins:norm.logins,report:{...norm.report,...patch}});
+  const setLogins=logins=>setRegCreditos({contas:norm.contas,logins,report:norm.report});
   const delRecarga=id=>{ if(window.confirm('Excluir esta recarga?')) setRC({recargas:recargas.filter(r=>r.id!==id)}); };
   const delGasto=id=>{ if(window.confirm('Excluir este registro?')) setRC({gastos:gastos.filter(g=>g.id!==id)}); };
 
@@ -10711,10 +10784,11 @@ function RegistradoresCreditos({regCreditos,setRegCreditos,projects,regTab}){
     <div>
       <div className="venc-note" style={{maxWidth:'none',marginBottom:12}}>Controle de créditos da plataforma <b>Registradores</b>. Cadastre as recargas de crédito e vá lançando os gastos (registros) — o saldo é atualizado automaticamente. Esta aba é independente: não entra nos valores dos contratos nem do dashboard financeiro.</div>
 
-      {/* Dois logins do Registradores — cada um com seus proprios creditos e gastos. */}
-      <div style={{display:'flex',gap:8,marginBottom:16,alignItems:'center'}}>
+      {/* Logins do Registradores (editáveis) — cada um com seus próprios créditos e gastos. */}
+      <div style={{display:'flex',gap:8,marginBottom:16,alignItems:'center',flexWrap:'wrap'}}>
         <span style={{fontSize:12,color:'var(--text3)',fontWeight:600,marginRight:2}}>Login:</span>
-        {[['FEW','FEW'],['WW','W&W']].map(([k,lbl])=>(
+        {ativosLogin.length===0&&<span style={{fontSize:12.5,color:'var(--text3)'}}>Nenhum login — clique em “Gerenciar logins”.</span>}
+        {ativosLogin.map(({id:k,nome:lbl})=>(
           <button key={k} onClick={()=>setConta(k)}
             style={{padding:'7px 20px',borderRadius:9,fontWeight:700,fontSize:13,cursor:'pointer',
               background:conta===k?'var(--accent)':'var(--surface)',
@@ -10723,9 +10797,11 @@ function RegistradoresCreditos({regCreditos,setRegCreditos,projects,regTab}){
             {lbl}
           </button>
         ))}
+        <button className="venc-act-btn" onClick={()=>setGerLogins(true)} title="Adicionar, renomear ou excluir logins" style={{padding:'7px 12px',display:'inline-flex',alignItems:'center',gap:5,fontSize:12.5}}><i className="ti ti-settings"/> Gerenciar logins</button>
       </div>
+      {gerLogins&&<RegLoginsModal norm={norm} onSave={l=>{ setLogins(l); setGerLogins(false); }} onClose={()=>setGerLogins(false)}/>}
 
-      {regTab==='dashboard' ? <><RegReportConfig norm={norm} setReport={setReport}/><RegistradoresDashboard recargas={recargas} gastos={gastos} ajuste={ajuste} saldo={saldo} gEmpresa={gEmpresa} gRegistro={gRegistro} contaLabel={conta==='WW'?'W&W':conta}/></> : (<>
+      {regTab==='dashboard' ? <><RegReportConfig norm={norm} setReport={setReport}/><RegistradoresDashboard recargas={recargas} gastos={gastos} ajuste={ajuste} saldo={saldo} gEmpresa={gEmpresa} gRegistro={gRegistro} contaLabel={regLoginNome(norm,conta)}/></> : (<>
       <div style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:18}}>
         <div style={{flex:'1 1 180px',minWidth:180,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px'}}>
           <div style={{fontSize:11,color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.03em',marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
