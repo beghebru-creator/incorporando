@@ -10650,23 +10650,16 @@ function RegistradoresDashboard({recargas,gastos,ajuste,saldo,gEmpresa,gRegistro
    lê estas configurações direto do banco. */
 function RegReportConfig({norm,setReport}){
   const rep=norm.report;
-  const[emails,setEmails]=useState(rep.emails);
-  useEffect(()=>{ setEmails(rep.emails); },[rep.emails]);
-  const save=()=>setReport({emails:emails.trim()});
   return (
     <div style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',marginBottom:16,background:'var(--surface)'}}>
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
         <i className="ti ti-mail" style={{color:'var(--accent)'}}/>
         <span style={{fontWeight:700,fontSize:13}}>Relatório mensal por e-mail</span>
         <label style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:6,fontSize:12,cursor:'pointer'}}>
-          <input type="checkbox" checked={rep.enabled} onChange={e=>setReport({enabled:e.target.checked,emails:emails.trim()})}/> Enviar automaticamente
+          <input type="checkbox" checked={rep.enabled} onChange={e=>setReport({enabled:e.target.checked})}/> Enviar automaticamente
         </label>
       </div>
-      <div style={{fontSize:11.5,color:'var(--text3)',marginBottom:10}}>Quando ligado, no 1º dia útil de cada mês é enviado o resumo do mês anterior (um bloco por login) para os e-mails abaixo.</div>
-      <div style={{maxWidth:520}}>
-        <label className="pdi-label">E-mail(s) que recebem <span style={{color:'var(--text3)'}}>(separe por vírgula)</span></label>
-        <input className="pdi-input" value={emails} onChange={e=>setEmails(e.target.value)} onBlur={save} placeholder="voce@empresa.com, financeiro@empresa.com"/>
-      </div>
+      <div style={{fontSize:11.5,color:'var(--text3)'}}>Quando ligado, no 1º dia útil de cada mês é enviado o resumo do mês anterior (um bloco por login) para os <b>Destinatários</b> de Configurações → Automações{rep.emails?<>: <b style={{color:'var(--text2)'}}>{rep.emails}</b></>:<span style={{color:'var(--amber)'}}> — nenhum cadastrado ainda</span>}.</div>
     </div>
   );
 }
@@ -15426,7 +15419,6 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
   const ativa=k=>!(automacoes&&automacoes[k]===false);
   /* Registradores */
   const norm=regNormalize(regCreditos); const rep=norm.report;
-  const[regEmails,setRegEmails]=useState(rep.emails||''); useEffect(()=>{ setRegEmails(rep.emails||''); },[rep.emails]);
   const setRep=patch=>setRegCreditos({contas:norm.contas,logins:norm.logins,report:{...rep,...patch}});
   /* IPTU (documento próprio) */
   const[iptuCfg,setIptuCfg]=useState(null);
@@ -15434,7 +15426,7 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
   const iptuAl={...IPTU_CFG_PADRAO.alertas,...((iptuCfg&&iptuCfg.alertas)||{})};
   const salvarIptu=nova=>{ setIptuCfg(nova); if(!DEMO_MODE) IPTU_DOC.set({config:nova},{merge:true}).catch(err=>alert('Não consegui salvar: '+(err.message||err))); };
   const setIptuAl=(k,v)=>salvarIptu({...(iptuCfg||{}),alertas:{...iptuAl,[k]:v}});
-  const padrao=notifyEmails.length?notifyEmails.join(', '):'(nenhum destinatário padrão)';
+  const padrao=notifyEmails.length?notifyEmails.join(', '):'(nenhum destinatário — abra “Destinatários”)';
   const fin=finNfEmail?('e-mail do financeiro: '+finNfEmail):'e-mail do financeiro (defina em Controle Financeiro → Configurar)';
   const ligadas=[notifyEnabled,rep.enabled,ativa('finMedicao'),ativa('finNf'),ativa('finCadastro'),...IPTU_ALERTAS.map(a=>iptuAl[a.k])].filter(Boolean).length;
   const total=5+IPTU_ALERTAS.length;
@@ -15447,19 +15439,16 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
     </div>
 
     <div className="settings-card auto-card">
-      <AutoRow titulo="Destinatários padrão" status={notifyEmails.length?notifyEmails.length+' e-mail'+(notifyEmails.length===1?'':'s'):'Não configurado'}
-        desc="Recebem o relatório de Pontos de Atenção e os alertas de IPTU.">
+      <AutoRow titulo="Destinatários" status={notifyEmails.length?notifyEmails.length+' e-mail'+(notifyEmails.length===1?'':'s'):'Não configurado'}
+        desc="Único lugar dos e-mails de quem recebe: valem para os relatórios mensais (Pontos de Atenção e Registradores) e os alertas de IPTU. Os e-mails do Controle Financeiro vão para o e-mail do financeiro, definido no próprio Controle Financeiro.">
         <EmailNotifySettings notifyEmails={notifyEmails} setNotifyEmails={setNotifyEmails} notifyEnabled={notifyEnabled} setNotifyEnabled={setNotifyEnabled} soDestinatarios embutido/>
       </AutoRow>
     </div>
 
     <div className="auto-grp">Relatórios mensais</div>
     <div className="settings-card auto-card">
-      <AutoRow titulo="Pontos de Atenção" desc="Relatório por empreendimento com as tarefas atrasadas e as com meta próxima." quando="dia 1º de cada mês" para={'destinatários padrão: '+padrao} on={notifyEnabled} onChange={setNotifyEnabled}/>
-      <AutoRow titulo="Registradores — resumo do mês" desc="Saldo no início e no fim do mês, recargas e gastos de cada login do Registradores, agrupados por empresa." quando="1º dia útil de cada mês (mês anterior)" para={rep.emails||'(nenhum e-mail)'} on={rep.enabled} onChange={v=>setRep({enabled:v})}>
-        <div className="auto-sub"><label className="pdi-label">E-mail(s) que recebem <span style={{color:'var(--text3)'}}>(separe por vírgula)</span></label>
-          <input className="pdi-input" value={regEmails} onChange={e=>setRegEmails(e.target.value)} onBlur={()=>{ if(regEmails!==rep.emails) setRep({emails:regEmails.trim()}); }} placeholder="voce@empresa.com, financeiro@empresa.com"/></div>
-      </AutoRow>
+      <AutoRow titulo="Pontos de Atenção" desc="Relatório por empreendimento com as tarefas atrasadas e as com meta próxima." quando="dia 1º de cada mês" para={'destinatários: '+padrao} on={notifyEnabled} onChange={setNotifyEnabled}/>
+      <AutoRow titulo="Registradores — resumo do mês" desc="Saldo no início e no fim do mês, recargas e gastos de cada login do Registradores, agrupados por empresa." quando="1º dia útil de cada mês (mês anterior)" para={'destinatários: '+padrao} on={rep.enabled} onChange={v=>setRep({enabled:v})}/>
     </div>
 
     <div className="auto-grp">Controle Financeiro</div>
@@ -15471,7 +15460,7 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
 
     <div className="auto-grp">Alertas de IPTU</div>
     <div className="settings-card auto-card">
-      {IPTU_ALERTAS.map(a=><AutoRow key={a.k} titulo={a.t} desc={a.s} para={'destinatários padrão: '+padrao} on={!!iptuAl[a.k]} onChange={v=>setIptuAl(a.k,v)}
+      {IPTU_ALERTAS.map(a=><AutoRow key={a.k} titulo={a.t} desc={a.s} para={'destinatários: '+padrao} on={!!iptuAl[a.k]} onChange={v=>setIptuAl(a.k,v)}
         aviso="O envio depende do script de e-mail do IPTU, que ainda não foi instalado. A escolha já fica salva."/>)}
     </div>
   </>);
@@ -15484,7 +15473,7 @@ function EmailNotifySettings({notifyEmails,setNotifyEmails,notifyEnabled,setNoti
   return (
     <div className={embutido?'':'settings-card'} style={{marginTop:embutido?8:16}}>
       {!embutido&&<div className="sidebar-title">{soDestinatarios?'Destinatários padrão':'Notificações por e-mail'}</div>}
-      {soDestinatarios&&!embutido&&<div className="settings-row-desc" style={{marginBottom:6}}>Recebem o relatório de Pontos de Atenção e os alertas de IPTU.</div>}
+      {soDestinatarios&&!embutido&&<div className="settings-row-desc" style={{marginBottom:6}}>Recebem os relatórios mensais e os alertas de IPTU.</div>}
       {!soDestinatarios&&<div className="settings-row">
         <div>
           <div className="settings-row-title">Relatório mensal automático</div>
@@ -17124,7 +17113,6 @@ function App({currentUser}){
   const[finGastos,setFinGastos]=useState([]);
   /* Créditos Registradores (Portal DI → Controle Financeiro → aba Registradores):
      saldo pré-pago global. {recargas:[], gastos:[]}. Salvo no doc do Portal DI. */
-  const[regCreditos,setRegCreditos]=useState(()=>regNormalize(null));
   /* O relatório mensal do Registradores é enviado pela automação do Google
      (Apps Script), que lê `regCreditos.report` (e-mails + ligado/desligado) do
      Firestore e dispara no 1º dia útil de cada mês. O app só guarda a config. */
@@ -17138,6 +17126,19 @@ function App({currentUser}){
   const[notifyEnabled,setNotifyEnabled]=useState(true);
   const[automacoes,setAutomacoes]=useState({});
   AUTOMACOES=automacoes;
+  const[regCreditos,setRegCreditos]=useState(()=>regNormalize(null));
+  /* Destinatários num lugar só (Configurações → Automações): o resumo mensal do
+     Registradores usa a mesma lista. regCreditos.report.emails continua sendo
+     gravado (é dele que o Apps Script lê), mas sempre igual à lista. Na 1ª vez,
+     se a lista estiver vazia e o Registradores já tiver e-mails, eles viram a lista. */
+  const[cfgCarregada,setCfgCarregada]=useState({settings:false,portaldi:false});
+  useEffect(()=>{
+    if(DEMO_MODE||!cfgCarregada.settings||!cfgCarregada.portaldi) return;
+    const atual=String((regCreditos.report&&regCreditos.report.emails)||'').trim();
+    const lista=notifyEmails.join(', ');
+    if(!notifyEmails.length&&atual){ const arr=[...new Set(atual.split(/[,;\s]+/).map(e=>e.trim().toLowerCase()).filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))]; if(arr.length){ setNotifyEmails(arr); return; } }
+    if(atual!==lista) setRegCreditos(rc=>({...rc,report:{...rc.report,emails:lista}}));
+  },[notifyEmails,regCreditos,cfgCarregada]);
   /* Controle de acesso (fluxoapp_meta/settings): liga/desliga, lista de usuários
      (email, nome, papel, setores) e definição dos setores (código, nome, cor). */
   const[acessoAtivo,setAcessoAtivo]=useState(false);
@@ -17469,6 +17470,7 @@ function App({currentUser}){
       setFinNfEmail(typeof d.finNfEmail==='string'?d.finNfEmail:'');
       setRegCreditos(regNormalize(d.regCreditos));
       loadedPortaldiRef.current=true;
+      setCfgCarregada(c=>c.portaldi?c:{...c,portaldi:true});
     }, (err)=>console.error('Erro ao ler Portal DI do Firestore:',err));
     return unsub;
   },[]);
@@ -17500,6 +17502,7 @@ function App({currentUser}){
       setSetoresCfg(Array.isArray(ac.setores)?ac.setores:[]);
       setPortaisCfgRaw(Array.isArray(d.portais)?d.portais:null);
       loadedSettingsRef.current=true;
+      setCfgCarregada(c=>c.settings?c:{...c,settings:true});
       setAcessoResolvido(true);
     }, (err)=>console.error('Erro ao ler configurações do Firestore:',err));
     return unsub;
