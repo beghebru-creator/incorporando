@@ -1532,9 +1532,19 @@
   .sch-projrow .sch-name{font-weight:800;font-size:13px;}
   .sch-projrow.drop-into td{box-shadow:inset 0 0 0 2px var(--accent);}
   /* ───────── Automações (e-mails automáticos) ───────── */
-  .auto-row{padding:12px 0;border-top:1px solid var(--border);}
-  .auto-row:first-of-type{border-top:none;}
-  .auto-row-main{display:flex;align-items:flex-start;gap:14px;}
+  .auto-top{margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .auto-grp{font-size:11.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin:18px 2px 6px;}
+  .auto-card{margin-top:10px;padding-top:4px!important;padding-bottom:4px!important;}
+  .auto-grp+.auto-card{margin-top:0;}
+  .auto-row{border-top:1px solid var(--border);}
+  .auto-row:first-child{border-top:none;}
+  .auto-row-h{display:flex;align-items:center;gap:10px;}
+  .auto-row-btn{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:none;border:none;color:var(--text);font:inherit;cursor:pointer;padding:12px 0;text-align:left;}
+  .auto-chev{color:var(--text3);font-size:15px;flex-shrink:0;}
+  .auto-row-t{font-weight:600;font-size:13.5px;flex:1;min-width:0;}
+  .auto-st{font-size:11.5px;font-weight:600;color:var(--text3);white-space:nowrap;}
+  .auto-st.on{color:var(--green);}
+  .auto-row-body{padding:0 0 12px 23px;}
   .auto-meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:11.5px;color:var(--text3);}
   .auto-meta span{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow-wrap:anywhere;}
   .auto-aviso{font-size:11.5px;color:var(--amber);margin-top:6px;display:flex;gap:5px;align-items:flex-start;}
@@ -15387,51 +15397,64 @@ function BulkDeleteModal({projects,onDelete,onClose}){
 function AutoSwitch({on,onChange,disabled}){
   return <label className="switch" style={disabled?{opacity:.5,pointerEvents:'none'}:null}><input type="checkbox" checked={!!on} onChange={()=>onChange(!on)}/><span className="switch-track"/></label>;
 }
-function AutoRow({titulo,desc,quando,para,on,onChange,aviso,children}){
+/* Linha recolhida: só o nome + status (Ligado/Desligado) + o liga/desliga.
+   A setinha abre a descrição, quando é enviado, para quem e os campos. */
+function AutoRow({titulo,desc,quando,para,on,onChange,aviso,children,status}){
+  const[aberto,setAberto]=useState(false);
+  const temSwitch=typeof onChange==='function';
   return (
-    <div className="auto-row">
-      <div className="auto-row-main">
-        <div style={{minWidth:0,flex:1}}>
-          <div className="settings-row-title">{titulo}</div>
-          <div className="settings-row-desc">{desc}</div>
-          <div className="auto-meta">{quando&&<span><i className="ti ti-clock"/> {quando}</span>}{para&&<span><i className="ti ti-mail"/> {para}</span>}</div>
-          {aviso&&<div className="auto-aviso"><i className="ti ti-info-circle"/> {aviso}</div>}
-        </div>
-        <AutoSwitch on={on} onChange={onChange}/>
+    <div className={'auto-row'+(aberto?' open':'')}>
+      <div className="auto-row-h">
+        <button className="auto-row-btn" onClick={()=>setAberto(v=>!v)} aria-expanded={aberto}>
+          <i className={'ti ti-chevron-'+(aberto?'down':'right')+' auto-chev'}/>
+          <span className="auto-row-t">{titulo}</span>
+          {status!=null?<span className="auto-st">{status}</span>:<span className={'auto-st'+(on?' on':'')}>{on?'Ligado':'Desligado'}</span>}
+        </button>
+        {temSwitch&&<AutoSwitch on={on} onChange={onChange}/>}
       </div>
-      {children}
+      {aberto&&<div className="auto-row-body">
+        {desc&&<div className="settings-row-desc">{desc}</div>}
+        {(quando||para)&&<div className="auto-meta">{quando&&<span><i className="ti ti-clock"/> {quando}</span>}{para&&<span><i className="ti ti-mail"/> {para}</span>}</div>}
+        {aviso&&<div className="auto-aviso"><i className="ti ti-info-circle"/> {aviso}</div>}
+        {children}
+      </div>}
     </div>
   );
 }
-function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyEnabled,automacoes,setAutomacoes,regCreditos,setRegCreditos,finNfEmail,setFinNfEmail}){
+function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyEnabled,automacoes,setAutomacoes,regCreditos,setRegCreditos,finNfEmail}){
   const setAuto=(k,v)=>setAutomacoes(a=>({...(a||{}),[k]:v}));
   const ativa=k=>!(automacoes&&automacoes[k]===false);
   /* Registradores */
   const norm=regNormalize(regCreditos); const rep=norm.report;
   const[regEmails,setRegEmails]=useState(rep.emails||''); useEffect(()=>{ setRegEmails(rep.emails||''); },[rep.emails]);
   const setRep=patch=>setRegCreditos({contas:norm.contas,logins:norm.logins,report:{...rep,...patch}});
-  /* Financeiro */
-  const[nfIn,setNfIn]=useState(finNfEmail||''); useEffect(()=>{ setNfIn(finNfEmail||''); },[finNfEmail]);
   /* IPTU (documento próprio) */
   const[iptuCfg,setIptuCfg]=useState(null);
   useEffect(()=>{ if(DEMO_MODE){ setIptuCfg({}); return; } return IPTU_DOC.onSnapshot(s=>{ setIptuCfg((s.exists&&s.data().config)||{}); },err=>{ console.error('Erro ao ler IPTU:',err); setIptuCfg({}); }); },[]);
   const iptuAl={...IPTU_CFG_PADRAO.alertas,...((iptuCfg&&iptuCfg.alertas)||{})};
-  const setIptuAl=(k,v)=>{ const nova={...(iptuCfg||{}),alertas:{...iptuAl,[k]:v}}; setIptuCfg(nova); if(!DEMO_MODE) IPTU_DOC.set({config:nova},{merge:true}).catch(err=>alert('Não consegui salvar: '+(err.message||err))); };
+  const salvarIptu=nova=>{ setIptuCfg(nova); if(!DEMO_MODE) IPTU_DOC.set({config:nova},{merge:true}).catch(err=>alert('Não consegui salvar: '+(err.message||err))); };
+  const setIptuAl=(k,v)=>salvarIptu({...(iptuCfg||{}),alertas:{...iptuAl,[k]:v}});
   const padrao=notifyEmails.length?notifyEmails.join(', '):'(nenhum destinatário padrão)';
+  const fin=finNfEmail?('e-mail do financeiro: '+finNfEmail):'e-mail do financeiro (defina em Controle Financeiro → Configurar)';
   const ligadas=[notifyEnabled,rep.enabled,ativa('finMedicao'),ativa('finNf'),ativa('finCadastro'),...IPTU_ALERTAS.map(a=>iptuAl[a.k])].filter(Boolean).length;
   const total=5+IPTU_ALERTAS.length;
   const tudo=v=>{ setNotifyEnabled(v); setRep({enabled:v}); setAutomacoes(a=>({...(a||{}),finMedicao:v,finNf:v,finCadastro:v}));
-    const nova={...(iptuCfg||{}),alertas:Object.fromEntries(IPTU_ALERTAS.map(a=>[a.k,v]))}; setIptuCfg(nova); if(!DEMO_MODE) IPTU_DOC.set({config:nova},{merge:true}).catch(()=>{}); };
+    salvarIptu({...(iptuCfg||{}),alertas:Object.fromEntries(IPTU_ALERTAS.map(a=>[a.k,v]))}); };
   return (<>
-    <div className="settings-card" style={{marginTop:16,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
-      <div><div className="settings-row-title">{ligadas} de {total} e-mails automáticos ligados</div><div className="settings-row-desc">Ligue só o que você quer receber. Dá para mudar a qualquer momento.</div></div>
+    <div className="settings-card auto-top">
+      <div><div className="settings-row-title">{ligadas} de {total} ligados</div><div className="settings-row-desc">Toque na setinha para ver detalhes ou preencher e-mails.</div></div>
       <div style={{display:'flex',gap:8}}><button className="pdi-btn ghost" onClick={()=>tudo(true)}><i className="ti ti-bell"/> Ligar todos</button><button className="pdi-btn ghost" onClick={()=>tudo(false)}><i className="ti ti-bell-off"/> Desligar todos</button></div>
     </div>
 
-    <EmailNotifySettings notifyEmails={notifyEmails} setNotifyEmails={setNotifyEmails} notifyEnabled={notifyEnabled} setNotifyEnabled={setNotifyEnabled} soDestinatarios/>
+    <div className="settings-card auto-card">
+      <AutoRow titulo="Destinatários padrão" status={notifyEmails.length?notifyEmails.length+' e-mail'+(notifyEmails.length===1?'':'s'):'Não configurado'}
+        desc="Recebem o relatório de Pontos de Atenção e os alertas de IPTU.">
+        <EmailNotifySettings notifyEmails={notifyEmails} setNotifyEmails={setNotifyEmails} notifyEnabled={notifyEnabled} setNotifyEnabled={setNotifyEnabled} soDestinatarios embutido/>
+      </AutoRow>
+    </div>
 
-    <div className="settings-card" style={{marginTop:16}}>
-      <div className="sidebar-title">Relatórios mensais</div>
+    <div className="auto-grp">Relatórios mensais</div>
+    <div className="settings-card auto-card">
       <AutoRow titulo="Pontos de Atenção" desc="Relatório por empreendimento com as tarefas atrasadas e as com meta próxima." quando="dia 1º de cada mês" para={'destinatários padrão: '+padrao} on={notifyEnabled} onChange={setNotifyEnabled}/>
       <AutoRow titulo="Registradores — resumo do mês" desc="Saldo no início e no fim do mês, recargas e gastos de cada login do Registradores, agrupados por empresa." quando="1º dia útil de cada mês (mês anterior)" para={rep.emails||'(nenhum e-mail)'} on={rep.enabled} onChange={v=>setRep({enabled:v})}>
         <div className="auto-sub"><label className="pdi-label">E-mail(s) que recebem <span style={{color:'var(--text3)'}}>(separe por vírgula)</span></label>
@@ -15439,37 +15462,29 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
       </AutoRow>
     </div>
 
-    <div className="settings-card" style={{marginTop:16}}>
-      <div className="sidebar-title">Controle Financeiro</div>
-      <div className="auto-sub" style={{marginTop:0,marginBottom:6}}><label className="pdi-label">E-mail do financeiro (recebe os 3 e-mails abaixo)</label>
-        <div style={{display:'flex',gap:8}}><input className="pdi-input" style={{flex:1}} type="email" value={nfIn} onChange={e=>setNfIn(e.target.value)} placeholder="financeiro@empresa.com"/>
-          <button className="pdi-btn ghost" disabled={nfIn.trim()===(finNfEmail||'')} onClick={()=>setFinNfEmail(nfIn.trim())}><i className="ti ti-device-floppy"/> Salvar</button></div></div>
-      <AutoRow titulo="Solicitação de medição" desc="Quando alguém pede a medição de uma parcela (contratos com mais de uma parcela)." quando="na hora do pedido" para={finNfEmail||'(sem e-mail do financeiro)'} on={ativa('finMedicao')} onChange={v=>setAuto('finMedicao',v)}/>
-      <AutoRow titulo="NF para lançamento" desc="Quando a NF/boleto de um contrato de parcela única é anexada. Desligado, os arquivos ficam só guardados no app." quando="na hora do envio" para={finNfEmail||'(sem e-mail do financeiro)'} on={ativa('finNf')} onChange={v=>setAuto('finNf',v)}/>
-      <AutoRow titulo="Cadastro de contrato novo" desc="Opção de mandar os dados e as parcelas de um contrato novo ao financeiro. Desligado, a opção some do cadastro." quando="ao salvar um contrato novo (se marcado)" para={finNfEmail||'(sem e-mail do financeiro)'} on={ativa('finCadastro')} onChange={v=>setAuto('finCadastro',v)}/>
+    <div className="auto-grp">Controle Financeiro</div>
+    <div className="settings-card auto-card">
+      <AutoRow titulo="Solicitação de medição" desc="Quando alguém pede a medição de uma parcela (contratos com mais de uma parcela)." quando="na hora do pedido" para={fin} on={ativa('finMedicao')} onChange={v=>setAuto('finMedicao',v)}/>
+      <AutoRow titulo="NF para lançamento" desc="Quando a NF/boleto de um contrato de parcela única é anexada. Desligado, os arquivos ficam só guardados no app." quando="na hora do envio" para={fin} on={ativa('finNf')} onChange={v=>setAuto('finNf',v)}/>
+      <AutoRow titulo="Cadastro de contrato novo" desc="Opção de mandar os dados e as parcelas de um contrato novo ao financeiro. Desligado, a opção some do cadastro." quando="ao salvar um contrato novo (se marcado)" para={fin} on={ativa('finCadastro')} onChange={v=>setAuto('finCadastro',v)}/>
     </div>
 
-    <div className="settings-card" style={{marginTop:16}}>
-      <div className="sidebar-title">Alertas de IPTU</div>
-      {IPTU_ALERTAS.map(a=><AutoRow key={a.k} titulo={a.t} desc={a.s} para={'destinatários padrão: '+padrao} on={!!iptuAl[a.k]} onChange={v=>setIptuAl(a.k,v)}/>)}
-      <div className="auto-aviso" style={{marginTop:8}}><i className="ti ti-info-circle"/> O envio destes alertas depende do script de e-mail do IPTU, que ainda não foi instalado. As escolhas já ficam salvas.</div>
-    </div>
-
-    <div className="settings-card" style={{marginTop:16}}>
-      <div className="sidebar-title">Outros</div>
-      <div className="settings-row-desc">Atas de reunião e o Relatório dos Parceiros não enviam e-mail automático — ficam só no app.</div>
+    <div className="auto-grp">Alertas de IPTU</div>
+    <div className="settings-card auto-card">
+      {IPTU_ALERTAS.map(a=><AutoRow key={a.k} titulo={a.t} desc={a.s} para={'destinatários padrão: '+padrao} on={!!iptuAl[a.k]} onChange={v=>setIptuAl(a.k,v)}
+        aviso="O envio depende do script de e-mail do IPTU, que ainda não foi instalado. A escolha já fica salva."/>)}
     </div>
   </>);
 }
-function EmailNotifySettings({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyEnabled,soDestinatarios}){
+function EmailNotifySettings({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyEnabled,soDestinatarios,embutido}){
   const[novo,setNovo]=useState('');
   const valido=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novo.trim());
   const add=()=>{ const e=novo.trim().toLowerCase(); if(!valido||notifyEmails.includes(e)) return; setNotifyEmails(list=>list.concat(e)); setNovo(''); };
   const remove=(e)=>setNotifyEmails(list=>list.filter(x=>x!==e));
   return (
-    <div className="settings-card" style={{marginTop:16}}>
-      <div className="sidebar-title">{soDestinatarios?'Destinatários padrão':'Notificações por e-mail'}</div>
-      {soDestinatarios&&<div className="settings-row-desc" style={{marginBottom:6}}>Recebem o relatório de Pontos de Atenção e os alertas de IPTU.</div>}
+    <div className={embutido?'':'settings-card'} style={{marginTop:embutido?8:16}}>
+      {!embutido&&<div className="sidebar-title">{soDestinatarios?'Destinatários padrão':'Notificações por e-mail'}</div>}
+      {soDestinatarios&&!embutido&&<div className="settings-row-desc" style={{marginBottom:6}}>Recebem o relatório de Pontos de Atenção e os alertas de IPTU.</div>}
       {!soDestinatarios&&<div className="settings-row">
         <div>
           <div className="settings-row-title">Relatório mensal automático</div>
@@ -19066,7 +19081,7 @@ function App({currentUser}){
               notifyEnabled={notifyEnabled} setNotifyEnabled={setNotifyEnabled}
               automacoes={automacoes} setAutomacoes={setAutomacoes}
               regCreditos={regCreditos} setRegCreditos={setRegCreditos}
-              finNfEmail={finNfEmail} setFinNfEmail={setFinNfEmail}/>
+              finNfEmail={finNfEmail}/>
           </>)}
 
           {cfgTab==='gerenciar' && permGerenciar() && (<>
