@@ -3927,9 +3927,30 @@ function ewSidesFor(edges,nodeLookup){
 
 /* Rota final de uma aresta (mesma regra do desenho): estilo EW; se raspar
    numa tarefa, testa outros lados; se nada for livre, mantém a automática. */
+/* Linha RETA quando as tarefas estão de frente (uma embaixo da outra, ou lado a
+   lado) e os lados se sobrepõem: em vez de um "degrau" de poucos pixels (tarefas
+   de larguras diferentes têm centros diferentes), a linha vai direto. Mantém o
+   centro da tarefa de origem (tronco comum); se não couber no destino, usa o
+   centro do destino. Losango e conector sempre pela ponta. */
+function ewReto(a,b,s1,s2,obst){
+  const vert=(s1==='S'&&s2==='N'&&b.y>a.y+a.h+8)||(s1==='N'&&s2==='S'&&a.y>b.y+b.h+8);
+  const horiz=(s1==='E'&&s2==='W'&&b.x>a.x+a.w+8)||(s1==='W'&&s2==='E'&&a.x>b.x+b.w+8);
+  if(!vert&&!horiz) return null;
+  const pont=r=>r.type==='decisao'||r.type==='conector';
+  const M=14;
+  const cabe=(r,v)=>vert?(pont(r)?Math.abs(v-(r.x+r.w/2))<.5:(v>=r.x+M&&v<=r.x+r.w-M)):(pont(r)?Math.abs(v-(r.y+r.h/2))<.5:(v>=r.y+M&&v<=r.y+r.h-M));
+  const ca=vert?a.x+a.w/2:a.y+a.h/2, cb=vert?b.x+b.w/2:b.y+b.h/2;
+  if(Math.abs(ca-cb)<.5) return null; /* já alinhadas: a rota normal já é reta */
+  const v=cabe(b,ca)?ca:cabe(a,cb)?cb:null; if(v==null) return null;
+  const p1=vert?{x:v,y:s1==='S'?a.y+a.h:a.y}:{x:s1==='E'?a.x+a.w:a.x,y:v};
+  const p2=vert?{x:v,y:s2==='N'?b.y:b.y+b.h}:{x:s2==='W'?b.x:b.x+b.w,y:v};
+  const pts=[p1,p2]; if(!ewPathClear(pts,obst||[])) return null;
+  return {pts,raw:pts,mid:null,midPt:null,p1,p2};
+}
 function ewRouteForEdge(d,a,b,sd,obstacles){
   d=d||{};
   const manual=typeof d.mid==='number'||!!d.sa||!!d.ta;
+  if(!manual){ const reta=ewReto(a,b,sd.s1,sd.s2,obstacles); if(reta) return reta; }
   const r=ewRoute(a,b,sd.s1,sd.s2,d.sa&&d.t1!=null?d.t1:null,d.ta&&d.t2!=null?d.t2:null,obstacles,d.mid,d.midAx);
   if(manual||ewPathClear(r.pts,obstacles)) return r;
   let best=null, bestScore=Infinity;
