@@ -1366,12 +1366,15 @@
   .gantt2-phase-row{position:absolute;left:0;display:flex;align-items:center;box-sizing:border-box;}
   .gantt2-phasecell{position:sticky;left:0;z-index:5;background:var(--surface);flex-shrink:0;padding-left:10px;display:flex;align-items:center;box-sizing:border-box;}
   .gantt2-phase-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;white-space:nowrap;}
-  .gantt2-row{position:absolute;left:0;display:flex;align-items:center;border-top:1px solid var(--border);box-sizing:border-box;width:100%;}
+  .gantt2-row{position:absolute;left:0;display:flex;align-items:center;border-top:1px solid var(--border2);box-sizing:border-box;width:100%;}
   .gantt2-label{position:sticky;left:0;z-index:5;background:var(--surface);flex-shrink:0;display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text);cursor:pointer;padding:0 14px 0 10px;box-sizing:border-box;border-right:1px solid var(--border);height:100%;}
   .gantt2-label:hover{color:var(--accent);}
   .gantt2-labeltxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .gantt2-track{position:relative;flex-shrink:0;height:100%;}
   .gantt2-bar{position:absolute;border-radius:5px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.25);z-index:2;}
+  .gantt2-blbar{position:absolute;border-radius:3px;cursor:pointer;z-index:2;background:repeating-linear-gradient(45deg,rgba(148,163,184,.75) 0 4px,rgba(148,163,184,.45) 4px 8px);border:1px solid rgba(100,116,139,.8);box-sizing:border-box;}
+  .gantt2-legbar{display:inline-block;width:22px;height:9px;border-radius:3px;background:var(--accent);}
+  .gantt2-legbar.bl{height:6px;background:repeating-linear-gradient(45deg,rgba(148,163,184,.75) 0 4px,rgba(148,163,184,.45) 4px 8px);border:1px solid rgba(100,116,139,.8);}
   .gantt2-bdate{position:absolute;top:50%;transform:translateY(-50%);font-size:9px;color:var(--text2);white-space:nowrap;pointer-events:none;z-index:2;}
   .gantt2-nodate{position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3);font-style:italic;}
   .gantt2-outer{flex:1;min-height:0;min-width:0;display:flex;padding:16px 20px;}
@@ -1410,8 +1413,14 @@
   .sch-peso{text-align:center;color:var(--text);font-variant-numeric:tabular-nums;}
   /* Altura FIXA e uniforme (30px). Sob o zoom:0.8 do #root vira 24px exatos —
      evita alturas fracionadas (25,6px) que deixavam as linhas "escadeadas". */
-  .sch-table td{padding:0 10px;height:30px;line-height:1;vertical-align:middle;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;box-sizing:border-box;}
+  .sch-table td{padding:0 10px;height:30px;line-height:1;vertical-align:middle;border-bottom:0;box-shadow:inset 0 -1px 0 var(--sch-linha);color:var(--text);white-space:nowrap;box-sizing:border-box;}
   .sch-table tr{height:30px;}
+  /* Linha entre as tarefas: desenhada em cada célula (sombra de 1px), assim fica
+     contínua de ponta a ponta — inclusive na coluna do nome e com zoom. */
+  .sch-table{--sch-linha:var(--border2);}
+  /* Texto maior que a coluna fica escondido (com "…") em vez de invadir a vizinha. */
+  .sch-table td,.sch-table thead th:not(.sch-c-fill){overflow:hidden;text-overflow:ellipsis;}
+  .sch-tipo{color:var(--text2);} .sch-tipoglifo{display:inline-block;width:14px;text-align:center;color:var(--text3);}
   .sch-c-num{width:34px;text-align:right;color:var(--text3);}
   .sch-c-pct{width:96px;} .sch-c-dur{width:70px;} .sch-c-date{width:78px;} .sch-c-pred{min-width:120px;} .sch-c-sector{width:82px;}
   .sch-c-meta{width:40px;text-align:center;} .sch-c-mst{width:112px;} .sch-c-mbt{width:112px;}
@@ -1486,6 +1495,10 @@
   .imp-setor{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .imp-setor .form-select{width:auto;min-width:200px;padding:5px 8px;font-size:12.5px;}
   .imp-dica{font-size:11px;color:var(--text3);}
+  .imp-fe{font-size:11.5px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;line-height:1.4;}
+  .imp-fe b{color:var(--text);}
+  .imp-fe-s{display:flex;flex-direction:column;gap:1px;margin-top:5px;}
+  .imp-fe-set{font-weight:700;color:var(--accent);}
   .imp-sel{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:6px;font-size:11.5px;padding:2px 4px;width:100%;}
   .imp-cod{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;color:var(--accent);margin-right:6px;}
   .imp-liga{margin-left:8px;font-size:10px;font-weight:700;color:var(--green,#2dd4a0);white-space:nowrap;}
@@ -1514,6 +1527,11 @@
   .sch-c-fill{padding:0;}
   .sch-row{cursor:pointer;} .sch-row:hover{background:var(--surface2);}
   .sch-row.sel{background:var(--blue-bg);}
+  /* Linha selecionada: fundo azul mais escuro nas CÉLULAS (vale também para tarefa-mãe
+     e linha achada na busca, que têm fundo próprio) + barra azul na esquerda. */
+  .sch-table tr.sch-row.sel td{background:color-mix(in srgb,var(--accent,#4f7cff) 30%,var(--surface,#1a1f2b));}
+  .sch-table tr.sch-row.sel:hover td{background:color-mix(in srgb,var(--accent,#4f7cff) 38%,var(--surface,#1a1f2b));}
+  .sch-table tr.sch-row.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent,#4f7cff),inset 0 -1px 0 var(--sch-linha);}
   .sch-phase td{background:var(--surface2);font-weight:700;}
   .sch-phase .sch-name{font-weight:700;}
   .sch-name{display:flex;align-items:center;gap:6px;}
@@ -1719,7 +1737,7 @@
   .sch-grip{opacity:0;color:var(--text3);cursor:grab;font-size:13px;margin-right:-2px;display:inline-flex;flex-shrink:0;}
   .sch-row:hover .sch-grip{opacity:.55;}
   .sch-row.sch-dragging{opacity:.4;}
-  .sch-row.drop-before td{box-shadow:inset 0 2px 0 0 var(--accent);}
+  .sch-row.drop-before td{box-shadow:inset 0 2px 0 0 var(--accent),inset 0 -1px 0 var(--sch-linha);}
   .sch-row.drop-after td{box-shadow:inset 0 -2px 0 0 var(--accent);}
   .sch-noflow .sch-name>span:last-child{color:var(--text2);}
   .sch-noflowico{font-size:12px;color:var(--text3);margin-left:2px;}
@@ -1885,6 +1903,7 @@
   .rf-decisao-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
   .dec-tit{font-size:10.5px;font-weight:800;line-height:1.15;color:var(--text);word-wrap:break-word;overflow-wrap:anywhere;}
   .dec-sub{font-size:8px;color:var(--text2);line-height:1.15;}
+  .dec-fase{font-size:6.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);line-height:1.1;margin-bottom:1px;}
   .rf-decisao-text .node-title{font-size:10px;font-weight:700;margin-bottom:0;}
 
   .rf-documentos-outer{position:relative;width:100%;height:100%;}
@@ -2092,24 +2111,39 @@
   .chat-hist-msgs{overflow-y:auto;padding:4px 18px 18px;min-height:240px;}
   @media (max-width:760px){ .chat-hist-f{grid-template-columns:1fr 1fr;} .chat-hist-f .chat-busca{grid-column:1/-1;} .chat-hist-b{grid-template-columns:1fr;} .chat-hist-dias{border-right:none;border-bottom:1px solid var(--border);max-height:140px;} .chat-fab.acima,.chat-win.acima{bottom:22px;} }
   @media print{ .chat-fab,.chat-win{display:none !important;} }
+  .chat-conv{display:flex;align-items:center;gap:7px;padding:7px 12px;border-bottom:1px solid var(--border);}
+  .chat-conv>i{color:var(--accent);font-size:15px;}
+  .chat-conv select{flex:1;min-width:0;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font:inherit;font-size:12.5px;font-weight:600;border-radius:7px;padding:5px 7px;}
+  .chat-conv-n{font-size:10.5px;font-weight:700;color:#fff;background:var(--red,#e5534b);border-radius:9px;padding:2px 7px;white-space:nowrap;}
+  .chat-conv-aviso{font-size:10.5px;color:var(--text3);padding:4px 12px;display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border);}
+  .chat-para{background:var(--surface2);color:var(--text2);}
   .rp-tab.drop-antes{box-shadow:-3px 0 0 var(--accent);}
   .rp-tab.drop-depois{box-shadow:3px 0 0 var(--accent);}
   .flow-ocultos-btn{position:absolute;left:56px;bottom:15px;z-index:5;height:28px;padding:0 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text2);font-family:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
   .flow-ocultos-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
-  .fluxo-abas{max-width:calc(100% - 24px);}
-  .fluxo-abas>button{white-space:nowrap;}
-  .fluxo-abas .fluxo-mais{position:relative;}
-  .fluxo-abas .fluxo-mais>button{padding:6px 9px;}
-  .fluxo-mais-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:30;min-width:220px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:6px;display:flex;flex-direction:column;gap:2px;}
-  .fluxo-mais-menu .fmm-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:4px 8px 6px;}
-  .fluxo-mais-menu button{display:flex;align-items:center;gap:8px;justify-content:flex-start;width:100%;border-radius:7px;padding:6px 8px;font-weight:500;}
-  .fluxo-mais-menu button:hover{background:var(--surface2);color:var(--text);}
-  .fluxo-mais-menu .fmm-vazio{font-size:12px;color:var(--text3);padding:6px 8px;}
-  .fluxo-abas{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;display:flex;gap:4px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,.15);}
-  .fluxo-abas button{border:0;background:none;color:var(--text2);font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
-  .fluxo-abas button.on{background:var(--accent);color:#fff;}
-  .fluxo-abas button i.dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
-  .fluxo-aviso{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:6;max-width:80%;display:flex;align-items:center;gap:10px;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(210,153,34,.4);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;}
+  .fluxo-abas{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:6;font-size:10.5px;}
+  .fluxo-abas summary{list-style:none;display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none;background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:3px 8px;color:var(--text2);font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;}
+  .fluxo-abas summary::-webkit-details-marker{display:none;}
+  .fluxo-abas summary:hover{color:var(--text);border-color:var(--accent);}
+  .fluxo-abas .fluxo-seta{font-size:11px;transition:transform .15s;}
+  .fluxo-abas[open] .fluxo-seta{transform:rotate(180deg);}
+  .fluxo-abas-lista{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:2px;min-width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:3px;box-shadow:0 4px 14px rgba(0,0,0,.2);max-height:60vh;overflow-y:auto;}
+  .fluxo-abas-lista button{border:0;background:none;color:var(--text2);font:inherit;font-size:10.5px;font-weight:600;padding:4px 8px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;text-align:left;}
+  .fluxo-abas-lista button:hover{background:var(--surface2);color:var(--text);}
+  .fluxo-abas-lista button.on{background:var(--accent);color:var(--on-accent);}
+  .fluxo-abas-lista .fal-t{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:6px 8px 2px;border-top:1px solid var(--border);margin-top:2px;white-space:nowrap;}
+  .fluxo-abas-lista button.fal-novo{font-weight:500;}
+  .fluxo-abas i.dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;}
+  .fluxo-aviso{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;max-width:80%;display:flex;align-items:center;gap:10px;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(210,153,34,.4);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;}
+  .flow-resumo{margin:10px 0 2px;display:flex;flex-direction:column;gap:5px;}
+  .flow-resumo-stat{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
+  .flow-resumo-stat div{border:1px solid var(--border);border-radius:7px;padding:6px 7px;}
+  .flow-resumo-stat b{display:block;font-size:15px;font-variant-numeric:tabular-nums;}
+  .flow-resumo-stat span{font-size:10px;color:var(--text3);}
+  .flow-resumo-bar{display:grid;grid-template-columns:52px 1fr 22px;gap:7px;align-items:center;font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums;}
+  .flow-resumo-bar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .flow-resumo-bar .tr{height:6px;border-radius:4px;background:var(--surface3,var(--surface2));overflow:hidden;}
+  .flow-resumo-bar .tr i{display:block;height:100%;border-radius:4px;}
   .fluxo-aviso button{border:1px solid var(--amber);background:none;color:var(--amber);font:inherit;font-size:11.5px;font-weight:700;border-radius:6px;padding:3px 9px;cursor:pointer;white-space:nowrap;}
   .node-externo-card{border-style:dashed !important;}
   .nm-sec-res{flex:1;min-width:0;font-weight:400;font-size:11.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -2722,7 +2756,7 @@ function caixaDoGrupo(ns){ if(!ns.length) return null; const x0=Math.min(...ns.m
   const x1=Math.max(...ns.map(n=>n.position.x+dimNo(n).w)), y1=Math.max(...ns.map(n=>n.position.y+dimNo(n).h));
   return {x:Math.round((x0-24)/10)*10,y:Math.round((y0-44)/10)*10,w:Math.round((x1-x0+48)/10)*10,h:Math.round((y1-y0+68)/10)*10}; }
 function noDoGrupo(g,editando){ return {id:'grp-'+g.id,type:'grupo',position:{x:g.x||0,y:g.y||0},width:g.w||300,height:g.h||200,zIndex:0,dragHandle:'.grp-head',
-  selectable:!!editando,data:{gid:g.id,titulo:g.titulo||'Nova seção',cor:g.cor||'azul',editando:!!editando},style:{pointerEvents:'none'}}; }
+  selectable:!!editando,data:{gid:g.id,titulo:g.titulo||'Nova seção',cor:g.cor||'azul',editando:!!editando,ajustarFase:!!g.ajustarFase},style:{pointerEvents:'none'}}; }
 const ETAPAS_PADRAO={PRJ:[{id:'F0',nome:'F0',cor:'#9ca3af'},{id:'F1',nome:'F1',cor:'#5b9bf0'},{id:'F2',nome:'F2',cor:'#e8a33d'},{id:'F3',nome:'F3',cor:'#3fbf7f'}]};
 function etapasDoSetor(p,s){ const cfg=p&&p.etapasSetor&&s&&p.etapasSetor[s]; if(Array.isArray(cfg)) return cfg; return ETAPAS_PADRAO[s]||[]; }
 /* Empreendimento aberto (o App atualiza a cada render) e fases do fluxograma
@@ -2734,7 +2768,7 @@ function fasesAtuais(setor){ return fasesDoSetor(PROJ_ATUAL,setor); }
 function fasesDoProjeto(p){ const vistos={}, out=[]; const ss=['DI','PRJ',...Object.keys((p&&p.fasesSetor)||{})];
   ss.forEach(s=>fasesDoSetor(p,s).forEach(f=>{ if(!vistos[f.id]){ vistos[f.id]=1; out.push(f); } })); return out.map((f,i)=>({...f,...faseVisual(i)})); }
 function etapaDaTarefa(p,data){ if(!data||!data.etapa) return null; return etapasDoSetor(p,normSector(data.sector))
-  .find(e=>e.id===data.etapa)||null; }
+  .find(e=>e.id===data.etapa)||etapasDoSetor(p,fluxoSetorDe(data)).find(e=>e.id===data.etapa)||null; }
 const TASK_TYPES = [
   { id:'processo',            label:'Processo'          },
   { id:'decisao',             label:'Decisão'           },
@@ -2835,7 +2869,9 @@ function setorNome(code){ const x=SETOR_CFG.find(y=>y.code===code); return (x&&x
    - As linhas (connections) são as mesmas para todos os fluxogramas. */
 const FLUXO_SEM='SEM';
 let MODO_LIGACAO='prec'; /* tipo das ligações novas no Editar Fluxo (Precedência/Retorno/Compatibilização/Oculto) */
-function fluxoSetorDe(t){ return normSector(t&&t.sector)||FLUXO_SEM; }
+/* Em qual fluxograma a tarefa fica: o do "Fluxo setor" escolhido no cronograma
+   (ou vindo da planilha); sem ele, o do próprio setor. O setor da tarefa não muda. */
+function fluxoSetorDe(t){ return normSector(t&&t.fluxoSetor)||normSector(t&&t.sector)||FLUXO_SEM; }
 function fluxoOrdenar(l){ const ordem=SECTORS_ALL.concat(Object.keys(SETOR_NOMES_PADRAO));
   return [...new Set(l)].sort((a,b)=>{ const ia=ordem.indexOf(a), ib=ordem.indexOf(b); return ((ia<0?99:ia)-(ib<0?99:ib))||String(a).localeCompare(String(b)); }); }
 /* Setores que têm fluxograma neste empreendimento: só os que têm tarefa no
@@ -3441,7 +3477,7 @@ function TaskCardBody({id,data}){
         {data.code?<span className="nc-code" title="Código da tarefa">{data.code}</span>:null}
       </span>
     </div>:null}
-    {(()=>{ const fs=fasesDoSetor(PROJ_ATUAL,normSector(data.sector)||FLUXO_SEM); const f=fs.find(x=>x.id===(data.phase||'fase1')); return f?<div className="nc-estudo" title="Fase (editável em Fases e etapas)">{f.name}</div>:null; })()}
+    {(()=>{ const fs=fasesDoSetor(PROJ_ATUAL,fluxoSetorDe(data)); const f=fs.find(x=>x.id===(data.phase||'fase1')); return f?<div className="nc-estudo" title="Fase (editável em Fases e etapas)">{f.name}</div>:null; })()}
     <div className="nc-title" title={data.externo?'Tarefa do fluxograma '+fluxoRotulo(data.sector||FLUXO_SEM)+' trazida para este fluxograma (contorno cinza). É a mesma tarefa: o que mudar aqui muda lá.':undefined}><div>{data.disciplina?<span className="nc-disc">{data.disciplina} - </span>:null}{data.label}</div></div>
     {(data.startDate||data.endDate)&&<>
       <div className="nc-sep"/>
@@ -3516,8 +3552,9 @@ function TaskNode({id,data,selected}){
         {(()=>{ const e=etapaDaTarefa(PROJ_ATUAL,data); return e?<div className="nc-etapa" style={{'--ec':e.cor||'#9ca3af',transform:'translate(-50%,-50%)'}}>{e.nome}</div>:null; })()}
         <div className="rf-decisao-text">
           {data.isMeta&&(data.baselineEnd||data.clickupDate)&&<div className="dec-sub"><i className="ti ti-target-arrow"/> {formatDateShort(data.baselineEnd||data.clickupDate)}</div>}
+          {/* Fase em cima do nome (igual aos outros cartões). */}
+          {(()=>{ const fs=fasesDoSetor(PROJ_ATUAL,fluxoSetorDe(data)); const f=fs.find(x=>x.id===(data.phase||'fase1')); return f?<div className="dec-fase" title="Fase (editável em Fases e etapas)">{f.name}</div>:null; })()}
           <div className="dec-tit">{data.disciplina?data.disciplina+' - ':''}{data.label}</div>
-          {(()=>{ const fs=fasesDoSetor(PROJ_ATUAL,normSector(data.sector)||FLUXO_SEM); const f=fs.find(x=>x.id===(data.phase||'fase1')); return f?<div className="dec-sub">{f.name}</div>:null; })()}
         </div>
       </div>
     </>
@@ -4501,6 +4538,21 @@ function FlowCanvas({filtroExtra,project,isEditMode,theme,onNodeOpen,onChecklist
     swimlaneDataRef.current=newLanes;
     setSwimlaneData(newLanes);
   },[nodes,fasesKey]);
+  /* Caixas de fase criadas pela importação do Excel (ajustarFase): assim que os
+     cartões da fase já têm o tamanho medido na tela, a caixa "enquadra" exatamente
+     as tarefas daquela fase. Só ajusta a caixa; não mexe nas tarefas. */
+  useEffect(()=>{
+    const gs=nodes.filter(n=>n.type==='grupo'&&n.data&&n.data.ajustarFase); if(!gs.length) return;
+    const FS=FASES_VIVAS&&FASES_VIVAS.length?FASES_VIVAS:PHASES; const idsF=new Set(FS.map(f=>f.id));
+    const tasks=nodes.filter(n=>n.type==='task');
+    if(tasks.some(n=>!(n.measured&&n.measured.width))) return; /* ainda medindo */
+    const faseDe=n=>{ const ph=(n.data&&n.data.phase)||'fase1'; return idsF.has(ph)?ph:FS[0].id; };
+    const novos={};
+    gs.forEach(g=>{ const tt=String(g.data.titulo||'').trim().toLowerCase(); const f=FS.find(x=>String(x.name||'').trim().toLowerCase()===tt);
+      const c=f?caixaDoGrupo(tasks.filter(n=>faseDe(n)===f.id)):null; novos[g.id]=c; });
+    setNodes(nds=>nds.map(n=>{ if(!(n.id in novos)) return n; const c=novos[n.id]; const data={...n.data,ajustarFase:false};
+      return c?{...n,data,position:{x:c.x,y:c.y},width:c.w,height:c.h,style:{...(n.style||{}),width:c.w,height:c.h}}:{...n,data}; }));
+  },[nodes,fasesKey]);
 
   /* Nenhum alinhamento horizontal automático de tarefas: a posição X (e a
      posição Y dentro da própria fase) que a Brunna deu a cada tarefa é
@@ -4776,10 +4828,24 @@ function FlowCanvas({filtroExtra,project,isEditMode,theme,onNodeOpen,onChecklist
           });
           bandTop+=rows*gap+LANE_PAD*2+PHASE_GAP;
         });
-        /* Os grupos (molduras) acompanham: depois de arrumar, cada um se ajusta às tarefas que estavam nele. */
+        /* Uma caixa (grupo) para cada fase, com o nome da fase, em volta das tarefas
+           dela. A caixa de fase que já existe (mesmo título da fase) só é ajustada;
+           as que faltam são criadas. Os outros grupos acompanham as tarefas que estavam neles. */
+        const FS=FASES_VIVAS&&FASES_VIVAS.length?FASES_VIVAS:PHASES; const idsF=new Set(FS.map(f=>f.id));
+        const faseDe=n=>{ const ph=(n.data&&n.data.phase)||'fase1'; return idsF.has(ph)?ph:FS[0].id; };
+        const faseDoTitulo=g=>{ const tt=String((g.data&&g.data.titulo)||'').trim().toLowerCase(); return tt?FS.find(f=>String(f.name||'').trim().toLowerCase()===tt):null; };
         const memb={}; nodesRef.current.filter(n=>n.type==='grupo').forEach(g=>{ memb[g.id]=membrosDoGrupo(g,nodesRef.current).map(n=>n.id); });
+        const cores=['azul','ambar','verde','violeta','cinza']; const baseG=Date.now().toString(36);
+        const ajusta=(n,c)=>({...n,position:{x:c.x,y:c.y},width:c.w,height:c.h,style:{...(n.style||{}),width:c.w,height:c.h}});
         setNodes(ns=>{ const mov=ns.map(n=>pos[n.id]?{...n,position:pos[n.id]}:n);
-          return mov.map(n=>{ if(n.type!=='grupo') return n; const ms=mov.filter(m=>(memb[n.id]||[]).includes(m.id)); const c=caixaDoGrupo(ms); return c?{...n,position:{x:c.x,y:c.y},width:c.w,height:c.h,style:{...(n.style||{}),width:c.w,height:c.h}}:n; }); });
+          const tasksM=mov.filter(n=>n.type==='task');
+          const caixas={}; FS.forEach(f=>{ const c=caixaDoGrupo(tasksM.filter(n=>faseDe(n)===f.id)); if(c) caixas[f.id]=c; });
+          const comCaixa=new Set();
+          const out=mov.map(n=>{ if(n.type!=='grupo') return n;
+            const f=faseDoTitulo(n); if(f&&caixas[f.id]&&!comCaixa.has(f.id)){ comCaixa.add(f.id); return ajusta(n,caixas[f.id]); }
+            const c=caixaDoGrupo(mov.filter(m=>(memb[n.id]||[]).includes(m.id))); return c?ajusta(n,c):n; });
+          const novos=FS.map((f,i)=>(caixas[f.id]&&!comCaixa.has(f.id))?noDoGrupo({id:'g'+baseG+i,titulo:f.name,cor:cores[i%cores.length],x:caixas[f.id].x,y:caixas[f.id].y,w:caixas[f.id].w,h:caixas[f.id].h},true):null).filter(Boolean);
+          return novos.concat(out); });
         setEdges(eds=>eds.map(e=>{ if(!ids.has(e.source)) return e; const d={...e.data}; delete d.sa; delete d.ta; delete d.t1; delete d.t2; delete d.mid; delete d.midAx; return {...e,data:d}; }));
         setTimeout(()=>{ if(rfi.current) rfi.current.fitView({padding:0.08,duration:300}); },60);
       },
@@ -5647,6 +5713,78 @@ function ChecklistModal({node,onClose,onSave,standardChecklists,projectCity}){
    Aberta ao clicar num KPI clicável do Dashboard. Cada linha mostra o
    empreendimento (projeto) e os dados da tarefa; clicar numa linha leva
    direto pro fluxograma daquele projeto. */
+/* ── Fluxo no formato do Fluxograma EW (JSON) e Mermaid ──
+   Exporta o fluxograma do setor aberto. O JSON abre na Biblioteca do EW e
+   também serve de modelo ao criar um empreendimento novo aqui. */
+const FX_TIPO_EW={processo:'proc',decisao:'dec',terminacao:'term',documentos:'doc','processo-predefinido':'pre',conector:'con'};
+const FX_LINHA_EW={prec:'solid',retorno:'dash',compat:'compat',oculto:'hidden'};
+const EW_TIPO_MAP={proc:'processo',dec:'decisao',term:'terminacao',doc:'documentos',pre:'processo-predefinido',con:'conector'};
+const EW_LINHA_MAP={solid:'prec',dash:'retorno',compat:'compat',hidden:'oculto'};
+function fxTarefasDoFluxo(project,setor){
+  return (project.tasks||[]).filter(t=>t&&!t.deleted&&t.inFlow!==false&&(!setor||tarefaNoFluxo(t,setor)))
+    .map(t=>{ const p=posNoFluxo(t,setor); return {...t,x:p.x,y:p.y}; }); }
+function fxJsonEW(project,setor){
+  const ts=fxTarefasDoFluxo(project,setor); const FS=fasesDoSetor(project,setor);
+  const nid={}; ts.forEach((t,i)=>{ nid[String(t.id)]='n'+(i+1); });
+  const nodes=ts.map((t,i)=>{ const fi=FS.findIndex(f=>f.id===(t.phase||'fase1'));
+    return {id:nid[String(t.id)],code:t.code||('N'+String(i+1).padStart(2,'0')),type:FX_TIPO_EW[t.taskType||'processo']||'proc',
+      x:Math.round(t.x||0),y:Math.round(t.y||0),w:Math.round(t.w||180),h:Math.round(t.h||76),
+      disc:t.label||'',est:'',fase:fi<0?'':String(fi),obs:'',resp:t.responsavelNome||''}; });
+  const edges=[]; (project.connections||[]).forEach((c,i)=>{ const a=nid[String(c.from)], b=nid[String(c.to)]; if(!a||!b) return;
+    const e={id:'e'+(i+1),from:a,to:b,label:c.label||'',style:FX_LINHA_EW[c.kind||'prec']||'solid'};
+    if(typeof c.mid==='number'&&(c.midAx==='x'||c.midAx==='y')){ e.mid=c.mid; e.midAx=c.midAx; }
+    edges.push(e); });
+  return JSON.stringify({formato:'ew-fluxograma',versao:1,name:project.name||'Fluxo',rev:'R00',desc:'Exportado do Incorporando'+(setor&&setor!==FLUXO_SEM?' — fluxograma '+setor:''),
+    fases:FS.map(f=>f.name),nodes,edges,groups:[],seq:nodes.length+1},null,2);
+}
+function fxMermaid(project,setor){
+  const ts=fxTarefasDoFluxo(project,setor); const FS=fasesDoSetor(project,setor);
+  const ids={}, usados=new Set();
+  ts.forEach((t,i)=>{ let b=String(t.code||'').replace(/[^A-Za-z0-9_]/g,'_')||('T'+(i+1)); let k=b, j=2; while(usados.has(k)) k=b+'_'+(j++); usados.add(k); ids[String(t.id)]=k; });
+  const q=v=>String(v||'').replace(/"/g,'#quot;');
+  const decl=t=>{ const L=q(t.label), id=ids[String(t.id)];
+    switch(t.taskType){ case 'decisao': return id+'{"'+L+'"}'; case 'terminacao': return id+'(["'+L+'"])'; case 'documentos': return id+'>"'+L+'"]'; case 'processo-predefinido': return id+'[["'+L+'"]]'; case 'conector': return id+'(("'+L+'"))'; default: return id+'["'+L+'"]'; } };
+  let m='%% '+(project.name||'Fluxo')+(setor&&setor!==FLUXO_SEM?' — fluxograma '+setor:'')+'\nflowchart LR\n';
+  const idsF=new Set(FS.map(f=>f.id));
+  FS.forEach((p,i)=>{ const mem=ts.filter(t=>(idsF.has(t.phase)?t.phase:FS[0].id)===p.id); if(!mem.length) return; m+='  subgraph F'+(i+1)+'["'+q(p.name)+'"]\n'; mem.forEach(t=>{ m+='    '+decl(t)+'\n'; }); m+='  end\n'; });
+  (project.connections||[]).forEach(c=>{ const a=ids[String(c.from)], b=ids[String(c.to)]; if(!a||!b) return;
+    if(c.kind==='oculto'){ m+='  '+a+' ~~~ '+b+'\n'; return; }
+    const seta=c.kind==='compat'?'<-.->':c.kind==='retorno'?'-.->':'-->';
+    m+='  '+a+' '+seta+(c.label?'|"'+q(c.label)+'"|':'')+' '+b+'\n'; });
+  return '```mermaid\n'+m+'```\n';
+}
+/* Lê o JSON do Fluxograma EW (Exportar › Arquivo do fluxo) e monta as tarefas e
+   ligações de um empreendimento novo. Tipos, fases (etapa F0..F3 → Fase 1..4),
+   linhas (precedência, retorno, compatibilização, oculta) e rótulos (Sim/Não) vêm
+   junto. Nada é gravado até clicar em "Criar". */
+function ewJsonParaModelo(texto,setor){
+  const o=JSON.parse(texto);
+  if(!o||!Array.isArray(o.nodes)||!Array.isArray(o.edges)) throw new Error('formato');
+  const base=Date.now(), idDe={};
+  const nomesF=Array.isArray(o.fases)?o.fases.map(x=>String(x||'').trim()).filter(Boolean):[];
+  const qtdF=Math.max(PHASES.length,nomesF.length,...o.nodes.map(n=>Number(n.fase)+1||0));
+  const fasesSetor=nomesF.length?nomesF.map((nm,i)=>({id:i<PHASES.length?PHASES[i].id:'fx'+base+i,name:nm})):null;
+  const faseId=f=>{ const i=(f===''||f==null||isNaN(Number(f)))?0:Math.max(0,Math.min(qtdF-1,Number(f)));
+    if(fasesSetor) return (fasesSetor[i]||fasesSetor[0]).id; return (PHASES[i]||PHASES[0]).id; };
+  const tasks=o.nodes.map((n,i)=>{ const id='task-'+base+'-'+i; idDe[n.id]=id;
+    const label=String(n.disc||n.label||'Tarefa').trim()+(n.est?' — '+String(n.est).trim():'');
+    const t={id,label,taskType:EW_TIPO_MAP[n.type]||'processo',phase:faseId(n.fase),
+      sector:setor||'',status:'Não iniciado',notes:'',checklist:[],startDate:'',endDate:'',clickupDate:'',inFlow:true,
+      x:Math.round(Number(n.x)||0),y:Math.round(Number(n.y)||0)};
+    const cod=String(n.code||'').toUpperCase().slice(0,12); if(cod) t.code=cod;
+    if(Number(n.w)>0) t.w=Math.round(Number(n.w)); if(Number(n.h)>0) t.h=Math.round(Number(n.h));
+    if(n.obs&&String(n.obs).trim()) t.notes=String(n.obs).trim();
+    return t; });
+  const visto=new Set(); const connections=[];
+  o.edges.forEach(e=>{ const from=idDe[e.from], to=idDe[e.to]; if(!from||!to||from===to) return;
+    const k=from+'|'+to; if(visto.has(k)||visto.has(to+'|'+from)) return; visto.add(k);
+    const c={from,to,depType:'TI',lag:0};
+    const kind=EW_LINHA_MAP[e.style]||'prec'; if(kind!=='prec') c.kind=kind; if(e.label) c.label=String(e.label).slice(0,40);
+    if(typeof e.mid==='number'&&(e.midAx==='x'||e.midAx==='y')){ c.mid=e.mid; c.midAx=e.midAx; }
+    connections.push(c); });
+  return {nome:String(o.name||'').trim(),tasks,connections,fasesSetor};
+}
+
 /* Opções ao exportar o PDF do fluxograma: orientação (paisagem/retrato) e
    tamanho da margem — igual à configuração de impressão do Excel. */
 function FlowExportModal({onExport,onClose,onOutro}){
@@ -5678,11 +5816,14 @@ function FlowExportModal({onExport,onClose,onOutro}){
           </div>
         </div>
         {onOutro&&<div style={{marginTop:16,paddingTop:12,borderTop:'1px solid var(--border)'}}>
-          <div style={{fontSize:11.5,fontWeight:600,color:'var(--text2)',marginBottom:6}}>Outros formatos</div>
+          <div style={{fontSize:11.5,fontWeight:600,color:'var(--text2)',marginBottom:6}}>Outros formatos <span style={{fontWeight:400,color:'var(--text3)'}}>— JSON e Mermaid levam o fluxograma do setor aberto</span></div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             <button className="btn-modal ghost" onClick={()=>onOutro('png')} title="Imagem do fluxograma com legenda"><i className="ti ti-photo"/> Imagem PNG</button>
             <button className="btn-modal ghost" onClick={()=>onOutro('svg')} title="Desenho vetorial (abre no navegador, Illustrator, Inkscape…)"><i className="ti ti-vector"/> SVG</button>
             <button className="btn-modal ghost" onClick={()=>onOutro('csv')} title="Tabela de tarefas com predecessoras e sucessoras (Excel, MS Project, ClickUp)"><i className="ti ti-table-export"/> Tabela CSV</button>
+            <button className="btn-modal ghost" onClick={()=>onOutro('tsv')} title="Copia a mesma tabela do CSV; depois é só colar (Ctrl+V) no Excel ou no Word"><i className="ti ti-clipboard-copy"/> Copiar tabela</button>
+            <button className="btn-modal ghost" onClick={()=>onOutro('json')} title="Arquivo do fluxo no formato do Fluxograma EW: abre na Biblioteca do EW e serve de modelo para um empreendimento novo"><i className="ti ti-braces"/> JSON (EW)</button>
+            <button className="btn-modal ghost" onClick={()=>onOutro('mmd')} title="Texto Mermaid separado por fase, para colar no Notion, GitHub ou documentos"><i className="ti ti-markdown"/> Mermaid</button>
           </div>
         </div>}
         <div className="modal-footer" style={{marginTop:18}}>
@@ -5863,12 +6004,20 @@ function NewProjectModal({onClose,onCreate}){
   const[citySel,setCitySel]=useState(DEFAULT_CITIES[0]);
   const[customUF,setCustomUF]=useState('');
   const[customCity,setCustomCity]=useState('');
+  const[modeloTxt,setModeloTxt]=useState(null); /* JSON do Fluxograma EW (opcional) */
+  const[modeloInfo,setModeloInfo]=useState(null);
+  const[modeloSetor,setModeloSetor]=useState(()=>(PERM.setores&&PERM.setores[0])||SECTORS_ALL[0]||'');
   const isOther=citySel==='__outra__';
+  const lerModelo=(f)=>{ if(!f) return; const r=new FileReader();
+    r.onload=()=>{ try{ const txt=String(r.result||''); const m=ewJsonParaModelo(txt,''); setModeloTxt(txt); setModeloInfo({arq:f.name,n:m.tasks.length,l:m.connections.length}); if(!name.trim()&&m.nome) setName(m.nome); }
+      catch(e){ setModeloTxt(null); setModeloInfo(null); alert('Arquivo inválido. Use o JSON exportado pelo Fluxograma EW (Exportar › Arquivo do fluxo) ou pelo "JSON (EW)" do Incorporando.'); } };
+    r.readAsText(f); };
   const handleCreate=()=>{
     if(!name.trim()){alert('Digite o nome do empreendimento');return;}
     if(isOther&&(!customUF.trim()||!customCity.trim())){alert('Informe a UF e a cidade');return;}
     const city=isOther?`${customUF.trim().toUpperCase()} - ${customCity.trim().toUpperCase()}`:citySel;
-    onCreate(name.trim(), city);
+    let modelo=null; if(modeloTxt){ try{ modelo={...ewJsonParaModelo(modeloTxt,modeloSetor),setor:modeloSetor}; }catch(e){ modelo=null; } }
+    onCreate(name.trim(), city, modelo);
   };
   return(
     <div className="modal-overlay" onClick={e=>{if(e.target.classList.contains('modal-overlay'))onClose();}}>
@@ -5897,6 +6046,26 @@ function NewProjectModal({onClose,onCreate}){
             </div>
           </div>
         )}
+        <div className="modal-field">
+          <label className="modal-field-label">Usar um fluxo do EW (opcional)</label>
+          <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+            <label className="btn-modal ghost" style={{display:'inline-flex',alignItems:'center',gap:6,cursor:'pointer'}}>
+              <i className="ti ti-file-import"/> {modeloInfo?'Trocar arquivo':'Escolher JSON'}
+              <input type="file" accept=".json,application/json" style={{display:'none'}} onChange={e=>{ lerModelo(e.target.files&&e.target.files[0]); e.target.value=''; }}/>
+            </label>
+            {modeloInfo&&<>
+              <span style={{fontSize:12,color:'var(--text2)'}}>{modeloInfo.n} tarefa(s), {modeloInfo.l} ligação(ões)</span>
+              <button className="btn-modal ghost" style={{padding:'4px 8px'}} onClick={()=>{ setModeloTxt(null); setModeloInfo(null); }} title="Não usar o modelo"><i className="ti ti-x"/></button>
+            </>}
+          </div>
+          {modeloInfo&&<div style={{display:'flex',gap:8,alignItems:'center',marginTop:8,fontSize:12,color:'var(--text2)'}}>
+            Entra no fluxograma do setor
+            <select className="form-input" style={{width:'auto',padding:'4px 8px'}} value={modeloSetor} onChange={e=>setModeloSetor(e.target.value)}>
+              {SECTORS_ALL.map(s=><option key={s} value={s}>{setorSigla(s)} · {setorNome(s)}</option>)}
+            </select>
+          </div>}
+          <div style={{fontSize:11,color:'var(--text3)',marginTop:6}}>As tarefas, ligações e fases do arquivo entram no fluxograma. Nada é gravado até clicar em "Criar".</div>
+        </div>
         <div className="modal-footer">
           <button className="btn-modal ghost" onClick={onClose}>Cancelar</button>
           <button className="btn-modal" onClick={handleCreate}>Criar</button>
@@ -6377,8 +6546,29 @@ const IMP_COLS = {
   level:   ['nivelhierarquico','outlinelevel','niveldeestruturadetopicos','nivel','level'],
   wbs:     ['edt','wbs','estruturadetopicos'],
   code:    ['codigo','codigodatarefa','code','taskcode'],
+  fluxoSetor:['fluxosetor','fluxodosetor','setordofluxo','fluxograma','fluxogramadosetor','fluxogramasetor'],
   sector:  ['setor','sector'],
+  etapa:   ['etapa','etapas','etapadofluxo','stage'],
+  disciplina:['disciplina','disciplinas','discipline'],
+  fase:    ['fase','phase','fasedoprojeto'],
+  tipo:    ['tipo','tipodetarefa','tipodatarefa','tasktype','forma','simbolo'],
 };
+/* Tipo escrito na planilha ("Processo", "Decisão", "Proc. pré-definido"...) → id
+   da forma no fluxograma. Texto que não é um tipo do fluxograma (ex.: o "Tipo" do
+   MS Project, "Duração fixa") é ignorado e a tarefa fica como Processo. */
+function impTipoId(v){
+  const n=impNomeNorm(v); if(!n) return '';
+  const t=TASK_TYPES.find(x=>impNomeNorm(x.id)===n||impNomeNorm(x.label)===n); if(t) return t.id;
+  if(/predef|subprocesso/.test(n)) return 'processo-predefinido';
+  if(/^decis/.test(n)) return 'decisao';
+  if(/^termina|^inicio(e|)fim$|^iniciofim$|^fim$/.test(n)) return 'terminacao';
+  if(/^document/.test(n)) return 'documentos';
+  if(/^conect/.test(n)) return 'conector';
+  if(/^process/.test(n)) return 'processo';
+  return '';
+}
+/* Texto de célula; "—", "-", "N/A"... contam como vazio. */
+function impTxt(v){ const s=String(v==null?'':v).trim(); return /^([-–—_.]+|n\/?a|nenhum[a]?)$/i.test(s)?'':s; }
 function impNorm(s){ return String(s==null?'':s).trim().toLowerCase().replace(/[.:%()\/_\-–]/g,'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,''); }
 /* Coluna de LINHA DE BASE (plano/meta)? Ela nunca pode ser lida como início/término
    real: as datas reais é que dizem se a tarefa começou ou terminou (status). */
@@ -6431,13 +6621,22 @@ function parseMsProjectAoa(rows,baseId){
       baselineDuration:(cols.baselineDuration!=null?impDur(r[cols.baselineDuration]):null),
       predsStr:(cols.preds!=null?String(r[cols.preds]||''):''),
       code:(cols.code!=null?String(r[cols.code]==null?'':r[cols.code]).trim():''),
-      sector:(cols.sector!=null?normSector(String(r[cols.sector]==null?'':r[cols.sector]).trim().toUpperCase()):'') }); }
+      sector:(cols.sector!=null?normSector(String(r[cols.sector]==null?'':r[cols.sector]).trim().toUpperCase()):''),
+      etapa:(cols.etapa!=null?impTxt(r[cols.etapa]):''),
+      disciplina:(cols.disciplina!=null?impTxt(r[cols.disciplina]):''),
+      fase:(cols.fase!=null?impTxt(r[cols.fase]):''),
+      tipo:(cols.tipo!=null?impTipoId(r[cols.tipo]):''),
+      fluxoSetor:(cols.fluxoSetor!=null?normSector(impTxt(r[cols.fluxoSetor]).toUpperCase()):'') }); }
   if(!raw.length) throw new Error('Não encontrei nenhuma tarefa na planilha.');
+  /* % concluída: célula de porcentagem do Excel vem como 0–1 (1 = 100%). Se a coluna
+     tiver algum número acima de 1, ela está na escala 0–100 e um "1" quer dizer 1%. */
+  if(cols.pct!=null){ const nums=rows.slice(hIdx+1).map(r=>r[cols.pct]).filter(v=>typeof v==='number');
+    if(nums.some(v=>v>1)){ let k=0; for(let i=hIdx+1;i<rows.length;i++){ const r=rows[i]; const name=String((r[cols.name]==null?'':r[cols.name])).trim(); if(!name) continue; const v=r[cols.pct]; if(typeof v==='number') raw[k].pct=Math.round(v); k++; } } }
   const idByMs={}; raw.forEach((t,i)=>{ t.id=baseId+'-'+i; if(t.msId&&idByMs[t.msId]==null) idByMs[t.msId]=t.id; });
   const stack=[]; raw.forEach(t=>{ while(stack.length&&stack[stack.length-1].level>=t.level) stack.pop(); t.parentId=stack.length?stack[stack.length-1].id:null; stack.push({level:t.level,id:t.id}); });
   const hasChild={}; raw.forEach(t=>{ if(t.parentId) hasChild[t.parentId]=true; });
   const tasks=raw.map((t,i)=>{ const isSum=!!hasChild[t.id];
-    const base={ id:t.id, label:t.name, status:'Não iniciado', sector:t.sector||'', taskType:'processo', phase:'fase1', inFlow:false, isMeta:false, parentId:t.parentId, wbsOrder:i, x:130+(i%12)*170, y:130+Math.floor(i/12)*90, checklist:[] };
+    const base={ id:t.id, label:t.name, status:'Não iniciado', sector:t.sector||'', taskType:t.tipo||'processo', phase:'fase1', inFlow:false, isMeta:false, parentId:t.parentId, wbsOrder:i, x:130+(i%12)*170, y:130+Math.floor(i/12)*90, checklist:[] };
     /* As datas importadas do Excel viram apenas uma ÂNCORA inicial (startDate/endDate,
        campos livres) — NÃO ficam travadas (startMetaFixed/endMetaFixed). Assim o motor de
        agendamento recalcula automaticamente pela duração e pelos vínculos/predecessoras,
@@ -6445,6 +6644,10 @@ function parseMsProjectAoa(rows,baseId){
        predecessora (ponto de partida da cascata); quem tem predecessora é posicionado
        pelo vínculo, ignorando essa data importada. */
     if(t.code) base.code=t.code;
+    if(t.etapa) base.etapa=t.etapa;           /* texto da planilha; vira o id da etapa em impFinalizar */
+    if(t.disciplina) base.disciplina=t.disciplina;
+    if(t.fase) base.faseTxt=t.fase;           /* vira o id da fase em impFinalizar */
+    if(t.fluxoSetor&&t.fluxoSetor!==t.sector) base.fluxoSetor=t.fluxoSetor; /* fluxograma de outro setor */
     if(!isSum){
       if(t.duration!=null) base.duration=t.duration;
       if(t.start) base.startDate=t.start;
@@ -6491,34 +6694,109 @@ function impAchaExistentes(tasks,existing){
   const porCod={}, porNome={};
   vivos.forEach(t=>{ const c=codigoNorm(t.code); if(c) (porCod[c]=porCod[c]||[]).push(t); const n=impNomeNorm(t.label); if(n) (porNome[n]=porNome[n]||[]).push(t); });
   const m={};
+  /* Nome repetido sem código (ex.: o grupo "ESTUDO PRELIMINAR" aparece em vários
+     lugares): usa o CAMINHO na hierarquia (nomes das tarefas-mãe + o nome). Se o
+     mesmo caminho ainda se repetir, casa na ordem em que aparecem. */
+  const caminho=(t,byId)=>{ const ps=[]; let x=t,g=0; while(x&&g++<60){ ps.unshift(impNomeNorm(x.label)); x=x.parentId!=null?byId[String(x.parentId)]:null; } return ps.join('>'); };
+  const byIdV={}; vivos.forEach(t=>byIdV[String(t.id)]=t);
+  const byIdT={}; (tasks||[]).forEach(t=>byIdT[String(t.id)]=t);
+  const porCam={}; vivos.slice().sort((a,b)=>(Number(a.wbsOrder)||0)-(Number(b.wbsOrder)||0)).forEach(t=>{ const k=caminho(t,byIdV); (porCam[k]=porCam[k]||[]).push(t); });
+  const usados=new Set();
   (tasks||[]).forEach(t=>{ const c=codigoNorm(t.code);
     let e=c&&porCod[c]&&porCod[c].length===1?porCod[c][0]:null;
-    if(!e&&!c){ const n=impNomeNorm(t.label); if(n&&porNome[n]&&porNome[n].length===1) e=porNome[n][0]; }
-    if(e) m[t.id]=e; });
+    if(!e&&!c){ const n=impNomeNorm(t.label); if(n&&porNome[n]&&porNome[n].length===1&&!usados.has(porNome[n][0].id)) e=porNome[n][0]; }
+    if(!e&&(!c||(porCod[c]&&porCod[c].length>1))){ const lista=(porCam[caminho(t,byIdT)]||[]).filter(x=>!c||codigoNorm(x.code)===c); e=lista.find(x=>!usados.has(x.id))||null; }
+    if(e){ m[t.id]=e; usados.add(e.id); } });
   return m;
 }
 /* Monta o fluxograma previsto: cada tarefa-folha importada entra no fluxograma
    do seu setor, em camadas de cima para baixo pela ordem das predecessoras
    (quem não tem predecessora fica em cima). Cada setor é arrumado separado e
    começa abaixo das tarefas que o fluxograma dele já tem. */
-function impLayoutFluxo(novas,conns,existing){
-  const DX=330, DY=240;
+/* As FASES ficam separadas: um bloco por fase, um embaixo do outro, na ordem das
+   fases do setor (a da planilha, quando ela trouxe fases). Dentro de cada bloco,
+   as tarefas ficam em linhas pela ordem das predecessoras daquela fase, centradas.
+   Cada bloco ganha uma caixa (grupo) com o nome da fase. Devolve {pos, grupos}. */
+function impLayoutFluxo(novas,conns,existing,fasesOrd,reposicionar){
+  const DX=330, DY=240, GAP=150, PADX=30, PADT=56, PADB=34;
   const porSetor={}; novas.forEach(t=>{ if(t.inFlow===false) return; const s=fluxoSetorDe(t); (porSetor[s]=porSetor[s]||[]).push(t); });
-  const pos={};
+  const pos={}, grupos={}; const cores=['azul','ambar','verde','violeta','cinza']; const base=Date.now().toString(36);
+  const larg=t=>tamAuto(t)?260:getNodeDims(t.taskType||'processo',true).w;
+  const alt=t=>tamAuto(t)?140:getNodeDims(t.taskType||'processo',true).h;
   Object.keys(porSetor).forEach(s=>{
-    const lista=porSetor[s]; const ids=new Set(lista.map(t=>String(t.id)));
-    const preds={}; (conns||[]).forEach(c=>{ const f=String(c.from), to=String(c.to); if(ids.has(f)&&ids.has(to)&&f!==to) (preds[to]=preds[to]||[]).push(f); });
-    const nivel={}; const visit=(id,pilha)=>{ if(nivel[id]!=null) return nivel[id]; if(pilha.has(id)) return 0; pilha.add(id);
-      let n=0; (preds[id]||[]).forEach(p=>{ n=Math.max(n,visit(p,pilha)+1); }); pilha.delete(id); nivel[id]=n; return n; };
-    lista.forEach(t=>visit(String(t.id),new Set()));
-    const ja=(existing||[]).filter(t=>t&&!t.deleted&&t.inFlow!==false&&tarefaNoFluxo(t,s)).map(t=>posNoFluxo(t,s));
-    const y0=ja.length?Math.max(...ja.map(q=>q.y))+DY+60:130;
-    const x0=ja.length?Math.min(...ja.map(q=>q.x)):130;
-    const camadas={}; lista.forEach(t=>{ const n=nivel[String(t.id)]||0; (camadas[n]=camadas[n]||[]).push(t); });
-    Object.keys(camadas).forEach(n=>{ camadas[n].sort((a,b)=>(Number(a.wbsOrder)||0)-(Number(b.wbsOrder)||0))
-      .forEach((t,k)=>{ pos[t.id]={x:x0+k*DX,y:y0+Number(n)*DY}; }); });
+    const lista=porSetor[s];
+    const FS=(fasesOrd&&fasesOrd[s])||fasesDoSetor(PROJ_ATUAL,s); const idx={}; FS.forEach((f,i)=>idx[f.id]=i);
+    const faseI=t=>{ const i=idx[t.phase||'fase1']; return i==null?0:i; };
+    const ja=(existing||[]).filter(t=>t&&!t.deleted&&t.inFlow!==false&&tarefaNoFluxo(t,s)&&!(reposicionar&&reposicionar.has(String(t.id)))).map(t=>posNoFluxo(t,s));
+    let y=ja.length?Math.max(...ja.map(q=>q.y))+DY+GAP:130;
+    const xc=(ja.length?Math.min(...ja.map(q=>q.x)):130)+DX*2;
+    const blocos={}; lista.forEach(t=>{ (blocos[faseI(t)]=blocos[faseI(t)]||[]).push(t); });
+    Object.keys(blocos).map(Number).sort((a,b)=>a-b).forEach(fi=>{
+      const bl=blocos[fi]; const ids=new Set(bl.map(t=>String(t.id)));
+      const preds={}; (conns||[]).forEach(c=>{ const f=String(c.from), to=String(c.to); if(ids.has(f)&&ids.has(to)&&f!==to) (preds[to]=preds[to]||[]).push(f); });
+      const nivel={}; const visit=(id,pilha)=>{ if(nivel[id]!=null) return nivel[id]; if(pilha.has(id)) return 0; pilha.add(id);
+        let n=0; (preds[id]||[]).forEach(p=>{ n=Math.max(n,visit(p,pilha)+1); }); pilha.delete(id); nivel[id]=n; return n; };
+      bl.forEach(t=>visit(String(t.id),new Set()));
+      const camadas={}; bl.forEach(t=>{ const n=nivel[String(t.id)]||0; (camadas[n]=camadas[n]||[]).push(t); });
+      const topo=y; let x1=Infinity, x2=-Infinity, baixo=y;
+      Object.keys(camadas).map(Number).sort((a,b)=>a-b).forEach(n=>{
+        const linha=camadas[n].sort((a,b)=>(Number(a.wbsOrder)||0)-(Number(b.wbsOrder)||0)); let hMax=0;
+        linha.forEach((t,k)=>{ const w=larg(t); const cx=xc+(k-(linha.length-1)/2)*DX; const x=Math.round((cx-w/2)/10)*10;
+          pos[t.id]={x,y}; x1=Math.min(x1,x); x2=Math.max(x2,x+w); hMax=Math.max(hMax,alt(t)); });
+        baixo=y+hMax; y+=DY; });
+      const f=FS[fi];
+      if(f) (grupos[s]=grupos[s]||[]).push({id:'gi'+base+s+fi,titulo:f.name,cor:cores[fi%cores.length],ajustarFase:true,
+        x:Math.round((x1-PADX)/10)*10,y:Math.round((topo-PADT)/10)*10,w:Math.round((x2-x1+PADX*2)/10)*10,h:Math.round((baixo-topo+PADT+PADB)/10)*10});
+      y=baixo+GAP+PADT;
+    });
   });
-  return pos;
+  return {pos,grupos};
+}
+/* Fases e etapas vêm da PLANILHA, separadas por fluxograma de setor (o VIA entra
+   no do PRJ). Para cada setor que tem a coluna preenchida, a lista dele passa a
+   ser exatamente a da planilha, na ordem em que aparecem; as que não estão lá
+   saem. Uma fase/etapa que já existia com o mesmo nome (ou id) mantém o id e a
+   cor, para as tarefas que já estavam nela continuarem nela. Setor sem nada
+   preenchido na planilha fica como está. Devolve as listas novas e, por setor,
+   o texto normalizado → id. */
+const ETAPA_CORES_IMP=['#9ca3af','#5b9bf0','#e8a33d','#3fbf7f','#a07ae6','#e5627a','#2fb5b5','#c9a227'];
+const IMP_SEM_FASE='Sem fase';
+function impMontaFasesEtapas(tasks0,setorDe){
+  const p=PROJ_ATUAL; const porS={};
+  /* Fase/etapa em branco: herda da tarefa-mãe (a fase escrita nela, ou o próprio nome
+     dela quando é o nome de uma fase da planilha — ex.: o grupo "ESTUDO PRELIMINAR").
+     Tarefa-folha que mesmo assim fica sem fase vai para a fase "Sem fase" (no fim). */
+  const byId={}, hasChild={}; (tasks0||[]).forEach(t=>{ byId[t.id]=t; if(t.parentId) hasChild[t.parentId]=true; });
+  const grafia={}; (tasks0||[]).forEach(t=>{ const n=impNomeNorm(t.faseTxt); if(n&&!grafia[n]) grafia[n]=String(t.faseTxt).trim(); });
+  const tasks=(tasks0||[]).map(t=>{ let f=t.faseTxt||'', e=t.etapa||''; let x=byId[t.parentId], g=0;
+    while((!f||!e)&&x&&g++<60){ if(!f){ if(x.faseTxt) f=x.faseTxt; else { const n=impNomeNorm(x.label); if(grafia[n]) f=grafia[n]; } } if(!e&&x.etapa) e=x.etapa; x=byId[x.parentId]; }
+    return (f===(t.faseTxt||'')&&e===(t.etapa||''))?t:{...t,faseTxt:f,etapa:e}; });
+  const comFase=new Set(); tasks.forEach(t=>{ if(t.faseTxt) comFase.add(fluxoSetorDe({sector:setorDe(t),fluxoSetor:t.fluxoSetor})); });
+  tasks.forEach((t,i)=>{ if(!t.faseTxt&&!hasChild[t.id]&&comFase.has(fluxoSetorDe({sector:setorDe(t),fluxoSetor:t.fluxoSetor}))) tasks[i]={...t,faseTxt:IMP_SEM_FASE}; });
+  const efetivas={}; tasks.forEach(t=>{ efetivas[t.id]={faseTxt:t.faseTxt||'',etapa:t.etapa||''}; });
+  const poe=(lista,v)=>{ const s=String(v||'').trim(); if(s&&!lista.some(x=>impNomeNorm(x)===impNomeNorm(s))) lista.push(s); };
+  const datas={}; /* setor → fase → datas de início das tarefas (para a ordem das fases) */
+  tasks.forEach(t=>{ const s=fluxoSetorDe({sector:setorDe(t),fluxoSetor:t.fluxoSetor}); const o=porS[s]=porS[s]||{fases:[],etapas:[]}; poe(o.fases,t.faseTxt); poe(o.etapas,t.etapa);
+    const d=t.startDate||t.baselineStart; if(t.faseTxt&&d&&!hasChild[t.id]){ const k=impNomeNorm(t.faseTxt); ((datas[s]=datas[s]||{})[k]=datas[s][k]||[]).push(d); } });
+  /* Ordem das fases = ordem em que elas acontecem no cronograma da planilha (data
+     mediana de início das tarefas de cada fase); sem data, pela ordem das linhas.
+     "Sem fase" sempre por último. */
+  Object.keys(porS).forEach(s=>{ const o=porS[s]; const med=nome=>{ const a=((datas[s]||{})[impNomeNorm(nome)]||[]).slice().sort(); return a.length?a[Math.floor((a.length-1)/2)]:null; };
+    const ordem=o.fases.map((nome,i)=>({nome,i,m:med(nome),fim:nome===IMP_SEM_FASE}));
+    ordem.sort((a,b)=>(a.fim-b.fim)||((a.m==null)-(b.m==null))||(a.m&&b.m&&a.m!==b.m?(a.m<b.m?-1:1):0)||(a.i-b.i));
+    o.fases=ordem.map(x=>x.nome); });
+  const parecido=(nv,nome,id)=>{ const n=impNomeNorm(nome), ni=impNomeNorm(id); return n===nv||ni===nv||String(nome||'').split(/\s[–-]\s/).some(x=>impNomeNorm(x)===nv); };
+  const base=Date.now().toString(36);
+  const fasesSetor={}, etapasSetor={}, mapF={}, mapE={};
+  Object.keys(porS).forEach((s,si)=>{ const o=porS[s];
+    if(o.fases.length){ const velhas=fasesDoSetor(p,s); const usados=new Set(); mapF[s]={};
+      fasesSetor[s]=o.fases.map((nome,i)=>{ const nv=impNomeNorm(nome); const v=velhas.find(x=>!usados.has(x.id)&&parecido(nv,x.name,x.id));
+        const id=v?v.id:('fi'+base+si+'_'+i); usados.add(id); mapF[s][nv]=id; return {id,name:nome}; }); }
+    if(o.etapas.length){ const velhas=etapasDoSetor(p,s); const usados=new Set(); mapE[s]={};
+      etapasSetor[s]=o.etapas.map((nome,i)=>{ const nv=impNomeNorm(nome); const v=velhas.find(x=>!usados.has(x.id)&&parecido(nv,x.nome,x.id));
+        const id=v?v.id:('ei'+base+si+'_'+i); usados.add(id); mapE[s][nv]=id; return {id,nome,cor:(v&&v.cor)||ETAPA_CORES_IMP[i%ETAPA_CORES_IMP.length]}; }); }
+  });
+  return {fasesSetor,etapasSetor,mapF,mapE,efetivas};
 }
 /* Junta tudo o que foi escolhido na prévia e devolve o que entra no empreendimento. */
 function impFinalizar(preview,existing,op){
@@ -6527,11 +6805,23 @@ function impFinalizar(preview,existing,op){
   const hasChild={}; (preview.tasks||[]).forEach(t=>{ if(t.parentId) hasChild[t.parentId]=true; });
   const idFinal=id=>liga[id]?liga[id].id:id;
   const novas=[], updates={};
-  (preview.tasks||[]).forEach(t=>{
+  const fe=impMontaFasesEtapas(preview.tasks,setorDe);
+  const paraArrumar=[]; /* tarefas que já existiam e vieram na planilha: também vão para o bloco da fase delas */
+  (preview.tasks||[]).forEach(t0=>{
+    const {faseTxt:_f,...t}=t0; const ef=fe.efetivas[t0.id]||{}; const faseTxt=ef.faseTxt; t.etapa=ef.etapa||t.etapa;
+    const s=fluxoSetorDe({sector:setorDe(t0),fluxoSetor:t0.fluxoSetor});
+    if(faseTxt&&fe.mapF[s]){ const f=fe.mapF[s][impNomeNorm(faseTxt)]; if(f) t.phase=f; }
+    if(t.etapa&&fe.mapE[s]){ const id=fe.mapE[s][impNomeNorm(t.etapa)]; if(id) t.etapa=id; }
+    if(!t.etapa) delete t.etapa;
     const e=liga[t.id];
     if(e){ const patch={};
-      ['startDate','endDate','duration','baselineStart','baselineEnd','baselineDuration','code'].forEach(k=>{ if(t[k]!=null&&t[k]!==''&&(e[k]==null||e[k]==='')) patch[k]=t[k]; });
-      if(Object.keys(patch).length) updates[e.id]=patch; return; }
+      ['startDate','endDate','duration','baselineStart','baselineEnd','baselineDuration','code','disciplina','fluxoSetor'].forEach(k=>{ if(t[k]!=null&&t[k]!==''&&(e[k]==null||e[k]==='')) patch[k]=t[k]; });
+      /* Fase e etapa seguem a planilha também na tarefa que já existia. */
+      if(faseTxt&&t.phase&&t.phase!==e.phase) patch.phase=t.phase;
+      if(t.etapa&&t.etapa!==e.etapa) patch.etapa=t.etapa;
+      if(Object.keys(patch).length) updates[e.id]=patch;
+      if(!hasChild[t.id]&&e.inFlow!==false) paraArrumar.push({...e,...patch});
+      return; }
     const n={...t, sector:setorDe(t), parentId:t.parentId!=null?idFinal(t.parentId):null};
     if(!n.code) delete n.code;
     /* Entra no fluxograma se estiver marcada na prévia (todas as tarefas-folha vêm marcadas). */
@@ -6540,8 +6830,10 @@ function impFinalizar(preview,existing,op){
   const conns=[]; const vistas=new Set();
   (preview.connections||[]).forEach(c=>{ const f=idFinal(c.from), to=idFinal(c.to); if(String(f)===String(to)) return;
     const k=f+'>'+to; if(vistas.has(k)) return; vistas.add(k); conns.push({...c,from:f,to}); });
-  { const pos=impLayoutFluxo(novas,conns,existing); novas.forEach(n=>{ if(pos[n.id]){ n.x=pos[n.id].x; n.y=pos[n.id].y; } }); }
-  return {tasks:novas,connections:conns,updates,ligadas:Object.keys(liga).length};
+  const lay=impLayoutFluxo(novas.concat(paraArrumar),conns,existing,fe.fasesSetor,new Set(paraArrumar.map(t=>String(t.id))));
+  novas.forEach(n=>{ const q=lay.pos[n.id]; if(q){ n.x=q.x; n.y=q.y; } });
+  paraArrumar.forEach(t=>{ const q=lay.pos[t.id]; if(q) updates[t.id]={...(updates[t.id]||{}),x:q.x,y:q.y}; });
+  return {tasks:novas,connections:conns,updates,ligadas:Object.keys(liga).length,fasesSetor:fe.fasesSetor,etapasSetor:fe.etapasSetor,grupos:lay.grupos};
 }
 /* ─── Hierarquia (WBS) do Cronograma: ordena irmãos, normaliza ordem, recua/avança/move ─── */
 function schedSiblingSort(a,b){ const oa=Number(a.wbsOrder), ob=Number(b.wbsOrder); const va=isNaN(oa)?1e9:oa, vb=isNaN(ob)?1e9:ob; if(va!==vb) return va-vb; const da=SCHED.parseISO(metaStartOf(a)),db=SCHED.parseISO(metaStartOf(b)); if(da&&db&&da.getTime()!==db.getTime()) return da.getTime()-db.getTime(); if(da&&!db) return -1; if(!da&&db) return 1; return (a.label||'').localeCompare(b.label||'','pt'); }
@@ -6655,10 +6947,15 @@ function GanttChart({tasks,connections,onTaskOpen}){
   });
   const scrollSide=(dir)=>{ const el=scrollRef.current; if(el) el.scrollBy({left:dir*Math.max(320,el.clientWidth*0.8),behavior:'smooth'}); };
   const goHoje=()=>{ const el=scrollRef.current; if(el&&hojeXRef.current!=null) el.scrollTo({left:Math.max(0,hojeXRef.current-40),behavior:'smooth'}); };
+  /* Duas barras por tarefa: REAL = Início/Término (as mesmas datas das colunas do
+     Cronograma) e LINHA DE BASE = Início/Término L.Base (o plano salvo). */
+  const realIni=t=>t.startMetaFixed||t.actualStart||t.startMeta||t.startDate||'';
+  const realFim=t=>t.endMetaFixed||t.endMeta||t.endDate||'';
   const allDates=[];
   tasks.forEach(t=>{
-    const s=parseFlexDate(t.startMeta||t.startDate), e=parseFlexDate(t.endMeta||t.endDate), m=parseFlexDate(t.clickupDate);
-    if(s) allDates.push(s); if(e) allDates.push(e); if(m) allDates.push(m);
+    const s=parseFlexDate(realIni(t)), e=parseFlexDate(realFim(t)), m=parseFlexDate(t.clickupDate);
+    const bs=parseFlexDate(t.baselineStart), be=parseFlexDate(t.baselineEnd);
+    [s,e,m,bs,be].forEach(d=>{ if(d) allDates.push(d); });
   });
   if(!allDates.length){
     return <div className="gantt-empty">Nenhuma tarefa com Início, Fim ou Meta preenchidos ainda — assim que alguma tarefa tiver uma data, o cronograma aparece aqui.</div>;
@@ -6672,7 +6969,7 @@ function GanttChart({tasks,connections,onTaskOpen}){
   const dayIndex=(d)=>Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime()-timelineStart.getTime())/DAY);
   const totalDays=dayIndex(timelineEnd)+1;
   const totalW=totalDays*pxPerDay;
-  const LABEL_W=210, ROW_H=34, HEAD_H=44, PHASE_H=28, BAR_H=16, BAR_TOP=(ROW_H-BAR_H)/2;
+  const LABEL_W=210, ROW_H=34, HEAD_H=44, PHASE_H=28, BAR_H=13, BAR_TOP=5, BL_H=7, BL_TOP=BAR_TOP+BAR_H+3;
 
   /* Marcadores de mês (posição e largura em px). */
   const monthMarks=[];
@@ -6691,13 +6988,16 @@ function GanttChart({tasks,connections,onTaskOpen}){
   const groupsLayout=grouped.map(g=>{
     const headY=yCur; yCur+=PHASE_H;
     const rows=g.tasks.map(t=>{
-      const s=parseFlexDate(t.startMeta||t.startDate), e=parseFlexDate(t.endMeta||t.endDate), meta=parseFlexDate(t.clickupDate);
+      const s=parseFlexDate(realIni(t)), e=parseFlexDate(realFim(t)), meta=parseFlexDate(t.clickupDate);
       const bs=s||meta||e, be=e||meta||s;
       const rowTop=yCur; yCur+=ROW_H;
       let barLeft=null, barW=0;
       if(bs){ barLeft=dayIndex(bs)*pxPerDay; barW=Math.max((dayIndex(be)-dayIndex(bs)+1)*pxPerDay,3); }
-      rectById[t.id]={left:barLeft,w:barW,cy:rowTop+ROW_H/2,hasDate:bs!=null};
-      return {t,rowTop,barLeft,barW,s,e,hasDate:bs!=null};
+      const ls=parseFlexDate(t.baselineStart), le=parseFlexDate(t.baselineEnd);
+      let blLeft=null, blW=0;
+      if(ls&&le){ blLeft=dayIndex(ls)*pxPerDay; blW=Math.max((dayIndex(le)-dayIndex(ls)+1)*pxPerDay,3); }
+      rectById[t.id]={left:barLeft,w:barW,cy:rowTop+BAR_TOP+BAR_H/2,hasDate:bs!=null};
+      return {t,rowTop,barLeft,barW,blLeft,blW,s,e,hasDate:bs!=null||blLeft!=null,temReal:bs!=null};
     });
     return {g,headY,rows};
   });
@@ -6751,12 +7051,15 @@ function GanttChart({tasks,connections,onTaskOpen}){
                       <span className="gantt2-labeltxt">{r.t.label}</span>
                     </div>
                     <div className="gantt2-track" style={{width:totalW+'px'}}>
-                      {r.hasDate ? (
+                      {r.temReal ? (
                         <div className="gantt2-bar" onClick={()=>onTaskOpen(r.t)}
                           style={{left:r.barLeft+'px',width:r.barW+'px',top:BAR_TOP+'px',height:BAR_H+'px',background:statusColor(r.t.status)}}
-                          title={r.t.label+(r.s?' · Início meta '+formatDateShort(r.t.startMeta||r.t.startDate):'')+(r.e?' · Término meta '+formatDateShort(r.t.endMeta||r.t.endDate):'')}/>
+                          title={r.t.label+' · Real'+(r.s?' · Início '+formatDateShort(realIni(r.t)):'')+(r.e?' · Término '+formatDateShort(realFim(r.t)):'')}/>
                       ) : null}
-                      {r.hasDate&&r.e&&<span className="gantt2-bdate" style={{left:(r.barLeft+r.barW+12)+'px'}}>{formatDateShort(r.t.endMeta||r.t.endDate)}</span>}
+                      {r.blLeft!=null&&<div className="gantt2-blbar" onClick={()=>onTaskOpen(r.t)}
+                          style={{left:r.blLeft+'px',width:r.blW+'px',top:BL_TOP+'px',height:BL_H+'px'}}
+                          title={r.t.label+' · Linha de base · Início '+formatDateShort(r.t.baselineStart)+' · Término '+formatDateShort(r.t.baselineEnd)}/>}
+                      {r.temReal&&r.e&&<span className="gantt2-bdate" style={{left:(Math.max(r.barLeft+r.barW,r.blLeft!=null?r.blLeft+r.blW:0)+12)+'px'}}>{formatDateShort(realFim(r.t))}</span>}
                       {!r.hasDate&&<span className="gantt2-nodate">sem data</span>}
                     </div>
                   </div>
@@ -6777,6 +7080,8 @@ function GanttChart({tasks,connections,onTaskOpen}){
         <span className="gantt2-hint">Use as setas para navegar no tempo · clique numa tarefa para abrir</span>
       </div>
       <div className="gantt-legend">
+        <span className="gantt-legend-item"><span className="gantt2-legbar"/> Real (início e término)</span>
+        <span className="gantt-legend-item"><span className="gantt2-legbar bl"/> Linha de base</span>
         {STATUSES.map(s=>(<span key={s} className="gantt-legend-item"><span className="dot" style={{background:statusColor(s)}}/> {s}</span>))}
       </div>
     </div>
@@ -6815,6 +7120,13 @@ function ImportPreviewModal({preview,existing,onConfirm,onClose}){
             </select>
             <span className="imp-dica">Dá para trocar o setor de cada tarefa na lista.</span>
           </div>
+          {(()=>{ const fe=impMontaFasesEtapas(tasks,setorDe); const ss=[...new Set([...Object.keys(fe.fasesSetor),...Object.keys(fe.etapasSetor)])];
+            if(!ss.length) return null;
+            return <div className="imp-fe"><b><i className="ti ti-layout-rows"/> Fases e etapas da planilha</b> — substituem as do fluxograma de cada setor abaixo (as que não estão na planilha saem):
+              {ss.map(s=><div key={s} className="imp-fe-s"><span className="imp-fe-set">Fluxograma {fluxoRotulo(s)}</span>
+                {fe.fasesSetor[s]&&<span>Fases: {fe.fasesSetor[s].map(f=>f.name).join(' · ')}</span>}
+                {fe.etapasSetor[s]&&<span>Etapas: {fe.etapasSetor[s].map(e=>e.nome).join(' · ')}</span>}</div>)}
+            </div>; })()}
         </div>
         <div className="imp-list">
           <div className="imp-row imp-head"><span className="imp-chk"><input type="checkbox" title="Marcar / desmarcar todas" checked={folhas.length>0&&folhas.every(x=>!foraFluxo[x.id])}
@@ -7364,10 +7676,12 @@ const SCH_COLS=[
   {key:'etapa',label:'Etapa',cls:'sch-c-etapa'},
   {key:'disc',label:'Disciplina',cls:'sch-c-disc'},
   {key:'estudo',label:'Fase',cls:'sch-c-estudo'},
+  {key:'tipo',label:'Tipo',cls:'sch-c-tipo'},
+  {key:'fxs',label:'Fluxo setor',cls:'sch-c-sector'},
 ];
 /* Colunas novas (nov/2026) começam escondidas — a pessoa liga em "Colunas". */
-const SCH_OCULTAS_PADRAO=['succ','etapa','disc','estudo'];
-const DEFAULT_COLW={flow:62,num:34,pct:96,meta:56,name:260,mst:118,mbt:116,dur:78,start:80,end:80,blS:108,blE:122,blD:94,sector:82,peso:64,pred:150,succ:130,code:84,etapa:70,disc:96,estudo:120};
+const SCH_OCULTAS_PADRAO=['succ','etapa','disc','estudo','fxs'];
+const DEFAULT_COLW={flow:62,num:34,pct:96,meta:56,name:260,mst:118,mbt:116,dur:78,start:80,end:80,blS:108,blE:122,blD:94,sector:82,peso:64,pred:150,succ:130,code:84,etapa:70,disc:96,estudo:120,tipo:120,fxs:96};
 /* Menu "Colunas" do Cronograma (estilo ClickUp): marcar/desmarcar quais
    colunas aparecem e arrastar (ou usar as setas) para mudar a ordem. */
 function SchColunasMenu({cols,order,hidden,onChange,onClose,onReset}){
@@ -7733,7 +8047,7 @@ function ScheduleView({project, onTaskField, onSetMetaPeso, onAddDep, onEditDep,
               sector:<td className="sch-sector"></td>,
               peso:<td className="sch-c-peso"></td>,
               pred:<td className="sch-pred"></td>,
-              succ:<td className="sch-pred"></td>, code:<td></td>, etapa:<td></td>, disc:<td></td>, estudo:<td></td>,
+              succ:<td className="sch-pred"></td>, code:<td></td>, etapa:<td></td>, disc:<td></td>, estudo:<td></td>, tipo:<td></td>, fxs:<td></td>,
             }; return colsVis.map(c=><React.Fragment key={c.key}>{C[c.key]}</React.Fragment>); })()}
             <td className="sch-c-fill"></td>
           </tr>
@@ -7811,9 +8125,19 @@ peso:<td className="sch-peso" onDoubleClick={t.isMeta?(e=>beginEdit(t.id,'peso',
               pred:<td className="sch-pred">{sm?'':depSummary(t.id)}</td>,
               succ:<td className="sch-pred">{sm?'':succSummary(t.id)}</td>,
               code:<td className="sch-code">{t.code||''}</td>,
-              etapa:<td>{(()=>{ const e=etapaDaTarefa(project,t); return e?<span className="sch-etapa" style={{'--ec':e.cor||'#9ca3af'}}>{e.nome}</span>:''; })()}</td>,
-              disc:<td>{t.disciplina||''}</td>,
-              estudo:<td className="sch-estudo">{sm?'':((fasesDoSetor(project,normSector(t.sector)||FLUXO_SEM).find(x=>x.id===(t.phase||'fase1'))||{}).name||'')}</td>,
+              etapa:<td title={t.etapa||undefined}>{(()=>{ const e=etapaDaTarefa(project,t); return e?<span className="sch-etapa" style={{'--ec':e.cor||'#9ca3af'}}>{e.nome}</span>:(t.etapa||''); })()}</td>,
+              disc:<td title={t.disciplina||undefined}>{t.disciplina||''}</td>,
+              estudo:<td className="sch-estudo">{sm?'':((fasesDoSetor(project,fluxoSetorDe(t)).find(x=>x.id===(t.phase||'fase1'))||{}).name||'')}</td>,
+              tipo:<td className="sch-tipo" onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'tipo',e))} title={sm?undefined:'Forma no fluxograma — duplo clique para trocar'}>
+                {(isEditing(id,'tipo')&&!sm)
+                  ? <SchInlineInput type="select" value={t.taskType||'processo'} options={TASK_TYPES.map(x=><option key={x.id} value={x.id}>{(TASK_TYPE_GLIFO[x.id]||'')+'  '+x.label}</option>)} onSave={v=>{ if(v&&v!==(t.taskType||'processo')) onTaskField(t.id,{taskType:v}); endEdit(); }} onCancel={endEdit}/>
+                  : (sm?'':(()=>{ const x=TASK_TYPES.find(y=>y.id===(t.taskType||'processo'))||TASK_TYPES[0]; return <span><span className="sch-tipoglifo">{TASK_TYPE_GLIFO[x.id]||''}</span> {x.label}</span>; })())}
+              </td>,
+              fxs:<td className="sch-sector" onDoubleClick={sm?undefined:(e=>beginEdit(t.id,'fxs',e))} title={sm?undefined:'Em qual fluxograma a tarefa aparece (vazio = o do próprio setor) — duplo clique para trocar'}>
+                {(isEditing(id,'fxs')&&!sm)
+                  ? <SchInlineInput type="select" value={t.fluxoSetor||''} options={<React.Fragment><option value="">Do próprio setor</option>{SECTORS_ALL.map(s=><option key={s} value={s}>{'Fluxograma '+setorSigla(s)}</option>)}</React.Fragment>} onSave={v=>{ onTaskField(t.id,{fluxoSetor:(v&&v!==t.sector)?v:null}); endEdit(); }} onCancel={endEdit}/>
+                  : (sm?'':(t.fluxoSetor&&t.fluxoSetor!==t.sector?setorSigla(t.fluxoSetor):<span className="sch-mst-empty">—</span>))}
+              </td>,
               }; return colsVis.map(c=><React.Fragment key={c.key}>{C[c.key]}</React.Fragment>); })()}
               <td className="sch-c-fill"></td>
             </tr>); })}
@@ -7888,7 +8212,7 @@ peso:<td className="sch-peso" onDoubleClick={t.isMeta?(e=>beginEdit(t.id,'peso',
       {showBlHist&&<BaselineHistoryModal project={project} fmt={fmt} onClose={()=>setShowBlHist(false)} onRestore={onRestoreBaseline} onDelete={onDeleteBaselineHist}/>}
       {importPreview&&<ImportPreviewModal preview={importPreview} existing={project.tasks||[]}
         onClose={()=>setImportPreview(null)}
-        onConfirm={r=>{ onImportTasks&&onImportTasks(r.tasks,r.connections,r.updates); setImportPreview(null); }}/>}
+        onConfirm={r=>{ onImportTasks&&onImportTasks(r.tasks,r.connections,r.updates,{fasesSetor:r.fasesSetor,etapasSetor:r.etapasSetor,grupos:r.grupos}); setImportPreview(null); }}/>}
     </div>
   );
 }
@@ -18168,9 +18492,32 @@ function chatDiaRotulo(iso){ const hoje=chatDiaISO(), ontem=chatDiaISO(new Date(
   if(iso===hoje) return 'Hoje'; if(iso===ontem) return 'Ontem';
   const d=new Date(iso+'T12:00:00'); return isNaN(d)?iso:d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}); }
 function chatHora(ms){ const d=new Date(ms); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
-const CHAT_DOC=dia=>db.collection('fluxoapp_meta').doc('chat_'+dia);
-const CHAT_DEMO={}; /* modo demonstração: mensagens só na memória */
+const CHAT_DOC=id=>db.collection('fluxoapp_meta').doc(id);
+const CHAT_DEMO={}; /* modo demonstração: {idDoc:{dia,tipo,setor,membros,msgs}} só na memória */
 function chatNorm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function chatHash(s){ let h=5381; s=String(s||''); for(let i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))|0; } return (h>>>0).toString(36); }
+/* Onde cada conversa fica guardada (um documento por dia):
+   - Toda a equipe: chat_AAAA-MM-DD (tipo chatDia)
+   - Um setor:      chat_AAAA-MM-DD__s_SETOR (tipo chatSetor; quem é do setor vê, e quem escreveu também)
+   - Uma pessoa:    chat_AAAA-MM-DD__p_xxxx (tipo chatPriv; só as duas pessoas veem) */
+function chatDocId(dia,para,eu){
+  if(!para||para==='g') return 'chat_'+dia;
+  if(para.startsWith('s:')) return 'chat_'+dia+'__s_'+para.slice(2).replace(/[^A-Za-z0-9]/g,'');
+  const outro=para.slice(2); return 'chat_'+dia+'__p_'+chatHash([eu,outro].sort().join('|')); }
+/* Chave da conversa vista por quem está usando: 'g', 's:PRJ' ou 'p:email-da-outra-pessoa'. */
+function chatChave(m,eu){ const p=m&&m.para; if(!p) return 'g'; if(p.startsWith('s:')) return p;
+  const outro=String(p.slice(2)).toLowerCase(); return String(m.de||'').toLowerCase()===eu?'p:'+outro:'p:'+String(m.de||'').toLowerCase(); }
+/* Quem vê o quê: equipe → todos; setor → quem é do setor (e o administrador) e quem
+   escreveu nele; pessoa → só as duas pessoas. */
+function chatMeusSetores(){ return (PERM.isAdmin||PERM.isMaster)?SECTORS_ALL.slice():((PERM.setores||[]).slice()); }
+function chatPodeVer(doc,eu){ if(!doc) return false; if(doc.tipo==='chatDia'||!doc.tipo) return true;
+  const mem=(doc.membros||[]).map(x=>String(x).toLowerCase());
+  if(doc.tipo==='chatPriv') return mem.includes(eu);
+  if(doc.tipo==='chatSetor') return mem.includes(eu)||chatMeusSetores().includes(doc.setor);
+  return false; }
+function chatRotuloConversa(k,pessoas){ if(k==='g') return 'Toda a equipe';
+  if(k.startsWith('s:')) return 'Setor '+setorSigla(k.slice(2));
+  const e=k.slice(2); const p=(pessoas||[]).find(x=>x.email===e); return (p&&p.nome)||e; }
 /* Texto da mensagem com as menções (@Nome) e a palavra buscada destacadas. */
 function ChatTexto({t,busca}){
   const partes=String(t||'').split(/(@[\wÀ-ÿ.]+(?:\s[A-ZÀ-Ý][\wÀ-ÿ]+)?)/g);
@@ -18181,51 +18528,79 @@ function ChatTexto({t,busca}){
 function ChatEquipe({uid,usuarios,projects,acima}){
   const eu=(EU&&EU.email||'').toLowerCase(), meuNome=(EU&&EU.nome)||eu||'Eu';
   const[aberto,setAberto]=useState(false);
-  const[dias,setDias]=useState({}); /* {dia:[msgs]} dos últimos dias, ao vivo */
+  const[docs,setDocs]=useState({}); /* {idDoc:{dia,tipo,setor,membros,msgs}} dos últimos dias, ao vivo */
   const[txt,setTxt]=useState('');
   const[emp,setEmp]=useState('');
+  const[conv,setConv]=useState('g'); /* conversa aberta */
   const[hist,setHist]=useState(false);
-  const[lido,setLido]=useState(()=>{ try{ return Number(localStorage.getItem('chat_lido'))||0; }catch(e){ return 0; } });
+  const[lido,setLido]=useState(()=>{ try{ const o=JSON.parse(localStorage.getItem('chat_lido_c')||'{}'); const g=Number(localStorage.getItem('chat_lido'))||0; return {g,...o}; }catch(e){ return {}; } });
   const[mencao,setMencao]=useState(null); /* {q, ini} enquanto digita @ */
   const fimRef=useRef(null), taRef=useRef(null);
   const ativos=(projects||[]).filter(p=>p&&!p.deleted&&!p.archived);
-  const pessoas=React.useMemo(()=>{ const m={}; (usuarios||[]).forEach(u=>{ const e=String(u.email||'').toLowerCase(); if(e) m[e]={email:e,nome:u.nome||e}; }); if(MASTER_ADMIN_EMAIL&&!m[MASTER_ADMIN_EMAIL]) m[MASTER_ADMIN_EMAIL]={email:MASTER_ADMIN_EMAIL,nome:MASTER_ADMIN_NOME}; return Object.values(m).sort((a,b)=>a.nome.localeCompare(b.nome,'pt')); },[usuarios]);
-  /* Ao vivo: um ouvinte por dia (hoje e os anteriores). */
+  const pessoas=React.useMemo(()=>{ const m={}; (usuarios||[]).forEach(u=>{ const e=String(u.email||'').toLowerCase(); if(e&&u.ativo!==false) m[e]={email:e,nome:u.nome||e}; }); if(MASTER_ADMIN_EMAIL&&!m[MASTER_ADMIN_EMAIL]) m[MASTER_ADMIN_EMAIL]={email:MASTER_ADMIN_EMAIL,nome:MASTER_ADMIN_NOME}; return Object.values(m).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')); },[usuarios]);
+  const meusSet=chatMeusSetores().join('|');
+  /* Ao vivo: equipe e setores (um documento por dia) + as conversas em que a pessoa está. */
   useEffect(()=>{
     const lista=[]; for(let i=0;i<CHAT_DIAS_VIVOS;i++) lista.push(chatDiaISO(new Date(Date.now()-i*86400000)));
-    if(DEMO_MODE){ const o={}; lista.forEach(d=>{ if(CHAT_DEMO[d]) o[d]=CHAT_DEMO[d]; }); setDias(o); return; }
-    const uns=lista.map(d=>CHAT_DOC(d).onSnapshot(s=>{ const x=s.exists?s.data():null; setDias(o=>{ const n={...o}; if(x&&Array.isArray(x.msgs)) n[d]=x.msgs; else delete n[d]; return n; }); },err=>console.error('Conversa da equipe:',err)));
+    const limite=lista[lista.length-1];
+    if(DEMO_MODE){ const o={}; Object.keys(CHAT_DEMO).forEach(id=>{ const d=CHAT_DEMO[id]; if(d.dia>=limite&&chatPodeVer(d,eu)) o[id]=d; }); setDocs(o); return; }
+    const poe=(id,x)=>setDocs(o=>{ const n={...o}; if(x&&Array.isArray(x.msgs)&&chatPodeVer(x,eu)) n[id]=x; else delete n[id]; return n; });
+    const ids=[]; lista.forEach(d=>{ ids.push('chat_'+d); (meusSet?meusSet.split('|'):[]).forEach(s=>ids.push(chatDocId(d,'s:'+s,eu))); });
+    const uns=ids.map(id=>CHAT_DOC(id).onSnapshot(s=>poe(id,s.exists?s.data():null),err=>console.error('Conversa da equipe:',err)));
+    if(eu) uns.push(db.collection('fluxoapp_meta').where('membros','array-contains',eu).onSnapshot(sn=>{
+      sn.docChanges().forEach(ch=>{ const x=ch.doc.data(); if(ch.type==='removed'||!x||x.dia<limite) poe(ch.doc.id,null); else poe(ch.doc.id,x); }); },err=>console.error('Conversas:',err)));
     return ()=>uns.forEach(u=>u&&u());
-  },[]);
-  /* "Lido até" fica também nas preferências da pessoa (vale em qualquer aparelho). */
-  useEffect(()=>{ if(DEMO_MODE||!uid) return; const u=USERPREFS_COL.doc(uid).onSnapshot(s=>{ const v=s.exists?Number((s.data()||{}).chatLido)||0:0; if(v) setLido(l=>Math.max(l,v)); },()=>{}); return u; },[uid]);
-  const todas=React.useMemo(()=>Object.keys(dias).sort().flatMap(d=>(dias[d]||[]).map(m=>({...m,dia:d}))).sort((a,b)=>(a.em||0)-(b.em||0)),[dias]);
-  const naoLidas=todas.filter(m=>(m.em||0)>lido&&String(m.de||'').toLowerCase()!==eu);
-  const meMencionaram=naoLidas.some(m=>(m.men||[]).includes(eu));
-  const marcarLido=()=>{ const ult=todas.length?Math.max(...todas.map(m=>m.em||0)):Date.now(); if(ult<=lido) return; setLido(ult); try{ localStorage.setItem('chat_lido',String(ult)); }catch(e){} if(!DEMO_MODE&&uid) USERPREFS_COL.doc(uid).set({chatLido:ult},{merge:true}).catch(()=>{}); };
-  useEffect(()=>{ if(aberto&&!hist){ marcarLido(); setTimeout(()=>{ if(fimRef.current) fimRef.current.scrollIntoView({block:'end'}); },30); } },[aberto,hist,todas.length]);
+  },[eu,meusSet]);
+  /* "Lido até" (por conversa) fica também nas preferências da pessoa (vale em qualquer aparelho). */
+  useEffect(()=>{ if(DEMO_MODE||!uid) return; const u=USERPREFS_COL.doc(uid).onSnapshot(s=>{ const x=s.exists?(s.data()||{}):{}; const c={...(x.chatLidoC||{})}; if(Number(x.chatLido)) c.g=Math.max(Number(x.chatLido),c.g||0);
+    setLido(l=>{ const n={...l}; Object.keys(c).forEach(k=>{ n[k]=Math.max(n[k]||0,Number(c[k])||0); }); return n; }); },()=>{}); return u; },[uid]);
+  const todas=React.useMemo(()=>Object.values(docs).flatMap(d=>(d.msgs||[]).map(m=>({...m,dia:d.dia,k:chatChave(m,eu)}))).sort((a,b)=>(a.em||0)-(b.em||0)),[docs,eu]);
+  const naoLidas=todas.filter(m=>(m.em||0)>(lido[m.k]||0)&&String(m.de||'').toLowerCase()!==eu);
+  const novasDe=k=>naoLidas.filter(m=>m.k===k).length;
+  const meMencionaram=naoLidas.some(m=>(m.men||[]).includes(eu)||m.k.startsWith('p:'));
+  const daConv=todas.filter(m=>m.k===conv);
+  /* Conversas da lista: equipe, setores e pessoas (as com mensagem aparecem primeiro). */
+  const convs=React.useMemo(()=>{ const ks=new Set(['g']); SECTORS_ALL.forEach(s=>ks.add('s:'+s)); todas.forEach(m=>ks.add(m.k));
+    return [...ks]; },[todas]);
+  const marcarLido=()=>{ const ms=daConv; const ult=ms.length?Math.max(...ms.map(m=>m.em||0)):0; if(!ult||ult<=(lido[conv]||0)) return;
+    const n={...lido,[conv]:ult}; setLido(n); try{ localStorage.setItem('chat_lido_c',JSON.stringify(n)); }catch(e){}
+    if(!DEMO_MODE&&uid) USERPREFS_COL.doc(uid).set({chatLidoC:{[conv]:ult}},{merge:true}).catch(()=>{}); };
+  useEffect(()=>{ if(aberto&&!hist){ marcarLido(); setTimeout(()=>{ if(fimRef.current) fimRef.current.scrollIntoView({block:'end'}); },30); } },[aberto,hist,daConv.length,conv]);
   const enviar=()=>{
     const t=txt.trim(); if(!t) return;
     const men=pessoas.filter(p=>t.includes('@'+p.nome)).map(p=>p.email);
     const p=emp?ativos.find(x=>String(x.id)===String(emp)):null;
     const msg={id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),de:eu,nome:meuNome,t,em:Date.now()};
     if(men.length) msg.men=men; if(p){ msg.proj=String(p.id); msg.projNome=p.name||''; }
-    const d=chatDiaISO();
+    if(conv!=='g') msg.para=conv;
+    const d=chatDiaISO(); const id=chatDocId(d,conv,eu);
+    const cab=conv==='g'?{tipo:'chatDia',dia:d}:conv.startsWith('s:')?{tipo:'chatSetor',dia:d,setor:conv.slice(2)}:{tipo:'chatPriv',dia:d};
     setTxt(''); setMencao(null);
-    if(DEMO_MODE){ CHAT_DEMO[d]=(CHAT_DEMO[d]||[]).concat(msg); setDias(o=>({...o,[d]:CHAT_DEMO[d]})); return; }
-    CHAT_DOC(d).set({tipo:'chatDia',dia:d,msgs:firebase.firestore.FieldValue.arrayUnion(msg)},{merge:true})
+    if(DEMO_MODE){ const o=CHAT_DEMO[id]||{...cab,membros:[],msgs:[]};
+      const mem=new Set(o.membros); if(conv!=='g') mem.add(eu); if(conv.startsWith('p:')) mem.add(conv.slice(2));
+      CHAT_DEMO[id]={...o,membros:[...mem],msgs:o.msgs.concat(msg)}; setDocs(x=>({...x,[id]:CHAT_DEMO[id]})); return; }
+    const FV=firebase.firestore.FieldValue; const dados={...cab,msgs:FV.arrayUnion(msg)};
+    if(conv.startsWith('s:')) dados.membros=FV.arrayUnion(eu);
+    if(conv.startsWith('p:')) dados.membros=FV.arrayUnion(eu,conv.slice(2));
+    CHAT_DOC(id).set(dados,{merge:true})
       .catch(e=>{ console.error(e); alert('Não consegui enviar a mensagem. Verifique a conexão.'); setTxt(t); });
   };
   const apagar=(m)=>{
-    if(!window.confirm('Apagar esta mensagem? Ela sai para todos.')) return;
-    if(DEMO_MODE){ CHAT_DEMO[m.dia]=(CHAT_DEMO[m.dia]||[]).filter(x=>x.id!==m.id); setDias(o=>({...o,[m.dia]:CHAT_DEMO[m.dia]})); return; }
-    const ref=CHAT_DOC(m.dia);
+    if(!window.confirm('Apagar esta mensagem? Ela sai para todos da conversa.')) return;
+    const id=chatDocId(m.dia,m.k==='g'?'g':m.k.startsWith('s:')?m.k:'p:'+m.k.slice(2),eu);
+    if(DEMO_MODE){ const o=CHAT_DEMO[id]; if(!o) return; CHAT_DEMO[id]={...o,msgs:o.msgs.filter(x=>x.id!==m.id)}; setDocs(x=>({...x,[id]:CHAT_DEMO[id]})); return; }
+    const ref=CHAT_DOC(id);
     db.runTransaction(tr=>tr.get(ref).then(s=>{ const l=(s.exists&&s.data().msgs)||[]; tr.update(ref,{msgs:l.filter(x=>x.id!==m.id)}); })).catch(e=>{ console.error(e); alert('Não consegui apagar.'); });
   };
   /* Menção: ao digitar @ aparece a lista de pessoas. */
   const aoDigitar=e=>{ const v=e.target.value; setTxt(v); const pos=e.target.selectionStart||v.length; const antes=v.slice(0,pos); const m=antes.match(/@([\wÀ-ÿ]*)$/); setMencao(m?{q:m[1],ini:pos-m[0].length}:null); };
   const escolherPessoa=p=>{ if(!mencao) return; const pos=(taRef.current&&taRef.current.selectionStart)||txt.length; const novo=txt.slice(0,mencao.ini)+'@'+p.nome+' '+txt.slice(pos); setTxt(novo); setMencao(null); setTimeout(()=>{ if(taRef.current){ taRef.current.focus(); const c=mencao.ini+p.nome.length+2; taRef.current.setSelectionRange(c,c); } },0); };
   const sugestoes=mencao?pessoas.filter(p=>p.email!==eu&&chatNorm(p.nome).includes(chatNorm(mencao.q))).slice(0,6):[];
+  const rotConv=k=>{ const n=novasDe(k); return chatRotuloConversa(k,pessoas)+(n?' ('+n+' nova'+(n>1?'s':'')+')':''); };
+  const visSetores=SECTORS_ALL.map(s=>'s:'+s);
+  const comPessoas=convs.filter(k=>k.startsWith('p:'));
+  const outrasPessoas=pessoas.filter(p=>p.email!==eu&&!comPessoas.includes('p:'+p.email));
+  const avisoConv=conv==='g'?'Todos que têm acesso ao app veem.':conv.startsWith('s:')?('Quem é do setor '+setorSigla(conv.slice(2))+' vê'+(chatMeusSetores().includes(conv.slice(2))?'.':' — e você, porque escreveu.')):'Só você e '+chatRotuloConversa(conv,pessoas)+' veem.';
   let ultDia='';
   return (<>
     {!aberto&&<button className={'chat-fab'+(acima?' acima':'')} onClick={()=>setAberto(true)} title="Conversa da equipe">
@@ -18233,13 +18608,24 @@ function ChatEquipe({uid,usuarios,projects,acima}){
     </button>}
     {aberto&&<div className={'chat-win'+(acima?' acima':'')} role="dialog" aria-label="Conversa da equipe">
       <div className="chat-h">
-        <div><b>Conversa da equipe</b><span>Só quem tem acesso ao app vê. Fica tudo registrado.</span></div>
+        <div><b>Conversas</b><span>Fica tudo registrado.</span></div>
         <button className="chat-ib" onClick={()=>setHist(true)} title="Histórico e busca"><i className="ti ti-history"/></button>
         <button className="chat-ib" onClick={()=>setAberto(false)} title="Fechar"><i className="ti ti-x"/></button>
       </div>
+      <div className="chat-conv">
+        <i className={'ti '+(conv==='g'?'ti-users-group':conv.startsWith('s:')?'ti-building':'ti-user')}/>
+        <select value={conv} onChange={e=>{ setConv(e.target.value); setMencao(null); }} title="Com quem conversar: toda a equipe, um setor ou uma pessoa">
+          <option value="g">{rotConv('g')}</option>
+          <optgroup label="Setor">{visSetores.map(k=><option key={k} value={k}>{rotConv(k)}</option>)}</optgroup>
+          {comPessoas.length>0&&<optgroup label="Conversas com pessoas">{comPessoas.map(k=><option key={k} value={k}>{rotConv(k)}</option>)}</optgroup>}
+          {outrasPessoas.length>0&&<optgroup label="Nova conversa com">{outrasPessoas.map(p=><option key={p.email} value={'p:'+p.email}>{p.nome}</option>)}</optgroup>}
+        </select>
+        {naoLidas.filter(m=>m.k!==conv).length>0&&<span className="chat-conv-n" title="Mensagens novas em outras conversas">{naoLidas.filter(m=>m.k!==conv).length} em outras</span>}
+      </div>
+      <div className="chat-conv-aviso"><i className="ti ti-lock"/> {avisoConv}</div>
       <div className="chat-lista">
-        {!todas.length&&<div className="chat-vazio">Nenhuma mensagem nos últimos {CHAT_DIAS_VIVOS} dias.<br/>Escreva abaixo — use <b>@</b> para chamar alguém.</div>}
-        {todas.map(m=>{ const minha=String(m.de||'').toLowerCase()===eu; const sep=m.dia!==ultDia; ultDia=m.dia;
+        {!daConv.length&&<div className="chat-vazio">Nenhuma mensagem nos últimos {CHAT_DIAS_VIVOS} dias nesta conversa.<br/>Escreva abaixo — use <b>@</b> para chamar alguém.</div>}
+        {daConv.map(m=>{ const minha=String(m.de||'').toLowerCase()===eu; const sep=m.dia!==ultDia; ultDia=m.dia;
           return <React.Fragment key={m.id}>
             {sep&&<div className="chat-dia"><span>{chatDiaRotulo(m.dia)}</span></div>}
             <div className={'chat-msg'+(minha?' minha':'')+((m.men||[]).includes(eu)?' pra-mim':'')}>
@@ -18256,7 +18642,7 @@ function ChatEquipe({uid,usuarios,projects,acima}){
           <option value="">Assunto geral</option>{ativos.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <div className="chat-env-l">
-          <textarea ref={taRef} value={txt} onChange={aoDigitar} rows={2} placeholder="Escreva uma mensagem… (@ para chamar alguém)"
+          <textarea ref={taRef} value={txt} onChange={aoDigitar} rows={2} placeholder={'Mensagem para '+chatRotuloConversa(conv,pessoas)+'… (@ para chamar alguém)'}
             onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); if(sugestoes.length&&mencao){ escolherPessoa(sugestoes[0]); return; } enviar(); } if(e.key==='Escape') setMencao(null); }}/>
           <button className="chat-send" onClick={enviar} disabled={!txt.trim()} title="Enviar (Enter)"><i className="ti ti-send"/></button>
         </div>
@@ -18265,36 +18651,44 @@ function ChatEquipe({uid,usuarios,projects,acima}){
     {hist&&<ChatHistorico onClose={()=>setHist(false)} ativos={ativos} pessoas={pessoas} eu={eu}/>}
   </>);
 }
-/* Histórico: todas as conversas registradas, com busca por palavra, pessoa,
-   empreendimento e período. Carrega os dias uma vez ao abrir. */
+/* Histórico: todas as conversas que a pessoa pode ver, com busca por palavra,
+   conversa (equipe, setor ou pessoa), quem escreveu, empreendimento e período. */
 function ChatHistorico({onClose,ativos,pessoas,eu}){
   const[dias,setDias]=useState(null);
   const[busca,setBusca]=useState('');
   const[emp,setEmp]=useState('');
   const[quem,setQuem]=useState('');
+  const[convF,setConvF]=useState('');
   const[de,setDe]=useState(''); const[ate,setAte]=useState('');
   const[diaSel,setDiaSel]=useState('');
   useEffect(()=>{
-    if(DEMO_MODE){ setDias(Object.keys(CHAT_DEMO).map(d=>({dia:d,msgs:CHAT_DEMO[d]}))); return; }
-    db.collection('fluxoapp_meta').where('tipo','==','chatDia').get()
-      .then(sn=>{ const l=[]; sn.forEach(d=>{ const x=d.data(); if(x&&x.dia) l.push({dia:x.dia,msgs:Array.isArray(x.msgs)?x.msgs:[]}); }); setDias(l); })
-      .catch(e=>{ console.error(e); setDias([]); });
+    const junta=docsL=>{ const por={}; docsL.filter(x=>x&&x.dia&&chatPodeVer(x,eu)).forEach(x=>{ (por[x.dia]=por[x.dia]||[]).push(...(x.msgs||[]).map(m=>({...m,k:chatChave(m,eu)}))); });
+      setDias(Object.keys(por).map(d=>({dia:d,msgs:por[d]}))); };
+    if(DEMO_MODE){ junta(Object.values(CHAT_DEMO)); return; }
+    const col=db.collection('fluxoapp_meta'); const meus=chatMeusSetores();
+    const qs=[col.where('tipo','==','chatDia').get()];
+    if(eu) qs.push(col.where('membros','array-contains',eu).get());
+    for(let i=0;i<meus.length;i+=10) qs.push(col.where('tipo','==','chatSetor').where('setor','in',meus.slice(i,i+10)).get());
+    Promise.all(qs.map(q=>q.catch(e=>{ console.error(e); return null; })))
+      .then(rs=>{ const vistos={}; rs.forEach(sn=>{ if(sn) sn.forEach(d=>{ vistos[d.id]=d.data(); }); }); junta(Object.values(vistos)); });
   },[]);
   const lista=(dias||[]).filter(d=>(!de||d.dia>=de)&&(!ate||d.dia<=ate)).sort((a,b)=>b.dia.localeCompare(a.dia));
   const b=chatNorm(busca.trim());
-  const passa=m=>(!b||chatNorm(m.t).includes(b)||chatNorm(m.nome).includes(b))&&(!emp||String(m.proj||'')===emp)&&(!quem||String(m.de||'').toLowerCase()===quem);
-  const filtrando=!!(b||emp||quem);
+  const passa=m=>(!b||chatNorm(m.t).includes(b)||chatNorm(m.nome).includes(b))&&(!emp||String(m.proj||'')===emp)&&(!quem||String(m.de||'').toLowerCase()===quem)&&(!convF||m.k===convF);
+  const filtrando=!!(b||emp||quem||convF);
   const grupos=lista.map(d=>({dia:d.dia,total:d.msgs.length,msgs:d.msgs.filter(passa).sort((x,y)=>(x.em||0)-(y.em||0))})).filter(g=>g.msgs.length);
   const totalAchadas=grupos.reduce((a,g)=>a+g.msgs.length,0);
   const mostrar=diaSel?grupos.filter(g=>g.dia===diaSel):grupos;
+  const convsH=[...new Set((dias||[]).flatMap(d=>d.msgs.map(m=>m.k)))].sort((x,y)=>(x==='g'?-1:y==='g'?1:x.localeCompare(y)));
   return (
     <div className="modal-overlay" onClick={e=>{ if(e.target.classList.contains('modal-overlay')) onClose(); }}>
       <div className="modal chat-hist">
-        <div className="chat-hist-h"><div className="modal-title" style={{margin:0}}><i className="ti ti-history"/> Histórico da conversa da equipe</div><button className="chat-ib" onClick={onClose} title="Fechar"><i className="ti ti-x"/></button></div>
+        <div className="chat-hist-h"><div className="modal-title" style={{margin:0}}><i className="ti ti-history"/> Histórico das conversas</div><button className="chat-ib" onClick={onClose} title="Fechar"><i className="ti ti-x"/></button></div>
         <div className="chat-hist-f">
           <div className="chat-busca"><i className="ti ti-search"/><input className="form-input" autoFocus value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Procurar palavra, assunto ou pessoa…"/></div>
-          <select className="form-input" value={emp} onChange={e=>setEmp(e.target.value)}><option value="">Todos os assuntos</option>{ativos.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-          <select className="form-input" value={quem} onChange={e=>setQuem(e.target.value)}><option value="">Todas as pessoas</option>{pessoas.map(p=><option key={p.email} value={p.email}>{p.nome}</option>)}</select>
+          <select className="form-input" value={convF} onChange={e=>setConvF(e.target.value)} title="Conversa"><option value="">Todas as conversas</option>{convsH.map(k=><option key={k} value={k}>{chatRotuloConversa(k,pessoas)}</option>)}</select>
+          <select className="form-input" value={emp} onChange={e=>setEmp(e.target.value)}><option value="">Todos os empreendimentos</option>{ativos.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+          <select className="form-input" value={quem} onChange={e=>setQuem(e.target.value)}><option value="">Quem escreveu: todos</option>{pessoas.map(p=><option key={p.email} value={p.email}>{p.nome}</option>)}</select>
           <input className="form-input" type="date" value={de} onChange={e=>{ setDe(e.target.value); setDiaSel(''); }} title="De"/>
           <input className="form-input" type="date" value={ate} onChange={e=>{ setAte(e.target.value); setDiaSel(''); }} title="Até"/>
         </div>
@@ -18309,7 +18703,7 @@ function ChatHistorico({onClose,ativos,pessoas,eu}){
             {mostrar.map(g=><div key={g.dia}>
               <div className="chat-dia"><span>{chatDiaRotulo(g.dia)}</span></div>
               {g.msgs.map(m=><div key={m.id} className={'chat-msg hist'+(String(m.de||'').toLowerCase()===eu?' minha':'')}>
-                <div className="chat-q"><b>{m.nome||m.de}</b><span>{chatHora(m.em)}</span>{m.projNome&&<span className="chat-proj">{m.projNome}</span>}</div>
+                <div className="chat-q"><b>{m.nome||m.de}</b><span>{chatHora(m.em)}</span>{m.k!=='g'&&<span className="chat-proj chat-para" title="Conversa"><i className={'ti '+(m.k.startsWith('s:')?'ti-building':'ti-user')}/> {chatRotuloConversa(m.k,pessoas)}</span>}{m.projNome&&<span className="chat-proj">{m.projNome}</span>}</div>
                 <div className="chat-t"><ChatTexto t={m.t} busca={busca.trim()}/></div>
               </div>)}
             </div>)}
@@ -19011,7 +19405,6 @@ function App({currentUser}){
      subtarefas passam para a que ficou, e ela passa a aparecer também nos
      fluxogramas onde as outras estavam. */
   const[showFases,setShowFases]=useState(false);
-  const[fluxoMaisAberto,setFluxoMaisAberto]=useState(false);
   const[modoLig,setModoLig]=useState(MODO_LIGACAO);
   const escolherLig=k=>{ MODO_LIGACAO=k; setModoLig(k); };
   const[painelMin,setPainelMin]=useState(()=>{ try{ return localStorage.getItem('cw_painel_min')==='1'; }catch(e){ return false; } });
@@ -19295,8 +19688,12 @@ function App({currentUser}){
   const handleNewProject=()=>setShowNewProjectModal(true);
   /* Cria o empreendimento com Nome + Cidade (a Cidade também é usada para
      casar com os templates de "Checklist Padrão"). */
-  const handleCreateProject=(name,city)=>{
-    setProjects(ps=>ps.concat({id:Date.now(),name,city,status:'Planejamento',tasks:[],connections:[],milestones:[],landParcels:[],order:Date.now()}));
+  const handleCreateProject=(name,city,modelo)=>{
+    const novo={id:Date.now(),name,city,status:'Planejamento',tasks:[],connections:[],milestones:[],landParcels:[],order:Date.now()};
+    if(modelo&&modelo.tasks&&modelo.tasks.length){
+      novo.tasks=modelo.tasks.map((t,i)=>({...t,wbsOrder:i+1})); novo.connections=modelo.connections||[];
+      if(modelo.fasesSetor&&modelo.setor) novo.fasesSetor={[modelo.setor]:modelo.fasesSetor}; }
+    setProjects(ps=>ps.concat(novo));
     setShowNewProjectModal(false);
     logActivity({type:'proj-new',text:`Empreendimento "${name}" criado`});
   };
@@ -19476,11 +19873,22 @@ function App({currentUser}){
   /* Importar tarefas de um Excel do MS Project: ADICIONA ao empreendimento aberto
      (nada é apagado). Coloca os importados no fim do nível raiz, junta os vínculos
      e recalcula o cronograma. O arquivo em si não é salvo. */
-  const schedImportTasks=(newTasks,newConns,updates)=>{
+  const schedImportTasks=(newTasks,newConns,updates,cfgFE)=>{
     newTasks=newTasks||[]; updates=updates||{};
-    if(!newTasks.length&&!Object.keys(updates).length&&!(newConns||[]).length) return;
+    const fsI=(cfgFE&&cfgFE.fasesSetor)||{}, esI=(cfgFE&&cfgFE.etapasSetor)||{};
+    const grI=(cfgFE&&cfgFE.grupos)||{};
+    const temFE=Object.keys(fsI).length||Object.keys(esI).length||Object.keys(grI).length;
+    if(!newTasks.length&&!Object.keys(updates).length&&!(newConns||[]).length&&!temFE) return;
     schedPushHistory();
-    setProjects(ps=>ps.map(p=>{ if(String(p.id)!==String(curId)) return p;
+    setProjects(ps=>ps.map(p0=>{ if(String(p0.id)!==String(curId)) return p0;
+      /* Fases e etapas da planilha substituem as do fluxograma de cada setor que veio nela.
+         As caixas das fases importadas entram no fluxograma do setor (a caixa antiga com
+         o mesmo nome de fase sai, para não ficar repetida). */
+      let p=temFE?{...p0,fasesSetor:{...(p0.fasesSetor||{}),...fsI},etapasSetor:{...(p0.etapasSetor||{}),...esI}}:p0;
+      if(Object.keys(grI).length){ const gs={...(p.gruposSetor||{})};
+        Object.keys(grI).forEach(s=>{ const nomes=new Set(grI[s].map(g=>String(g.titulo||'').trim().toLowerCase()));
+          gs[s]=(gs[s]||[]).filter(g=>!nomes.has(String(g.titulo||'').trim().toLowerCase())).concat(grI[s]); });
+        p={...p,gruposSetor:gs}; }
       /* Tarefas que já existiam (mesmo código/nome): só recebem o que estava vazio nelas. */
       const existing=(p.tasks||[]).map(t=>updates[t.id]?{...t,...updates[t.id]}:t);
       const maxRoot=Math.max(0,...existing.filter(t=>t.parentId==null).map(t=>Number(t.wbsOrder)||0));
@@ -19514,7 +19922,9 @@ function App({currentUser}){
     if(!project) return;
     const base=(project.name||'fluxograma').replace(/[\\/:*?"<>|]+/g,'').trim()||'fluxograma';
     try{
-      if(fmt==='csv'){
+      if(fmt==='json'){ baixarArquivo(base+' - fluxo '+(fluxoSetor||'')+'.json',new Blob([fxJsonEW(project,fluxoSetor)],{type:'application/json'})); return; }
+      if(fmt==='mmd'){ baixarArquivo(base+' - fluxo '+(fluxoSetor||'')+'.md',new Blob([fxMermaid(project,fluxoSetor)],{type:'text/markdown;charset=utf-8'})); return; }
+      if(fmt==='csv'||fmt==='tsv'){
         const tasks=(project.tasks||[]).filter(t=>t&&!t.deleted);
         const byId={}; tasks.forEach(t=>byId[String(t.id)]=t);
         const nome=id=>{ const t=byId[String(id)]; return t?(t.code||t.label||''):''; };
@@ -19528,6 +19938,10 @@ function App({currentUser}){
           const cmp=cs.filter(c=>c.kind==='compat'&&(String(c.from)===id||String(c.to)===id)).map(c=>nome(String(c.from)===id?c.to:c.from)).join(', ');
           linhas.push([t.code||'',t.label||'',(TASK_TYPES.find(x=>x.id===(t.taskType||'processo'))||{}).label||'',(fasesDoProjeto(project).find(p=>p.id===t.phase)||{}).name||'',t.sector?setorSigla(t.sector):'',t.status||'',t.startDate?fmtISOBR(t.startDate):'',t.endDate?fmtISOBR(t.endDate):'',pre,suc,cmp]);
         });
+        if(fmt==='tsv'){ const txt=linhas.map(l=>l.map(c=>String(c==null?'':c).replace(/[\t\n\r]/g,' ')).join('\t')).join('\n');
+          try{ await navigator.clipboard.writeText(txt); window.alert('Tabela copiada. Cole (Ctrl+V) no Excel ou no Word.'); }
+          catch(e){ baixarArquivo(base+' - tarefas.txt',new Blob([txt],{type:'text/plain;charset=utf-8'})); window.alert('Não consegui copiar automaticamente; baixei a tabela como arquivo de texto.'); }
+          return; }
         baixarArquivo(base+' - tarefas.csv',new Blob(['\ufeff'+linhas.map(l=>l.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
         return;
       }
@@ -20610,6 +21024,15 @@ function App({currentUser}){
               <div className="info-row"><span className="info-label">Projeto</span><span className="info-value">{project.name}</span></div>
               <div className="info-row"><span className="info-label">Cidade</span><span className="info-value">{project.city||'—'}</span></div>
               <div className="info-row"><span className="info-label">Tarefas</span><span className="info-value">{project.tasks.length}</span></div>
+              {/* Resumo do fluxograma do setor aberto: itens, ligações e itens por fase. */}
+              {(()=>{ const ts=fxTarefasDoFluxo(project,fluxoSetor); const ids=new Set(ts.map(t=>String(t.id)));
+                const cs=(project.connections||[]).filter(c=>c&&ids.has(String(c.from))&&ids.has(String(c.to)));
+                const FS=fasesDoSetor(project,fluxoSetor); const idsF=new Set(FS.map(f=>f.id));
+                const cnt=id=>ts.filter(t=>(idsF.has(t.phase)?t.phase:FS[0].id)===id).length, max=Math.max(1,...FS.map(p=>cnt(p.id)));
+                return (<div className="flow-resumo" title={'Fluxograma '+(fluxoSetor===FLUXO_SEM?'sem setor':setorSigla(fluxoSetor))}>
+                  <div className="flow-resumo-stat"><div><b>{ts.length}</b><span>no fluxo</span></div><div><b>{cs.filter(c=>c.kind!=='compat').length}</b><span>ligações</span></div><div><b>{cs.filter(c=>c.kind==='compat').length}</b><span>compat.</span></div></div>
+                  {FS.map(p=>(<div key={p.id} className="flow-resumo-bar" title={p.name}><span>{p.name.split(' – ')[0]}</span><div className="tr"><i style={{width:(cnt(p.id)/max*100)+'%',background:p.labelColor}}/></div><b>{cnt(p.id)}</b></div>))}
+                </div>); })()}
 
               <div className="sidebar-title" style={{marginTop:14}}>Estatísticas</div>
               <div style={{display:'flex',justifyContent:'center',marginBottom:10}}>
@@ -20702,19 +21125,21 @@ function App({currentUser}){
                   flowRevertKey={flowRevertKey} fluxoSetor={fluxoSetor}
                 />
               </ReactFlowProvider>
-              {/* Abas dos fluxogramas por setor: só os setores que têm tarefa (ou
-                  que acabaram de ser criados) + o "+" para criar o de outro setor. */}
-              <div className="fluxo-abas" role="tablist" aria-label="Fluxogramas por setor">
-                {fluxosProj.map(s=><button key={s} className={s===fluxoSetor?'on':''} onClick={()=>trocarFluxo(s)} title={s===FLUXO_SEM?'Tarefas sem setor':'Fluxograma '+setorNome(s)}>
-                  <i className="dot" style={{background:s===FLUXO_SEM?'var(--text3)':setorCor(s)}}/>Fluxograma {s===FLUXO_SEM?'Sem setor':setorSigla(s)}</button>)}
-                {!PERM.isViewer&&!PERM.isDiretoria&&setoresSemFluxo.length>0&&<span className="fluxo-mais">
-                  <button onClick={()=>setFluxoMaisAberto(v=>!v)} title="Criar o fluxograma de outro setor"><i className="ti ti-plus"/></button>
-                  {fluxoMaisAberto&&<><div className="fp-fundo" onClick={()=>setFluxoMaisAberto(false)}/>
-                    <div className="fluxo-mais-menu"><div className="fmm-t">Novo fluxograma do setor</div>
-                      {setoresSemFluxo.map(s=><button key={s} onClick={()=>{ setFluxoMaisAberto(false); criarFluxo(s); }}><i className="dot" style={{background:setorCor(s)}}/>{setorSigla(s)} · {setorNome(s)}</button>)}
-                    </div></>}
-                </span>}
-              </div>
+              {/* Escolha do fluxograma do setor: botão pequeno embaixo; a setinha abre a lista.
+                  Só aparecem os setores que têm tarefa (ou criados agora); embaixo da lista,
+                  "Novo fluxograma" cria o de outro setor. */}
+              <details className="fluxo-abas" aria-label="Fluxogramas por setor">
+                <summary title="Trocar o fluxograma do setor"><i className="dot" style={{background:fluxoSetor===FLUXO_SEM?'var(--text3)':setorCor(fluxoSetor)}}/>Fluxograma {fluxoSetor===FLUXO_SEM?'Sem setor':setorSigla(fluxoSetor)}<i className="ti ti-chevron-up fluxo-seta"/></summary>
+                <div className="fluxo-abas-lista">
+                  {fluxosProj.map(s=><button key={s} type="button" className={s===fluxoSetor?'on':''} onClick={e=>{ const d=e.currentTarget.closest('details'); if(d) d.open=false; trocarFluxo(s); }} title={s===FLUXO_SEM?'Tarefas sem setor':'Fluxograma '+setorNome(s)}>
+                    <i className="dot" style={{background:s===FLUXO_SEM?'var(--text3)':setorCor(s)}}/>Fluxograma {s===FLUXO_SEM?'Sem setor':setorSigla(s)}</button>)}
+                  {!PERM.isViewer&&!PERM.isDiretoria&&setoresSemFluxo.length>0&&<>
+                    <div className="fal-t"><i className="ti ti-plus"/> Novo fluxograma</div>
+                    {setoresSemFluxo.map(s=><button key={'n'+s} type="button" className="fal-novo" onClick={e=>{ const d=e.currentTarget.closest('details'); if(d) d.open=false; criarFluxo(s); }} title={'Criar o fluxograma do setor '+setorNome(s)}>
+                      <i className="dot" style={{background:setorCor(s)}}/>{setorSigla(s)} · {setorNome(s)}</button>)}
+                  </>}
+                </div>
+              </details>
               {showFases&&project&&<FasesEtapasModal project={project} setor={fluxoSetor} onClose={()=>setShowFases(false)} onSave={salvarFasesEtapas}/>}
               {repetidos.length>0&&<div className="fluxo-aviso"><i className="ti ti-alert-triangle"/>
                 <span>{repetidos.length===1?'1 código repetido':repetidos.length+' códigos repetidos'} neste empreendimento ({repetidos.slice(0,4).map(r=>r.code).join(', ')}{repetidos.length>4?'…':''}). Mesmo código = mesma tarefa.</span>
