@@ -2126,7 +2126,17 @@
   .rp-tab.drop-depois{box-shadow:3px 0 0 var(--accent);}
   .flow-ocultos-btn{position:absolute;left:56px;bottom:15px;z-index:5;height:28px;padding:0 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text2);font-family:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
   .flow-ocultos-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
-  .fluxo-abas{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:6;font-size:10.5px;}
+  .fluxo-sel{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:5px;}
+  .fluxo-abas{position:relative;font-size:10.5px;}
+  .fluxo-cfg{position:relative;display:inline-flex;}
+  .fluxo-cfg-btn{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text2);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15);padding:0;}
+  .fluxo-cfg-btn .ti{font-size:13px;}
+  .fluxo-cfg-btn:hover,.fluxo-cfg-btn.on{color:var(--text);border-color:var(--accent);}
+  .fluxo-cfg-fundo{position:fixed;inset:0;z-index:0;}
+  .fluxo-cfg .fluxo-cfg-menu{z-index:1;font-size:10.5px;left:auto;right:0;transform:none;min-width:210px;}
+  .fluxo-abas-lista button.fal-excluir .fal-lixo{margin-left:auto;font-size:11px;opacity:.6;}
+  .fluxo-abas-lista button.fal-excluir:hover:not(:disabled){color:var(--red,#e5534b);}
+  .fluxo-abas-lista button:disabled{opacity:.4;cursor:not-allowed;}
   .fluxo-abas summary{list-style:none;display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none;background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:3px 8px;color:var(--text2);font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;}
   .fluxo-abas summary::-webkit-details-marker{display:none;}
   .fluxo-abas summary:hover{color:var(--text);border-color:var(--accent);}
@@ -2876,18 +2886,29 @@ const FLUXO_SEM='SEM';
 let MODO_LIGACAO='prec'; /* tipo das ligações novas no Editar Fluxo (Precedência/Retorno/Compatibilização/Oculto) */
 /* Em qual fluxograma a tarefa fica: o do "Fluxo setor" escolhido no cronograma
    (ou vindo da planilha); sem ele, o do próprio setor. O setor da tarefa não muda. */
-function fluxoSetorDe(t){ return normSector(t&&t.fluxoSetor)||normSector(t&&t.sector)||FLUXO_SEM; }
+function fluxoSetorDe(t,p){ const b=normSector(t&&t.fluxoSetor)||normSector(t&&t.sector)||FLUXO_SEM; const m=fluxoMapa(p===undefined?PROJ_ATUAL:p); return m[b]||b; }
+/* Fluxogramas com nome próprio e mais de um setor (engrenagem › Editar):
+   project.fluxosCfg = { idDoFluxo: {nome:'…', setores:['DI','PRJ']} }.
+   O id é o setor "dono" (sempre incluído). As tarefas dos setores da lista
+   aparecem nesse fluxograma; cada setor fica em um fluxograma só. */
+function fluxoMapa(p){ const cfg=(p&&p.fluxosCfg)||{}; const m={};
+  Object.keys(cfg).forEach(id=>{ ((cfg[id]&&cfg[id].setores)||[]).forEach(s=>{ if(s&&s!==id) m[s]=id; }); });
+  Object.keys(cfg).forEach(id=>{ delete m[id]; }); /* o setor dono de um fluxograma fica no seu */
+  return m; }
+function fluxoNome(p,id){ const c=p&&p.fluxosCfg&&p.fluxosCfg[id]; const n=c&&String(c.nome||'').trim();
+  return n||('Fluxograma '+(id===FLUXO_SEM?'Sem setor':setorSigla(id))); }
+function fluxoSetoresDe(p,id){ const m=fluxoMapa(p); return [id].concat(SECTORS_ALL.filter(s=>s!==id&&m[s]===id)); }
 function fluxoOrdenar(l){ const ordem=SECTORS_ALL.concat(Object.keys(SETOR_NOMES_PADRAO));
   return [...new Set(l)].sort((a,b)=>{ const ia=ordem.indexOf(a), ib=ordem.indexOf(b); return ((ia<0?99:ia)-(ib<0?99:ib))||String(a).localeCompare(String(b)); }); }
 /* Setores que têm fluxograma neste empreendimento: só os que têm tarefa no
    fluxograma (a do próprio setor ou trazida de outro). Sem nenhuma tarefa,
    devolve lista vazia — quem chama decide o setor inicial. */
 function fluxosDoProjeto(p){
-  const set=new Set(); ((p&&p.tasks)||[]).forEach(t=>{ if(t&&!t.deleted&&t.inFlow!==false){ set.add(fluxoSetorDe(t)); (Array.isArray(t.fluxos)?t.fluxos:[]).forEach(s=>s&&set.add(s)); } });
+  const fm=fluxoMapa(p); const set=new Set(); ((p&&p.tasks)||[]).forEach(t=>{ if(t&&!t.deleted&&t.inFlow!==false){ set.add(fluxoSetorDe(t,p)); (Array.isArray(t.fluxos)?t.fluxos:[]).forEach(s=>s&&set.add(fm[s]||s)); } });
   return fluxoOrdenar([...set]);
 }
 function fluxoRotulo(s){ return s===FLUXO_SEM?'Sem setor':s; }
-function tarefaNoFluxo(t,s){ return fluxoSetorDe(t)===s||(Array.isArray(t.fluxos)&&t.fluxos.includes(s)); }
+function tarefaNoFluxo(t,s){ if(fluxoSetorDe(t)===s) return true; if(!Array.isArray(t.fluxos)) return false; const m=fluxoMapa(PROJ_ATUAL); return t.fluxos.some(x=>(m[x]||x)===s); }
 function posNoFluxo(t,s){ if(s&&fluxoSetorDe(t)!==s&&t.pos&&t.pos[s]) return {x:Number(t.pos[s].x)||0,y:Number(t.pos[s].y)||0}; return {x:t.x??0,y:t.y??0}; }
 function codigoNorm(c){ return String(c||'').trim().toUpperCase(); }
 /* Códigos repetidos no mesmo empreendimento (tarefas diferentes com o mesmo código). */
@@ -18794,6 +18815,7 @@ function App({currentUser}){
      salvas e voltar exatamente ao último estado gravado. */
   const[flowRevertKey,setFlowRevertKey]=useState(0);
   const[fluxoSetorSel,setFluxoSetorSel]=useState('');
+  const[fluxoCfg,setFluxoCfg]=useState(false); /* menu da engrenagem: criar/excluir fluxogramas */
   /* Fluxogramas criados pelo "+" que ainda não têm tarefa: só existem nesta
      sessão. Ao ganhar a 1ª tarefa e salvar, passam a existir de verdade. */
   const[fluxosNovos,setFluxosNovos]=useState({});
@@ -19412,7 +19434,8 @@ function App({currentUser}){
      último aberto neste empreendimento; senão, pelo setor da pessoa. */
   const setorInicialFluxo=(()=>{ const meus=(PERM&&PERM.setores)||[]; return meus.find(s=>SECTORS_ALL.includes(s))||SECTORS_ALL[0]||FLUXO_SEM; })();
   const fluxosProj=project?(()=>{ const l=fluxoOrdenar(fluxosDoProjeto(project).concat(fluxosNovos[project.id]||[])); return l.length?l:[setorInicialFluxo]; })():[];
-  const setoresSemFluxo=SECTORS_ALL.filter(s=>!fluxosProj.includes(s));
+  const setoresSemFluxo=project?(()=>{ const m=fluxoMapa(project); return SECTORS_ALL.filter(s=>!fluxosProj.includes(s)&&!m[s]); })():[];
+  const[fluxoEdit,setFluxoEdit]=useState(null); /* {id,nome,setores} — janela Editar fluxograma */
   const criarFluxo=s=>{ if(!s||!project) return; if(isEditMode){ alert('Salve ou cancele a edição antes de criar outro fluxograma.'); return; }
     setFluxosNovos(m=>({...m,[project.id]:[...new Set([...(m[project.id]||[]),s])]})); setFluxoSetorSel(s); try{ localStorage.setItem('cw_fluxo_'+project.id,s); }catch(e){} };
   const fluxoSetor=(()=>{ if(!project) return '';
@@ -19421,6 +19444,35 @@ function App({currentUser}){
     if(fluxosProj.includes(salvo)) return salvo;
     const meus=(PERM&&PERM.setores)||[];
     return fluxosProj.find(s=>meus.includes(s))||fluxosProj[0]||''; })();
+  /* Excluir o fluxograma de um setor: as tarefas dele saem do fluxograma (ficam
+     no Cronograma, como "fora do fluxo") e as trazidas de outros setores voltam
+     só para o fluxograma delas. Nada é apagado; as ligações continuam. */
+  const excluirFluxo=s=>{ if(!s||!project) return;
+    if(isEditMode){ alert('Salve ou cancele a edição antes de excluir um fluxograma.'); return; }
+    const proprias=(project.tasks||[]).filter(t=>t&&!t.deleted&&t.inFlow!==false&&fluxoSetorDe(t)===s);
+    const trazidas=(project.tasks||[]).filter(t=>t&&!t.deleted&&fluxoSetorDe(t)!==s&&Array.isArray(t.fluxos)&&t.fluxos.includes(s));
+    const nome=fluxoNome(project,s);
+    if(!window.confirm('Excluir o '+nome+'?\n\n'+(proprias.length?proprias.length+' tarefa(s) saem do fluxograma e continuam no Cronograma (não são apagadas).\n':'')+(trazidas.length?trazidas.length+' tarefa(s) trazidas de outros setores voltam só para o fluxograma delas.\n':'')+(!proprias.length&&!trazidas.length?'Este fluxograma está vazio.\n':'')+'\nPara trazer de volta, crie o fluxograma do setor de novo pela engrenagem e use "Trazer tarefa" ou ligue as tarefas no Cronograma.')) return;
+    setFluxosNovos(m=>({...m,[project.id]:(m[project.id]||[]).filter(x=>x!==s)}));
+    if(project.fluxosCfg&&project.fluxosCfg[s]) setProjects(ps=>ps.map(p=>{ if(p.id!==project.id) return p; const c={...(p.fluxosCfg||{})}; delete c[s]; return {...p,fluxosCfg:c}; }));
+    if(proprias.length||trazidas.length){
+      const idsP=new Set(proprias.map(t=>t.id)), idsT=new Set(trazidas.map(t=>t.id));
+      setProjects(ps=>ps.map(p=>p.id!==project.id?p:{...p,tasks:(p.tasks||[]).map(t=>{
+        if(idsP.has(t.id)) return {...t,inFlow:false};
+        if(idsT.has(t.id)){ const fl=t.fluxos.filter(x=>x!==s); const pos={...(t.pos||{})}; delete pos[s]; return {...t,fluxos:fl,pos}; }
+        return t; })})); }
+    if(fluxoSetor===s){ setFluxoSetorSel(''); try{ localStorage.removeItem('cw_fluxo_'+project.id); }catch(e){} }
+    setTimeout(()=>setFlowRevertKey(k=>k+1),0); };
+  const salvarFluxoEdit=()=>{ const e=fluxoEdit; if(!e||!project) return;
+    const nome=String(e.nome||'').trim(); const padrao='Fluxograma '+(e.id===FLUXO_SEM?'Sem setor':setorSigla(e.id));
+    const setores=[...new Set([e.id].concat(e.setores||[]))].filter(Boolean);
+    setProjects(ps=>ps.map(p=>{ if(p.id!==project.id) return p; const c={};
+      Object.keys(p.fluxosCfg||{}).forEach(id=>{ if(id===e.id) return; const o=p.fluxosCfg[id]||{};
+        const ss=(o.setores||[]).filter(x=>!setores.includes(x)||x===id); /* um setor fica em um fluxograma só */
+        if((o.nome&&String(o.nome).trim())||ss.filter(x=>x!==id).length) c[id]={nome:o.nome||'',setores:ss}; });
+      if((nome&&nome!==padrao)||setores.length>1) c[e.id]={nome:nome&&nome!==padrao?nome:'',setores};
+      return {...p,fluxosCfg:c}; }));
+    setFluxoEdit(null); setTimeout(()=>setFlowRevertKey(k=>k+1),0); /* redesenha com as tarefas dos setores escolhidos */ };
   const trocarFluxo=s=>{ if(s===fluxoSetor) return;
     if(isEditMode){ alert('Salve ou cancele a edição antes de trocar de fluxograma.'); return; }
     setFluxoSetorSel(s); try{ localStorage.setItem('cw_fluxo_'+project.id,s); }catch(e){} };
@@ -21154,18 +21206,65 @@ function App({currentUser}){
               {/* Escolha do fluxograma do setor: botão pequeno embaixo; a setinha abre a lista.
                   Só aparecem os setores que têm tarefa (ou criados agora); embaixo da lista,
                   "Novo fluxograma" cria o de outro setor. */}
-              <details className="fluxo-abas" aria-label="Fluxogramas por setor">
-                <summary title="Trocar o fluxograma do setor"><i className="dot" style={{background:fluxoSetor===FLUXO_SEM?'var(--text3)':setorCor(fluxoSetor)}}/>Fluxograma {fluxoSetor===FLUXO_SEM?'Sem setor':setorSigla(fluxoSetor)}<i className="ti ti-chevron-up fluxo-seta"/></summary>
+              <div className="fluxo-sel">
+              <details className="fluxo-abas" aria-label="Fluxogramas por setor" onToggle={e=>{ if(e.currentTarget.open) setFluxoCfg(false); }}>
+                <summary title="Trocar o fluxograma"><i className="dot" style={{background:fluxoSetor===FLUXO_SEM?'var(--text3)':setorCor(fluxoSetor)}}/>{fluxoNome(project,fluxoSetor)}<i className="ti ti-chevron-up fluxo-seta"/></summary>
                 <div className="fluxo-abas-lista">
-                  {fluxosProj.map(s=><button key={s} type="button" className={s===fluxoSetor?'on':''} onClick={e=>{ const d=e.currentTarget.closest('details'); if(d) d.open=false; trocarFluxo(s); }} title={s===FLUXO_SEM?'Tarefas sem setor':'Fluxograma '+setorNome(s)}>
-                    <i className="dot" style={{background:s===FLUXO_SEM?'var(--text3)':setorCor(s)}}/>Fluxograma {s===FLUXO_SEM?'Sem setor':setorSigla(s)}</button>)}
-                  {!PERM.isViewer&&!PERM.isDiretoria&&setoresSemFluxo.length>0&&<>
-                    <div className="fal-t"><i className="ti ti-plus"/> Novo fluxograma</div>
-                    {setoresSemFluxo.map(s=><button key={'n'+s} type="button" className="fal-novo" onClick={e=>{ const d=e.currentTarget.closest('details'); if(d) d.open=false; criarFluxo(s); }} title={'Criar o fluxograma do setor '+setorNome(s)}>
-                      <i className="dot" style={{background:setorCor(s)}}/>{setorSigla(s)} · {setorNome(s)}</button>)}
-                  </>}
+                  {fluxosProj.map(s=><button key={s} type="button" className={s===fluxoSetor?'on':''} onClick={e=>{ const d=e.currentTarget.closest('details'); if(d) d.open=false; trocarFluxo(s); }} title={'Setores: '+fluxoSetoresDe(project,s).map(x=>x===FLUXO_SEM?'sem setor':setorSigla(x)).join(', ')}>
+                    <i className="dot" style={{background:s===FLUXO_SEM?'var(--text3)':setorCor(s)}}/>{fluxoNome(project,s)}</button>)}
                 </div>
               </details>
+              {/* Engrenagem: criar o fluxograma de outro setor ou excluir um existente. */}
+              {!PERM.isViewer&&!PERM.isDiretoria&&<span className="fluxo-cfg">
+                <button type="button" className={'fluxo-cfg-btn'+(fluxoCfg?' on':'')} onClick={()=>{ setFluxoCfg(v=>!v); const d=document.querySelector('.fluxo-abas'); if(d) d.open=false; }} title="Opções dos fluxogramas: criar ou excluir"><i className="ti ti-settings"/></button>
+                {fluxoCfg&&<>
+                  <div className="fluxo-cfg-fundo" onClick={()=>setFluxoCfg(false)}/>
+                  <div className="fluxo-abas-lista fluxo-cfg-menu">
+                    <div className="fal-t" style={{borderTop:0,marginTop:0}}><i className="ti ti-pencil"/> Fluxograma aberto</div>
+                    <button type="button" className="fal-novo" disabled={!(fluxoSetor===FLUXO_SEM?permEstrutura():podeEditarTarefa(fluxoSetor))} onClick={()=>{ setFluxoCfg(false); setFluxoEdit({id:fluxoSetor,nome:fluxoNome(project,fluxoSetor),setores:fluxoSetoresDe(project,fluxoSetor)}); }} title="Mudar o nome e escolher de quais setores são as tarefas deste fluxograma">
+                      <i className="ti ti-adjustments-horizontal"/>Renomear e escolher setores…</button>
+                    {setoresSemFluxo.length>0&&<>
+                      <div className="fal-t"><i className="ti ti-plus"/> Novo fluxograma</div>
+                      {setoresSemFluxo.map(s=><button key={'n'+s} type="button" className="fal-novo" onClick={()=>{ setFluxoCfg(false); criarFluxo(s); }} title={'Criar o fluxograma do setor '+setorNome(s)}>
+                        <i className="dot" style={{background:setorCor(s)}}/>{setorSigla(s)} · {setorNome(s)}</button>)}
+                    </>}
+                    <div className="fal-t"><i className="ti ti-trash"/> Excluir fluxograma</div>
+                    {fluxosProj.map(s=>{ const pode=s===FLUXO_SEM?permEstrutura():podeEditarTarefa(s);
+                      return <button key={'x'+s} type="button" className="fal-novo fal-excluir" disabled={!pode} onClick={()=>{ setFluxoCfg(false); excluirFluxo(s); }} title={pode?'Excluir o '+fluxoNome(project,s)+' (as tarefas continuam no Cronograma)':'Só quem é do setor pode excluir este fluxograma'}>
+                        <i className="dot" style={{background:s===FLUXO_SEM?'var(--text3)':setorCor(s)}}/>{fluxoNome(project,s)}<i className="ti ti-trash fal-lixo"/></button>; })}
+                  </div>
+                </>}
+              </span>}
+              </div>
+              {fluxoEdit&&project&&<div className="modal-overlay" onClick={e=>{ if(e.target.classList.contains('modal-overlay')) setFluxoEdit(null); }}>
+                <div className="modal" style={{maxWidth:420}}>
+                  <div className="modal-title"><i className="ti ti-adjustments-horizontal"/> Editar fluxograma</div>
+                  <div className="modal-field">
+                    <label className="modal-field-label">Nome</label>
+                    <input className="form-input" autoFocus value={fluxoEdit.nome} onChange={e=>setFluxoEdit(x=>({...x,nome:e.target.value}))} placeholder={'Fluxograma '+(fluxoEdit.id===FLUXO_SEM?'Sem setor':setorSigla(fluxoEdit.id))} onKeyDown={e=>{ if(e.key==='Enter') salvarFluxoEdit(); }}/>
+                  </div>
+                  <div className="modal-field">
+                    <label className="modal-field-label">Tarefas dos setores</label>
+                    <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                      {(fluxoEdit.id===FLUXO_SEM?[FLUXO_SEM]:[]).concat(SECTORS_ALL).map(sx=>{ const dono=sx===fluxoEdit.id; const m=fluxoMapa(project);
+                        const outro=!dono&&(fluxosProj.includes(sx)&&sx!==fluxoEdit.id?sx:(m[sx]&&m[sx]!==fluxoEdit.id?m[sx]:null));
+                        const on=dono||(fluxoEdit.setores||[]).includes(sx);
+                        return <label key={sx} style={{display:'flex',alignItems:'center',gap:8,fontSize:13,cursor:dono?'default':'pointer',opacity:dono?.75:1}}>
+                          <input type="checkbox" checked={on} disabled={dono||!!(project.fluxosCfg&&project.fluxosCfg[sx]&&(project.fluxosCfg[sx].setores||[]).length>1)} onChange={e=>setFluxoEdit(x=>({...x,setores:e.target.checked?[...new Set([...(x.setores||[]),sx])]:(x.setores||[]).filter(y=>y!==sx)}))}/>
+                          <i className="dot" style={{width:8,height:8,borderRadius:'50%',display:'inline-block',background:sx===FLUXO_SEM?'var(--text3)':setorCor(sx)}}/>
+                          <span>{sx===FLUXO_SEM?'Sem setor':setorSigla(sx)+' · '+setorNome(sx)}</span>
+                          {dono&&<span style={{fontSize:11,color:'var(--text3)'}}>(setor do fluxograma)</span>}
+                          {!dono&&outro&&<span style={{fontSize:11,color:'var(--text3)'}}>{(project.fluxosCfg&&project.fluxosCfg[sx]&&(project.fluxosCfg[sx].setores||[]).length>1)?'já junta outros setores':fluxosProj.includes(sx)&&!m[sx]?'tem fluxograma próprio — passa para este':'hoje no '+fluxoNome(project,outro)}</span>}
+                        </label>; })}
+                    </div>
+                    <div style={{fontSize:11,color:'var(--text3)',marginTop:8}}>As tarefas dos setores marcados aparecem neste fluxograma (o setor de cada tarefa não muda). Um setor fica em um fluxograma só.</div>
+                  </div>
+                  <div className="modal-footer">
+                    <button className="btn-modal ghost" onClick={()=>setFluxoEdit(null)}>Cancelar</button>
+                    <button className="btn-modal" onClick={salvarFluxoEdit}>Salvar</button>
+                  </div>
+                </div>
+              </div>}
               {showFases&&project&&<FasesEtapasModal project={project} setor={fluxoSetor} onClose={()=>setShowFases(false)} onSave={salvarFasesEtapas}/>}
               {repetidos.length>0&&<div className="fluxo-aviso"><i className="ti ti-alert-triangle"/>
                 <span>{repetidos.length===1?'1 código repetido':repetidos.length+' códigos repetidos'} neste empreendimento ({repetidos.slice(0,4).map(r=>r.code).join(', ')}{repetidos.length>4?'…':''}). Mesmo código = mesma tarefa.</span>
