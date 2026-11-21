@@ -1891,6 +1891,24 @@
   .st-rev .dot{background:var(--st-rev);}
   .st-cancel .dot{background:var(--st-cancel);}
   .st-none .dot{background:var(--st-none);}
+  .emp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+  .emp-lbl{display:block;font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600;}
+  .emp-extra{display:grid;grid-template-columns:1fr 1.4fr 30px;gap:6px;margin-bottom:6px;}
+  .emp-x{border:1px solid var(--border2);background:var(--surface2);color:var(--text2);border-radius:6px;width:30px;height:30px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .emp-item{display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--border);font-size:13px;}
+  .emp-sub{font-size:11.5px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  @media(max-width:700px){ .emp-grid{grid-template-columns:1fr;} .emp-grid>*{grid-column:auto !important;} }
+  .stcfg-lista{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto;}
+  .stcfg-l{display:flex;align-items:center;gap:8px;}
+  .stcfg-l.oculto{opacity:.5;}
+  .stcfg-l input[type=color]{width:28px;height:28px;border:1px solid var(--border2);border-radius:6px;padding:1px;background:none;cursor:pointer;flex-shrink:0;}
+  .stcfg-nome{flex:1;font-size:13px;display:flex;align-items:center;gap:6px;}
+  .stcfg-nome small{font-size:10px;color:var(--text3);}
+  .stcfg-in{flex:1;min-width:0;padding:5px 8px !important;}
+  .stcfg-base{width:auto !important;padding:5px 6px !important;font-size:12px !important;}
+  .stcfg-uso{font-size:11px;color:var(--text3);min-width:22px;text-align:right;font-variant-numeric:tabular-nums;}
+  .stcfg-b{border:1px solid var(--border2);background:var(--surface2);color:var(--text2);border-radius:6px;width:28px;height:28px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+  .stcfg-b.del:hover{color:var(--red,#e5534b);}
 
   .rf-terminacao{background:var(--surface);border:1.5px solid var(--border2);border-radius:40px;padding:12px 22px;display:flex;align-items:center;justify-content:center;width:100%;height:100%;text-align:center;}
   .rf-terminacao.selected{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent);}
@@ -2197,6 +2215,9 @@
      (--status-color, definida inline por tarefa) misturada com a
      superfície normal — continua opaco e some/reaparece com o tema. */
   .rf-node,.rf-terminacao,.rf-predef,.rf-doc-main{background:color-mix(in srgb, var(--status-color, var(--surface)) 16%, var(--surface)) !important;}
+  /* Caixas das tarefas menos arredondadas (20/11). */
+  .rf-node,.rf-doc-main,.rf-doc-shadow,.rf-predef{border-radius:4px !important;}
+  .rf-predef::before{border-radius:4px 0 0 4px !important;} .rf-predef::after{border-radius:0 4px 4px 0 !important;}
   .rf-decisao-shape{background:color-mix(in srgb, var(--status-color, var(--surface)) 16%, var(--surface)) !important;}
   .rf-decisao-outer{background:transparent;}
   .rf-conector-shape{background:color-mix(in srgb, var(--status-color, var(--surface)) 16%, var(--surface)) !important;}
@@ -3001,7 +3022,27 @@ function resolverPapel(email, cfg){
   return {ativo,isMaster,papel,setores,isAdmin:papel==='admin',isDiretoria:papel==='diretoria',isViewer:papel==='viewer',isRestrito:papel==='restrito',nome:(u&&u.nome)||''};
 }
 /* Ordem alfabética — usada em todo select/legenda/gráfico de Status. */
-const STATUSES = ['Cancelado','Concluído','Em andamento','Em revisão','Não iniciado','Pendente'];
+const STATUS_BASE = ['Cancelado','Concluído','Em andamento','Em revisão','Não iniciado','Pendente'];
+/* Lista usada em todo select/legenda/gráfico de Status (ordem alfabética).
+   É mutável: a engrenagem do fluxograma › "Status das tarefas" acrescenta
+   status próprios e esconde os padrão que não se usam (fluxoapp_meta/statusTarefas). */
+const STATUSES = STATUS_BASE.slice();
+let STATUS_CUSTOM={};   /* nome → {cor, base}  (base = status padrão usado nos cálculos) */
+let STATUS_CORES={};    /* status padrão → cor escolhida */
+let STATUS_OCULTOS=[];  /* status padrão que não aparecem nas listas */
+const STATUS_DOC=db.collection('fluxoapp_meta').doc('statusTarefas');
+function statusBase(s){ const c=STATUS_CUSTOM[s]; return c?(c.base||'Não iniciado'):s; }
+function statusAplicar(cfg){
+  cfg=cfg||{}; STATUS_CUSTOM={}; (cfg.custom||[]).forEach(c=>{ if(c&&c.nome) STATUS_CUSTOM[c.nome]={cor:c.cor||'#8E8D82',base:STATUS_BASE.includes(c.base)?c.base:'Não iniciado'}; });
+  STATUS_CORES={...(cfg.cores||{})}; STATUS_OCULTOS=(cfg.ocultos||[]).filter(x=>STATUS_BASE.includes(x));
+  const l=STATUS_BASE.filter(x=>!STATUS_OCULTOS.includes(x)).concat(Object.keys(STATUS_CUSTOM)).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  STATUSES.length=0; l.forEach(x=>STATUSES.push(x));
+  /* cores: variáveis dos padrão e classes dos próprios */
+  const root=document.documentElement; const VAR={'Concluído':'--st-done','Em andamento':'--st-wip','Pendente':'--st-pend','Em revisão':'--st-rev','Cancelado':'--st-cancel','Não iniciado':'--st-none'};
+  Object.keys(VAR).forEach(k=>{ if(STATUS_CORES[k]) root.style.setProperty(VAR[k],STATUS_CORES[k]); else root.style.removeProperty(VAR[k]); });
+  let css=''; Object.keys(STATUS_CUSTOM).forEach(k=>{ css+='.'+statusClasseCustom(k)+' .dot{background:'+STATUS_CUSTOM[k].cor+';}\n'; });
+  let el=document.getElementById('status-custom-css'); if(!el){ el=document.createElement('style'); el.id='status-custom-css'; document.head.appendChild(el); } el.textContent=css; }
+function statusClasseCustom(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return 'stc-'+(h>>>0).toString(36); }
 /* Cidades padrão sugeridas ao criar um empreendimento — a pessoa pode
    escolher uma delas ou digitar uma cidade diferente (opção "Outra"). */
 /* Cidades padrão, já com a sigla do estado na frente e em ordem alfabética
@@ -3037,11 +3078,12 @@ const STATUS_HEX={
 };
 const STATUS_VAR={'Concluído':'--st-done','Em andamento':'--st-wip','Pendente':'--st-pend','Em revisão':'--st-rev','Cancelado':'--st-cancel'};
 /* Cor principal da tarefa, definida pelo STATUS. Hex do tema atual. */
-function statusColor(s){ const p=STATUS_HEX[s]||STATUS_HEX['Não iniciado']; return tc(p[0],p[1]); }
+function statusColor(s){ if(STATUS_CUSTOM[s]) return STATUS_CUSTOM[s].cor; if(STATUS_CORES[s]) return STATUS_CORES[s]; const p=STATUS_HEX[s]||STATUS_HEX['Não iniciado']; return tc(p[0],p[1]); }
 /* Mesma cor como variável CSS (acompanha o tema sozinha) — para style inline. */
-function statusVar(s){ return 'var('+(STATUS_VAR[s]||'--st-none')+')'; }
+function statusVar(s){ if(STATUS_CUSTOM[s]) return STATUS_CUSTOM[s].cor; return 'var('+(STATUS_VAR[s]||'--st-none')+')'; }
 /* Versão discreta usada na borda do card. */
 function statusBorderColor(s){
+  if(STATUS_CUSTOM[s]) return 'color-mix(in srgb,'+STATUS_CUSTOM[s].cor+' 50%,transparent)';
   if(!STATUS_VAR[s]) return 'var(--border2)'; /* Não iniciado */
   return 'color-mix(in srgb,'+statusVar(s)+' 50%,transparent)';
 }
@@ -3067,6 +3109,7 @@ function UsuarioSelect({value,onChange,className='pdi-select',style,vazio='Selec
 }
 function statusIcone(s){ return s==='Concluído'?'ti-check':s==='Em andamento'?'ti-progress':s==='Pendente'?'ti-clock':s==='Em revisão'?'ti-eye':s==='Cancelado'?'ti-x':'ti-circle-dashed'; }
 function statusClass(s){
+  if(STATUS_CUSTOM[s]) return statusClasseCustom(s);
   return s==='Concluído'?'st-done':s==='Em andamento'?'st-wip':
          s==='Pendente'?'st-pend':s==='Em revisão'?'st-rev':
          s==='Cancelado'?'st-cancel':'st-none';
@@ -3086,7 +3129,7 @@ function parseFlexDate(str){
    — não importa se foi concluída depois da meta. Atraso é só pra quem
    ainda não foi concluída e a meta já passou. */
 function isTaskLate(t){
-  if(t.status==='Concluído') return false;
+  if(statusBase(t.status)==='Concluído') return false;
   const meta=parseFlexDate(t.clickupDate);
   if(!meta) return false;
   const today=new Date(); today.setHours(0,0,0,0);
@@ -3096,7 +3139,7 @@ function isTaskLate(t){
    prazo (não atrasada) mas a menos de 30 dias da data da meta — sinaliza
    que a tarefa está se aproximando do prazo antes que vire atraso. */
 function isTaskDueSoon(t){
-  if(t.status==='Concluído') return false;
+  if(statusBase(t.status)==='Concluído') return false;
   const meta=parseFlexDate(t.clickupDate);
   if(!meta) return false;
   const today=new Date(); today.setHours(0,0,0,0);
@@ -3106,7 +3149,7 @@ function isTaskDueSoon(t){
 /* "Concluídas (mês)": usa a Data de fim da tarefa como data de conclusão —
    só conta quem está Concluído E tem data de fim dentro do mês corrente. */
 function isCompletedThisMonth(t){
-  if(t.status!=='Concluído') return false;
+  if(statusBase(t.status)!=='Concluído') return false;
   const end=parseFlexDate(t.endDate);
   if(!end) return false;
   const now=new Date();
@@ -3168,12 +3211,12 @@ function activityIcon(type){
    combina). */
 function taskMatchesStat(t, statKey){
   if(!statKey || statKey==='all') return true;
-  if(statKey==='done')       return t.status==='Concluído';
-  if(statKey==='wip')        return t.status==='Em andamento';
-  if(statKey==='pending')    return t.status==='Pendente';
-  if(statKey==='notStarted') return t.status==='Não iniciado';
-  if(statKey==='review')     return t.status==='Em revisão';
-  if(statKey==='cancelled')  return t.status==='Cancelado';
+  if(statKey==='done')       return statusBase(t.status)==='Concluído';
+  if(statKey==='wip')        return statusBase(t.status)==='Em andamento';
+  if(statKey==='pending')    return statusBase(t.status)==='Pendente';
+  if(statKey==='notStarted') return statusBase(t.status)==='Não iniciado';
+  if(statKey==='review')     return statusBase(t.status)==='Em revisão';
+  if(statKey==='cancelled')  return statusBase(t.status)==='Cancelado';
   if(statKey==='late')       return isTaskLate(t);
   if(statKey==='dueSoon')    return isTaskDueSoon(t);
   return true;
@@ -4066,7 +4109,7 @@ function buildFlowSvg(nodes,edges,lanes,titulo){
     else if(tp==='terminacao') g.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2}" ${base}/>`);
     else if(tp==='conector') g.push(`<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${w/2}" ry="${h/2}" ${base}/>`);
     else if(tp==='documentos') g.push(`<path d="M${x},${y} H${x+w} V${y+h-10} Q${x+w*0.75},${y+h-20} ${x+w/2},${y+h-10} T${x},${y+h-10} Z" ${base}/>`);
-    else { g.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" ${base}/>`); if(tp==='processo-predefinido'){ g.push(`<line x1="${x+9}" y1="${y}" x2="${x+9}" y2="${y+h}" stroke="${st}" stroke-width="1.2"/><line x1="${x+w-9}" y1="${y}" x2="${x+w-9}" y2="${y+h}" stroke="${st}" stroke-width="1.2"/>`); } }
+    else { g.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" ${base}/>`); if(tp==='processo-predefinido'){ g.push(`<line x1="${x+9}" y1="${y}" x2="${x+9}" y2="${y+h}" stroke="${st}" stroke-width="1.2"/><line x1="${x+w-9}" y1="${y}" x2="${x+w-9}" y2="${y+h}" stroke="${st}" stroke-width="1.2"/>`); } }
     const compact=tp==='decisao'||tp==='conector';
     const linhas=flowWrap(dt.label,Math.max(8,Math.floor((compact?w*0.6:w-24)/6.6)),compact?3:3);
     const ly=y+h/2-(linhas.length-1)*7.5+4;
@@ -4164,11 +4207,13 @@ function ObstacleEdge({id,source,target,sourceX,sourceY,targetX,targetY,sourcePo
     <>
       <BaseEdge id={id} path={path} markerEnd={markerEnd} markerStart={markerStart}
         style={{stroke:cor,strokeWidth:selected?1.8:1.3,strokeDasharray:dash,strokeLinecap:kind==='compat'?'round':undefined,strokeLinejoin:'round',opacity:kind==='oculto'?.45:1,pointerEvents:'none'}}/>
-      {(data&&data.label&&!(data.proposto&&!editando))&&(()=>{ const P=R.midPt||lab, L=String(data.label), w=L.length*5.4+12;
-        /* Rótulo da seta (Sim, Não, Compat., Clash…) — igual ao Fluxograma EW. */
+      {(data&&data.label&&!(data.proposto&&!editando))&&(()=>{ const P=R.midPt||lab;
+        /* Texto da linha (Sim, Não ou qualquer texto) — quebra em até 4 linhas. */
+        const ls=flowWrap(String(data.label),26,4), w=Math.max(...ls.map(x=>x.length))*5.4+12, h=ls.length*11+5;
+        const y0=P.y-(editando&&R.midPt?11+h:h/2);
         return <g style={{pointerEvents:'none'}}>
-          <rect x={P.x-w/2} y={P.y-(editando&&R.midPt?19:8)} width={w} height={16} rx={4} fill="var(--surface)" stroke={kind==='compat'?EDGE_COMPAT_COLOR:'var(--border2)'} strokeWidth={0.8}/>
-          <text x={P.x} y={P.y-(editando&&R.midPt?19:8)+11} textAnchor="middle" fontSize="9" fontWeight="700" fill={kind==='compat'?EDGE_COMPAT_COLOR:'var(--text)'}>{L}</text>
+          <rect x={P.x-w/2} y={y0} width={w} height={h} rx={4} fill="var(--surface)" stroke={kind==='compat'?EDGE_COMPAT_COLOR:'var(--border2)'} strokeWidth={0.8}/>
+          {ls.map((x,i)=><text key={i} x={P.x} y={y0+11+i*11} textAnchor="middle" fontSize="9" fontWeight="700" fill={kind==='compat'?EDGE_COMPAT_COLOR:'var(--text)'}>{x}</text>)}
         </g>; })()}
       {editando&&R.midPt&&(
         <rect x={R.midPt.x-7} y={R.midPt.y-7} width={14} height={14} rx={3} className="edge-mid-handle"
@@ -4940,7 +4985,7 @@ function FlowCanvas({filtroExtra,project,isEditMode,theme,onNodeOpen,onChecklist
       setSelectedEdgeLabel:(label)=>{
         if(!selEdges.length) return;
         pushHistory();
-        const ids=new Set(selEdges); const v=String(label||'').trim().slice(0,40);
+        const ids=new Set(selEdges); const v=String(label||'').trim().slice(0,120);
         setEdges(eds=>eds.map(e=>{ if(!ids.has(e.id)) return e; const d={...(e.data||{})}; if(v) d.label=v; else delete d.label; return {...e,data:d}; }));
       },
       rotuloDaSelecionada:()=>{ const e=edgesRef.current.find(x=>selEdges.includes(x.id)); return (e&&e.data&&e.data.label)||''; },
@@ -5253,6 +5298,15 @@ function FlowCanvas({filtroExtra,project,isEditMode,theme,onNodeOpen,onChecklist
   const onNodeDoubleClick=useCallback((e,node)=>{
     if(node.type==='task') onNodeOpen(node);
   },[onNodeOpen]);
+  /* Duplo clique numa linha (modo edição): escrever o texto que aparece nela. */
+  const onEdgeDoubleClick=useCallback((e,edge)=>{
+    if(!isEditMode) return; e.preventDefault&&e.preventDefault();
+    const atual=(edge.data&&edge.data.label)||'';
+    const r=window.prompt('Texto da linha (até 120 caracteres; vazio tira o texto):',atual); if(r===null) return;
+    const v=String(r).trim().slice(0,120); if(v===atual) return;
+    pushHistory();
+    setEdges(eds=>eds.map(x=>{ if(x.id!==edge.id) return x; const d={...(x.data||{})}; if(v) d.label=v; else delete d.label; return {...x,data:d}; }));
+  },[isEditMode]);
   /* Duplo clique no fundo (modo edição) cria um Processo ali, na fase da
      faixa onde caiu (como no EW). Dê duplo clique nele para dar nome. */
   const onCanvasDoubleClick=useCallback((e)=>{
@@ -5336,7 +5390,7 @@ function FlowCanvas({filtroExtra,project,isEditMode,theme,onNodeOpen,onChecklist
         onConnect={onConnect} onConnectStart={onConnectStart} onConnectEnd={onConnectEnd}
         onNodeDragStart={onNodeDragStart} onNodeDrag={onNodeDrag} onNodeDragStop={onNodeDragStop}
         onNodeMouseUp={onNodeMouseUp} onReconnect={onReconnect}
-        onSelectionChange={onSelectionChange} onNodeDoubleClick={onNodeDoubleClick}
+        onSelectionChange={onSelectionChange} onNodeDoubleClick={onNodeDoubleClick} onEdgeDoubleClick={onEdgeDoubleClick}
         onNodeContextMenu={onNodeContextMenu} onPaneClick={onPaneClick} onDoubleClick={onCanvasDoubleClick}
         nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         onInit={inst=>{rfi.current=inst;}}
@@ -5667,7 +5721,7 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
           if(!pn.length) return null;
           return <NmSecao icone="ti-layout-kanban" titulo="Painel Semanal" resumo={pn.length+' atividade(s) vinculada(s)'}>
             <div className="nm-pn">{pn.slice().sort((a,b)=>String(pnBrToISO(b.dataPlanejada)||'').localeCompare(String(pnBrToISO(a.dataPlanejada)||''))).map(a=>(
-              <div key={a.id} className="nm-pn-it"><span className="nm-pn-d">{a.dataPlanejada||'—'}</span><span className="nm-pn-t">{a.atividade}</span><span className={'nm-pn-s'+(a.status==='Concluída'||a.status==='Concluído'?' ok':'')}>{a.status||'—'}</span><span className="nm-pn-a">{a.analista||''}</span></div>))}</div>
+              <div key={a.id} className="nm-pn-it"><span className="nm-pn-d">{a.dataPlanejada||'—'}</span><span className="nm-pn-t">{a.atividade}</span><span className={'nm-pn-s'+(a.status==='Concluída'||statusBase(a.status)==='Concluído'?' ok':'')}>{a.status||'—'}</span><span className="nm-pn-a">{a.analista||''}</span></div>))}</div>
           </NmSecao>; })()}
         {!DEMO_MODE&&<NmSecao icone="ti-notes" titulo="Atas de reunião" resumo="registrar e consultar">
           <AtasDaTarefa projId={projId} taskId={node.id} taskLabel={node.data.label} projects={projects}/>
@@ -6142,8 +6196,8 @@ function ProjectCard({p,onOpen,onRename,onImageChange,onArchive,onDelete,onToggl
   const[menuOpen,setMenuOpen]=useState(false);
   const fileInputRef=useRef(null);
   const total=p.tasks.length;
-  const done=p.tasks.filter(t=>t.status==='Concluído').length;
-  const wip=p.tasks.filter(t=>t.status==='Em andamento').length;
+  const done=p.tasks.filter(t=>statusBase(t.status)==='Concluído').length;
+  const wip=p.tasks.filter(t=>statusBase(t.status)==='Em andamento').length;
   const todo=total-done-wip;
   const percent=total?Math.round(done/total*100):0;
 
@@ -6496,9 +6550,9 @@ function taskDuration(t,hol){ if(t.duration!=null&&t.duration!=='') return Math.
    passou do término e não concluído (ex.: Em andamento)=90; no meio=proporção
    (em dias úteis, no máx. 89). Tarefa-mãe é a média das folhas (feito em rollupOf). */
 function schedAutoPct(t,hol){
-  if(t.status==='Concluído') return 100;
-  if(t.status==='Cancelado') return 0;
-  if(t.status==='Não iniciado') return 0; /* não iniciada = 0%, mesmo que a data já tenha passado */
+  if(statusBase(t.status)==='Concluído') return 100;
+  if(statusBase(t.status)==='Cancelado') return 0;
+  if(statusBase(t.status)==='Não iniciado') return 0; /* não iniciada = 0%, mesmo que a data já tenha passado */
   const s=t.startMetaFixed||t.startMeta||t.startDate||'';
   const e=t.endMetaFixed||t.endMeta||t.endDate||'';
   const sd=SCHED.parseISO(s), ed=SCHED.parseISO(e);
@@ -7222,7 +7276,7 @@ function Pctbar({v,color}){ v=Math.max(0,Math.min(100,Number(v)||0)); return <sp
    - senão, se a tarefa está "Concluído" => botão "Validar" (abre a caixa);
    - senão => "Aguardando". A confirmação é manual (não mexe no status da tarefa). */
 function MetaStatusCell({t,onTaskField,onValidate}){
-  const done = t.status==='Concluído';
+  const done = statusBase(t.status)==='Concluído';
   if(t.metaConcluida){
     return <button className="meta-badge mb-done" title="Reabrir (voltar para Validar)" onClick={()=>onTaskField(t.id,{metaConcluida:false,metaBatida:null})}><i className="ti ti-circle-check"/> Concluída</button>;
   }
@@ -7327,7 +7381,7 @@ function cmResolve(t,project,hol,kids){
 /* Classifica a meta usando as datas resolvidas (atraso pela linha de base/prazo). */
 function cmBucketInfo(t,info){
   if(t.metaConcluida) return t.metaBatida===true?'batida':'naobatida';
-  if(t.status==='Concluído') return 'validar';
+  if(statusBase(t.status)==='Concluído') return 'validar';
   const dl=info.blE||info.end||cmMetaTarget(t);
   const d=parseFlexDate(dl);
   const hoje=new Date(); hoje.setHours(0,0,0,0);
@@ -7440,7 +7494,7 @@ function PainelMetas({allMetas,onValidar,onIrValidar}){
       let byId=byIdCache.get(x.projId); if(!byId){ byId={}; (x.proj.tasks||[]).forEach(t=>{ byId[String(t.id)]=t; }); byIdCache.set(x.projId,byId); }
       const meta=pmDate(x.info.blE||x.info.end||cmMetaTarget(x.t));
       const atual=pmDate(x.info.end);
-      const concl=x.t.status==='Concluído'||x.t.metaConcluida;
+      const concl=statusBase(x.t.status)==='Concluído'||x.t.metaConcluida;
       const real=concl?pmDate(x.info.summary?x.info.end:(x.t.endDate||x.info.end)):null;
       const c=PM_BY_BUCKET[x.bucket]||PM_CATS[3];
       let dias=null;
@@ -9587,7 +9641,7 @@ function pnSituacaoNaSemana(t, weekStart){
   const dp=pnParseBR(t.dataPlanejada);
   const hoje=new Date(); hoje.setHours(0,0,0,0);
   if(dp && dp<hoje && dp<Wend) return {sit:'Atrasada', cls:'atrasada', noPrazo:null};
-  if(t.status==='Em andamento') return {sit:'Em andamento', cls:'andamento', noPrazo:null};
+  if(statusBase(t.status)==='Em andamento') return {sit:'Em andamento', cls:'andamento', noPrazo:null};
   return {sit:'Planejada', cls:'planejada', noPrazo:null};
 }
 /* Métricas de UMA semana sobre TODAS as atividades dela (planejadas na semana +
@@ -9610,7 +9664,7 @@ function pnSituacao(t){
   const dp=pnParseBR(t.dataPlanejada);
   const hoje=new Date(); hoje.setHours(0,0,0,0);
   if(dp&&dp<hoje) return {sit:'Atrasada', cls:'atrasada', noPrazo:null};
-  if(t.status==='Em andamento') return {sit:'Em andamento', cls:'andamento', noPrazo:null};
+  if(statusBase(t.status)==='Em andamento') return {sit:'Em andamento', cls:'andamento', noPrazo:null};
   return {sit:'Planejada', cls:'planejada', noPrazo:null};
 }
 function pnAgg(list){
@@ -11496,7 +11550,7 @@ const DD_OBRIG=[['city','Cidade'],['oficioMatricula','Matrículas'],['empresaNom
 function ddNorm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
 
 
-function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,representantes,setRepresentantes,apiRef}){
+function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,representantes,setRepresentantes,apiRef,empresas,setEmpresas}){
   const ativos=(projects||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt',{sensitivity:'base'}));
   const[selId,setSelId]=useState('');
   const[busca,setBusca]=useState('');
@@ -11577,6 +11631,7 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
         <div className="dd-side-sub">Cadastros gerais</div>
         <button className={'dd-geral'+(selId==='__gerais__'?' on':'')} onClick={()=>escolher('__gerais__')}><i className="ti ti-world"/> Dados gerais (todos)</button>
         <button className={'dd-geral'+(selId==='__reps__'?' on':'')} onClick={()=>escolher('__reps__')}><i className="ti ti-user-check"/> Representantes</button>
+        {setEmpresas&&<button className={'dd-geral'+(selId==='__emps__'?' on':'')} onClick={()=>escolher('__emps__')}><i className="ti ti-building-skyscraper"/> Empresas</button>}
       </aside>
 
       {/* ── Coluna direita ── */}
@@ -11644,6 +11699,13 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
             ))}
           </section>
         </>)}
+
+        {selId==='__emps__' && setEmpresas && (
+          <section className="dd-sec">
+            <div className="dd-sec-head"><span className="dd-sec-ic"><i className="ti ti-building-skyscraper"/></span><div><div className="dd-sec-t">Empresas</div><div className="dd-sec-s">Dados de outras empresas (parceiros, prestadores, outras SPEs) que não são empreendimentos do app. Também aparecem no Gerador de Ofícios, em "Empresas avulsas".</div></div></div>
+            <CadastroEmpresas empresas={empresas} setEmpresas={setEmpresas}/>
+          </section>
+        )}
 
         {selId==='__reps__' && (
           <section className="dd-sec">
@@ -16791,6 +16853,66 @@ function CadastroAssuntos({assuntos,setAssuntos}){
 /* Cadastro de empreendimentos avulsos (fora de Projetos) usados no gerador de
    ofícios. Mesma estrutura de dados de um projeto (name/city + textos do
    ofício), salvos no doc do Portal DI. */
+/* Dados › Empresas: cadastro de outras empresas. Fica na mesma lista dos
+   "empreendimentos avulsos" do Gerador de Ofícios (nome/cidade/textos do ofício),
+   com os dados da empresa em "company" e campos livres em "extras". */
+function CadastroEmpresas({empresas,setEmpresas}){
+  const lista=(Array.isArray(empresas)?empresas:[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt',{sensitivity:'base'}));
+  const vazio=()=>({name:'',city:'',company:{...EMPTY_COMPANY},extras:[],obs:'',oficioTexto:'',oficioMatricula:'',oficioIndicacao:'',oficioEndereco:''});
+  const[f,setF]=useState(null); const[editId,setEditId]=useState(null); const[busca,setBusca]=useState('');
+  const setC=(k,v)=>setF(o=>({...o,company:{...o.company,[k]:v}}));
+  const abrir=a=>{ setEditId(a?a.id:null); setF(a?{...vazio(),...a,company:{...EMPTY_COMPANY,...(a.company||{})},extras:Array.isArray(a.extras)?a.extras:[]}:vazio()); };
+  const salvar=()=>{ if(!f||!String(f.name||'').trim()){ alert('Dê um nome à empresa.'); return; }
+    const rec={...f,name:f.name.trim(),city:String(f.city||'').trim(),extras:(f.extras||[]).filter(x=>String(x.chave||'').trim()||String(x.valor||'').trim())};
+    if(editId) setEmpresas(l=>(Array.isArray(l)?l:[]).map(a=>a.id===editId?{...a,...rec,id:a.id}:a));
+    else setEmpresas(l=>(Array.isArray(l)?l:[]).concat({...rec,id:'avl-'+Date.now()}));
+    setF(null); setEditId(null); };
+  const remove=a=>{ if(!window.confirm('Excluir a empresa "'+(a.name||'')+'"?')) return; setEmpresas(l=>(Array.isArray(l)?l:[]).filter(x=>x.id!==a.id)); if(editId===a.id){ setF(null); setEditId(null); } };
+  const b=busca.trim().toLowerCase();
+  const vis=lista.filter(a=>!b||[a.name,a.city,a.company&&a.company.razaoSocial,a.company&&a.company.cnpj].some(x=>String(x||'').toLowerCase().includes(b)));
+  const L=({k,label,w})=>(<div className="pdi-field" style={w?{gridColumn:'span '+w}:undefined}><label className="emp-lbl">{label}</label><input className="pdi-input" value={(f.company||{})[k]||''} onChange={e=>setC(k,e.target.value)}/></div>);
+  if(f) return (
+    <div className="emp-form">
+      <div className="emp-grid">
+        <div className="pdi-field" style={{gridColumn:'span 2'}}><label className="emp-lbl">Nome (como aparece nas listas)</label><input className="pdi-input" autoFocus value={f.name} onChange={e=>setF(o=>({...o,name:e.target.value}))}/></div>
+        <div className="pdi-field"><label className="emp-lbl">Cidade</label><input className="pdi-input" value={f.city||''} onChange={e=>setF(o=>({...o,city:e.target.value}))}/></div>
+        {L({k:'razaoSocial',label:'Razão social',w:2})}{L({k:'cnpj',label:'CNPJ'})}
+        {L({k:'endereco',label:'Endereço',w:2})}{L({k:'bairro',label:'Bairro'})}
+        {L({k:'cidade',label:'Cidade (endereço)'})}{L({k:'uf',label:'UF'})}{L({k:'cep',label:'CEP'})}
+        {L({k:'telefone',label:'Telefone'})}{L({k:'email',label:'E-mail',w:2})}
+      </div>
+      <div className="emp-lbl" style={{marginTop:14}}>Outras informações</div>
+      {(f.extras||[]).map((x,i)=>(<div key={i} className="emp-extra">
+        <input className="pdi-input" placeholder="Campo (ex.: Responsável técnico)" value={x.chave||''} onChange={e=>setF(o=>({...o,extras:o.extras.map((y,j)=>j===i?{...y,chave:e.target.value}:y)}))}/>
+        <input className="pdi-input" placeholder="Valor" value={x.valor||''} onChange={e=>setF(o=>({...o,extras:o.extras.map((y,j)=>j===i?{...y,valor:e.target.value}:y)}))}/>
+        <button className="emp-x" onClick={()=>setF(o=>({...o,extras:o.extras.filter((_,j)=>j!==i)}))} title="Tirar"><i className="ti ti-x"/></button></div>))}
+      <button className="btn-modal ghost" style={{marginTop:6}} onClick={()=>setF(o=>({...o,extras:(o.extras||[]).concat({chave:'',valor:''})}))}><i className="ti ti-plus"/> Adicionar informação</button>
+      <div className="pdi-field" style={{marginTop:12}}><label className="emp-lbl">Observações</label><textarea className="pdi-input" rows={3} value={f.obs||''} onChange={e=>setF(o=>({...o,obs:e.target.value}))}/></div>
+      <details style={{marginTop:10}}><summary className="emp-lbl" style={{cursor:'pointer'}}>Para o Gerador de Ofícios (opcional)</summary>
+        <div className="emp-grid" style={{marginTop:8}}>
+          <div className="pdi-field"><label className="emp-lbl">Matrícula</label><input className="pdi-input" value={f.oficioMatricula||''} onChange={e=>setF(o=>({...o,oficioMatricula:e.target.value}))}/></div>
+          <div className="pdi-field"><label className="emp-lbl">Indicação fiscal</label><input className="pdi-input" value={f.oficioIndicacao||''} onChange={e=>setF(o=>({...o,oficioIndicacao:e.target.value}))}/></div>
+          <div className="pdi-field"><label className="emp-lbl">Endereço do imóvel</label><input className="pdi-input" value={f.oficioEndereco||''} onChange={e=>setF(o=>({...o,oficioEndereco:e.target.value}))}/></div>
+          <div className="pdi-field" style={{gridColumn:'1 / -1'}}><label className="emp-lbl">Texto padrão do ofício</label><textarea className="pdi-input" rows={3} value={f.oficioTexto||''} onChange={e=>setF(o=>({...o,oficioTexto:e.target.value}))}/></div>
+        </div></details>
+      <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:14}}>
+        <button className="btn-modal ghost" onClick={()=>{ setF(null); setEditId(null); }}>Cancelar</button>
+        <button className="btn-modal" onClick={salvar}>{editId?'Salvar':'Adicionar empresa'}</button>
+      </div>
+    </div>);
+  return (<div>
+    <div style={{display:'flex',gap:8,marginBottom:10}}>
+      <input className="pdi-input" style={{flex:1}} placeholder="Procurar empresa, razão social ou CNPJ…" value={busca} onChange={e=>setBusca(e.target.value)}/>
+      <button className="btn-modal" onClick={()=>abrir(null)}><i className="ti ti-plus"/> Nova empresa</button>
+    </div>
+    {!vis.length&&<div style={{fontSize:13,color:'var(--text3)',padding:'14px 2px'}}>{lista.length?'Nada encontrado.':'Nenhuma empresa cadastrada ainda.'}</div>}
+    {vis.map(a=>{ const c=a.company||{}; return (<div key={a.id} className="emp-item">
+      <div style={{flex:1,minWidth:0}}><b>{a.name}</b><div className="emp-sub">{[c.razaoSocial,c.cnpj&&'CNPJ '+c.cnpj,a.city||c.cidade].filter(Boolean).join(' · ')||'—'}</div></div>
+      <button className="emp-x" onClick={()=>abrir(a)} title="Editar"><i className="ti ti-pencil"/></button>
+      <button className="emp-x" onClick={()=>remove(a)} title="Excluir"><i className="ti ti-trash"/></button>
+    </div>); })}
+  </div>);
+}
 function CadastroAvulsos({avulsos,setAvulsos}){
   const empty={name:'',city:'',oficioTexto:'',oficioMatricula:'',oficioIndicacao:'',oficioEndereco:''};
   const[f,setF]=useState(empty);
@@ -17512,7 +17634,7 @@ function InicioView({projects,painelTarefas,setPainelTarefas,vencimentos,usuario
   (projects||[]).forEach(p=>(p.tasks||[]).forEach(t=>{
     if(!ehMinha(t)||t.deleted||t.taskType==='terminacao'||t.taskType==='conector') return;
     const meta=parseFlexDate(t.baselineEnd||t.clickupDate), fim=parseFlexDate(t.endDate), ref=meta||fim;
-    const aberta=t.status!=='Concluído'&&t.status!=='Cancelado';
+    const aberta=statusBase(t.status)!=='Concluído'&&statusBase(t.status)!=='Cancelado';
     const dias=ref?Math.round((ref-hoje)/86400000):null;
     const r={t,p,ref,meta,aberta,dias,atrasada:aberta&&dias!==null&&dias<0};
     minhas.push(r); (empsMap[p.id]=empsMap[p.id]||{p,minhas:[]}).minhas.push(r);
@@ -17534,7 +17656,7 @@ function InicioView({projects,painelTarefas,setPainelTarefas,vencimentos,usuario
   /* Empreendimentos */
   const meusEmps=Object.values(empsMap).map(({p,minhas:ms})=>{
     const todas=(p.tasks||[]).filter(t=>t&&t.taskType!=='terminacao'&&t.taskType!=='conector');
-    const pct=todas.length?Math.round(todas.filter(t=>t.status==='Concluído').length/todas.length*100):0;
+    const pct=todas.length?Math.round(todas.filter(t=>statusBase(t.status)==='Concluído').length/todas.length*100):0;
     const abertas=ms.filter(r=>r.aberta);
     const prox=abertas.filter(r=>r.ref).sort((a,b)=>a.ref-b.ref)[0]||null;
     return {p,pct,abertas:abertas.length,atras:abertas.filter(r=>r.atrasada).length,prox};
@@ -17677,7 +17799,7 @@ function TarefasView({projects,onOpenProject,onBack}){
       if(t.taskType==='terminacao'||t.taskType==='conector') return;
       const fim=parseFlexDate(t.endDate), meta=parseFlexDate(t.baselineEnd||t.clickupDate);
       const ref=meta||fim;
-      const aberta=t.status!=='Concluído'&&t.status!=='Cancelado';
+      const aberta=statusBase(t.status)!=='Concluído'&&statusBase(t.status)!=='Cancelado';
       const atrasada=aberta&&ref&&ref<hoje;
       out.push({t,p,fim,meta,ref,aberta,atrasada,resp:t.responsavelNome||''});
     }));
@@ -17694,7 +17816,7 @@ function TarefasView({projects,onOpenProject,onBack}){
     if(q&&!((r.t.label||'')+' '+r.p.name+' '+r.resp).toLowerCase().includes(q)) return false;
     return true;
   }).sort((a,b)=>{ const ta=a.ref?a.ref.getTime():Infinity, tb=b.ref?b.ref.getTime():Infinity; return ta-tb||(a.p.name||'').localeCompare(b.p.name||'','pt'); });
-  const n={abertas:base.filter(r=>r.aberta).length, atras:base.filter(r=>r.atrasada).length, wip:base.filter(r=>r.t.status==='Em andamento').length, sem:base.filter(r=>r.aberta&&!r.resp).length, concl:base.filter(r=>r.t.status==='Concluído').length};
+  const n={abertas:base.filter(r=>r.aberta).length, atras:base.filter(r=>r.atrasada).length, wip:base.filter(r=>statusBase(r.t.status)==='Em andamento').length, sem:base.filter(r=>r.aberta&&!r.resp).length, concl:base.filter(r=>statusBase(r.t.status)==='Concluído').length};
   const fmt=d=>d?vencFmtBR(d):'—';
   const card=(key,label,icon,val,color)=>(
     <div className={'venc-card'+(fStatus===key?' active':'')} style={{cursor:'pointer'}} onClick={()=>setFStatus(fStatus===key&&key!=='abertas'?'abertas':key)}>
@@ -18771,6 +18893,52 @@ function ChatHistorico({onClose,ativos,pessoas,eu}){
     </div>
   );
 }
+/* Engrenagem do fluxograma › Status das tarefas: os 6 padrão podem mudar de cor
+   ou ficar escondidos (as tarefas que já usam continuam com ele); os próprios
+   podem ser criados, renomeados, recoloridos e excluídos. Cada status próprio
+   "conta como" um padrão nos cálculos (andamento, atraso, % concluído). */
+function StatusCfgModal({onClose,onSave,projects}){
+  const usoDe=n=>(projects||[]).reduce((a,p)=>a+(p.tasks||[]).filter(t=>t&&!t.deleted&&t.status===n).length,0);
+  const[linhas,setLinhas]=useState(()=>STATUS_BASE.map(n=>({nome:n,orig:n,padrao:true,cor:STATUS_CORES[n]||statusColor(n),corMudou:!!STATUS_CORES[n],oculto:STATUS_OCULTOS.includes(n)}))
+    .concat(Object.keys(STATUS_CUSTOM).map(n=>({nome:n,orig:n,padrao:false,cor:STATUS_CUSTOM[n].cor,base:STATUS_CUSTOM[n].base}))));
+  const[excluidos,setExcluidos]=useState([]); /* [{nome,base}] */
+  const muda=(i,o)=>setLinhas(ls=>ls.map((l,j)=>j===i?{...l,...o}:l));
+  const salvar=()=>{
+    const nomes=linhas.map(l=>String(l.nome).trim().toLowerCase());
+    if(nomes.some(n=>!n)){ alert('Dê um nome a todos os status.'); return; }
+    if(new Set(nomes).size!==nomes.length){ alert('Há dois status com o mesmo nome.'); return; }
+    const trocas={};
+    linhas.forEach(l=>{ if(!l.padrao&&l.orig&&l.orig!==String(l.nome).trim()) trocas[l.orig]=String(l.nome).trim(); });
+    excluidos.forEach(x=>{ trocas[x.nome]=x.base||'Não iniciado'; });
+    const cores={}; linhas.filter(l=>l.padrao&&l.corMudou).forEach(l=>{ cores[l.nome]=l.cor; });
+    onSave({custom:linhas.filter(l=>!l.padrao).map(l=>({nome:l.nome,cor:l.cor,base:l.base})),cores,ocultos:linhas.filter(l=>l.padrao&&l.oculto).map(l=>l.nome)},trocas); };
+  return (
+    <div className="modal-overlay" onClick={e=>{ if(e.target.classList.contains('modal-overlay')) onClose(); }}>
+      <div className="modal" style={{maxWidth:560}}>
+        <div className="modal-title"><i className="ti ti-circle-dot"/> Status das tarefas</div>
+        <div style={{fontSize:12,color:'var(--text3)',marginBottom:10}}>Vale para todos os empreendimentos. Os padrão podem mudar de cor ou ficar escondidos; os novos contam como um padrão nos cálculos (atraso, % concluído).</div>
+        <div className="stcfg-lista">
+          {linhas.map((l,i)=>(<div key={i} className={'stcfg-l'+(l.oculto?' oculto':'')}>
+            <input type="color" value={/^#[0-9a-f]{6}$/i.test(l.cor)?l.cor:'#8e8d82'} onChange={e=>muda(i,{cor:e.target.value,corMudou:true})} title="Cor"/>
+            {l.padrao?<span className="stcfg-nome">{l.nome}<small>padrão</small></span>
+              :<input className="form-input stcfg-in" value={l.nome} onChange={e=>muda(i,{nome:e.target.value})} placeholder="Nome do status"/>}
+            {!l.padrao&&<select className="form-input stcfg-base" value={l.base||'Não iniciado'} onChange={e=>muda(i,{base:e.target.value})} title="Conta como (nos cálculos)">
+              {STATUS_BASE.map(b=><option key={b} value={b}>conta como {b}</option>)}</select>}
+            <span className="stcfg-uso" title="Tarefas com este status">{l.orig?usoDe(l.orig):0}</span>
+            {l.padrao
+              ?<button type="button" className="stcfg-b" onClick={()=>muda(i,{oculto:!l.oculto})} title={l.oculto?'Mostrar nas listas':'Esconder das listas (quem já usa continua)'}><i className={'ti '+(l.oculto?'ti-eye-off':'ti-eye')}/></button>
+              :<button type="button" className="stcfg-b del" onClick={()=>{ const n=l.orig?usoDe(l.orig):0; if(n&&!window.confirm(n+' tarefa(s) usam "'+l.orig+'". Ao salvar, elas passam para "'+(l.base||'Não iniciado')+'". Excluir?')) return; if(l.orig) setExcluidos(x=>x.concat({nome:l.orig,base:l.base})); setLinhas(ls=>ls.filter((_,j)=>j!==i)); }} title="Excluir"><i className="ti ti-trash"/></button>}
+            {l.padrao&&l.corMudou&&<button type="button" className="stcfg-b" onClick={()=>{ const p=STATUS_HEX[l.nome]||STATUS_HEX['Não iniciado']; muda(i,{cor:tc(p[0],p[1]),corMudou:false}); }} title="Voltar à cor original"><i className="ti ti-arrow-back-up"/></button>}
+          </div>))}
+        </div>
+        <button type="button" className="btn-modal ghost" style={{marginTop:8}} onClick={()=>setLinhas(ls=>ls.concat({nome:'',orig:'',padrao:false,cor:'#4A77C0',base:'Em andamento'}))}><i className="ti ti-plus"/> Novo status</button>
+        <div className="modal-footer">
+          <button className="btn-modal ghost" onClick={onClose}>Cancelar</button>
+          <button className="btn-modal" onClick={salvar}>Salvar</button>
+        </div>
+      </div>
+    </div>);
+}
 function App({currentUser}){
   const[projects,setProjects]=useState(initialProjects);
   const[screen,setScreen]=useState(()=>pathToScreen());
@@ -18827,6 +18995,19 @@ function App({currentUser}){
   const[flowRevertKey,setFlowRevertKey]=useState(0);
   const[fluxoSetorSel,setFluxoSetorSel]=useState('');
   const[fluxoCfg,setFluxoCfg]=useState(false); /* menu da engrenagem: criar/excluir fluxogramas */
+  const[statusVer,setStatusVer]=useState(0); /* muda quando a lista de status muda (redesenha) */
+  const[showStatusCfg,setShowStatusCfg]=useState(false);
+  useEffect(()=>{ if(DEMO_MODE){ statusAplicar(window.__STATUS_DEMO||{}); return; }
+    return STATUS_DOC.onSnapshot(sn=>{ statusAplicar(sn.exists?sn.data():{}); setStatusVer(v=>v+1); setFlowRevertKey(k=>k+1); },e=>console.error('Status:',e)); },[]);
+  /* Salvar a lista de status. Renomear um status próprio troca o nome nas
+     tarefas que o usam; excluir passa essas tarefas para o status base dele. */
+  const salvarStatusCfg=(cfg,trocas)=>{
+    const limpo={custom:(cfg.custom||[]).map(c=>({nome:String(c.nome).trim(),cor:c.cor||'#8E8D82',base:c.base||'Não iniciado'})).filter(c=>c.nome),cores:cfg.cores||{},ocultos:cfg.ocultos||[]};
+    statusAplicar(limpo); setStatusVer(v=>v+1);
+    if(trocas&&Object.keys(trocas).length) setProjects(ps=>ps.map(p=>{ let mud=false; const ts=(p.tasks||[]).map(t=>{ if(t&&trocas[t.status]!=null){ mud=true; return {...t,status:trocas[t.status]}; } return t; }); return mud?{...p,tasks:ts}:p; }));
+    if(DEMO_MODE){ window.__STATUS_DEMO=limpo; }
+    else STATUS_DOC.set(limpo).catch(e=>{ console.error(e); alert('Não consegui salvar os status. Verifique a conexão.'); });
+    setShowStatusCfg(false); setTimeout(()=>setFlowRevertKey(k=>k+1),0); };
   /* Fluxogramas criados pelo "+" que ainda não têm tarefa: só existem nesta
      sessão. Ao ganhar a 1ª tarefa e salvar, passam a existir de verdade. */
   const[fluxosNovos,setFluxosNovos]=useState({});
@@ -19554,12 +19735,12 @@ function App({currentUser}){
   const statsSourceTasks = project ? (viewFilterSectors.length ? project.tasks.filter(t=>viewFilterSectors.includes(t.sector)) : project.tasks) : [];
   const projTaskStats = project ? {
     total:statsSourceTasks.length,
-    done:statsSourceTasks.filter(t=>t.status==='Concluído').length,
-    wip:statsSourceTasks.filter(t=>t.status==='Em andamento').length,
-    pending:statsSourceTasks.filter(t=>t.status==='Pendente').length,
-    notStarted:statsSourceTasks.filter(t=>t.status==='Não iniciado').length,
-    review:statsSourceTasks.filter(t=>t.status==='Em revisão').length,
-    cancelled:statsSourceTasks.filter(t=>t.status==='Cancelado').length,
+    done:statsSourceTasks.filter(t=>statusBase(t.status)==='Concluído').length,
+    wip:statsSourceTasks.filter(t=>statusBase(t.status)==='Em andamento').length,
+    pending:statsSourceTasks.filter(t=>statusBase(t.status)==='Pendente').length,
+    notStarted:statsSourceTasks.filter(t=>statusBase(t.status)==='Não iniciado').length,
+    review:statsSourceTasks.filter(t=>statusBase(t.status)==='Em revisão').length,
+    cancelled:statsSourceTasks.filter(t=>statusBase(t.status)==='Cancelado').length,
     late:statsSourceTasks.filter(isTaskLate).length,
     dueSoon:statsSourceTasks.filter(isTaskDueSoon).length,
   } : {total:0,done:0,wip:0,pending:0,notStarted:0,review:0,cancelled:0,late:0,dueSoon:0};
@@ -20350,7 +20531,7 @@ function App({currentUser}){
      total de tarefas concluídas x abertas em toda a rede de projetos ativos
      (já filtrados por projeto/setor). */
   const perfTotalTasks = dashProjects.reduce((sum,p)=>sum+p.tasks.filter(dashTaskFilter).length,0);
-  const perfConcluidas = dashProjects.reduce((sum,p)=>sum+p.tasks.filter(dashTaskFilter).filter(t=>t.status==='Concluído').length,0);
+  const perfConcluidas = dashProjects.reduce((sum,p)=>sum+p.tasks.filter(dashTaskFilter).filter(t=>statusBase(t.status)==='Concluído').length,0);
   const perfAbertas = perfTotalTasks - perfConcluidas;
   /* Fatias reais do gráfico de pizza "Status Geral das Tarefas" — uma por
      status (mesmas cores usadas em todo o resto do app). */
@@ -20363,7 +20544,7 @@ function App({currentUser}){
      setor selecionado no filtro do Dashboard, só a barra dele aparece. */
   const sectorWorkload = dashSectorsToShow.map(s=>({
     sector:s,
-    value:dashProjects.reduce((sum,p)=>sum+p.tasks.filter(t=>t.sector===s && t.status!=='Concluído' && t.status!=='Cancelado').length,0)
+    value:dashProjects.reduce((sum,p)=>sum+p.tasks.filter(t=>t.sector===s && statusBase(t.status)!=='Concluído' && statusBase(t.status)!=='Cancelado').length,0)
   }));
   const sectorWorkloadMax = Math.max(1, ...sectorWorkload.map(s=>s.value));
   /* Listas por trás dos KPIs clicáveis (Em atraso / Ponto de atenção) —
@@ -20408,7 +20589,7 @@ function App({currentUser}){
     const arr=[];
     for(let m=0;m<12;m++){
       const completed=dashProjects.reduce((sum,p)=>sum+p.tasks.filter(dashTaskFilter).filter(t=>{
-        if(t.status!=='Concluído') return false;
+        if(statusBase(t.status)!=='Concluído') return false;
         const end=parseFlexDate(t.endDate);
         return end && end.getFullYear()===year && end.getMonth()===m;
       }).length,0);
@@ -20431,7 +20612,7 @@ function App({currentUser}){
      em vez de um número fabricado). Respeita o filtro de setor do Dashboard. */
   const leadTimeBySector = dashSectorsToShow.map(s=>{
     const qualifying = dashProjects.flatMap(p=>p.tasks).filter(t=>
-      t.sector===s && t.status==='Concluído' && t.startDate && t.endDate
+      t.sector===s && statusBase(t.status)==='Concluído' && t.startDate && t.endDate
     );
     if(!qualifying.length) return {sector:s, avgDays:null, count:0};
     const totalDays = qualifying.reduce((sum,t)=>{
@@ -20590,7 +20771,7 @@ function App({currentUser}){
                 ? <div className="perf-empty">Nenhum projeto ativo no momento.</div>
                 : dashProjects.map(p=>{
                     const pTasks=p.tasks.filter(dashTaskFilter);
-                    const total=pTasks.length, done=pTasks.filter(t=>t.status==='Concluído').length;
+                    const total=pTasks.length, done=pTasks.filter(t=>statusBase(t.status)==='Concluído').length;
                     const pct=total?Math.round(done/total*100):0;
                     return(
                       <div key={p.id} className="perf-bar-row">
@@ -20919,7 +21100,8 @@ function App({currentUser}){
       {screen==='dados'&&(
         <DadosView projects={activeProjects} updateProjectOficio={updateProjectOficio}
           dadosGerais={dadosGerais} setDadosGerais={setDadosGerais}
-          representantes={representantes} setRepresentantes={setRepresentantes} apiRef={dadosApiRef}/>
+          representantes={representantes} setRepresentantes={setRepresentantes} apiRef={dadosApiRef}
+          empresas={empreendimentosAvulsos} setEmpresas={setEmpreendimentosAvulsos}/>
       )}
 
       {screen==='portalpcp'&&(
@@ -21240,6 +21422,10 @@ function App({currentUser}){
                       {setoresSemFluxo.map(s=><button key={'n'+s} type="button" className="fal-novo" onClick={()=>{ setFluxoCfg(false); criarFluxo(s); }} title={'Criar o fluxograma do setor '+setorNome(s)}>
                         <i className="dot" style={{background:setorCor(s)}}/>{setorSigla(s)} · {setorNome(s)}</button>)}
                     </>}
+                    {permEstrutura()&&<>
+                      <div className="fal-t"><i className="ti ti-tags"/> Tarefas</div>
+                      <button type="button" className="fal-novo" onClick={()=>{ setFluxoCfg(false); setShowStatusCfg(true); }} title="Criar, editar ou excluir os status das tarefas (vale para todo o app)"><i className="ti ti-circle-dot"/>Status das tarefas…</button>
+                    </>}
                     <div className="fal-t"><i className="ti ti-trash"/> Excluir fluxograma</div>
                     {fluxosProj.map(s=>{ const pode=s===FLUXO_SEM?permEstrutura():podeEditarTarefa(s);
                       return <button key={'x'+s} type="button" className="fal-novo fal-excluir" disabled={!pode} onClick={()=>{ setFluxoCfg(false); excluirFluxo(s); }} title={pode?'Excluir o '+fluxoNome(project,s)+' (as tarefas continuam no Cronograma)':'Só quem é do setor pode excluir este fluxograma'}>
@@ -21248,6 +21434,7 @@ function App({currentUser}){
                 </>}
               </span>}
               </div>
+              {showStatusCfg&&<StatusCfgModal onClose={()=>setShowStatusCfg(false)} onSave={salvarStatusCfg} projects={projects}/>}
               {fluxoEdit&&project&&<div className="modal-overlay" onClick={e=>{ if(e.target.classList.contains('modal-overlay')) setFluxoEdit(null); }}>
                 <div className="modal" style={{maxWidth:420}}>
                   <div className="modal-title"><i className="ti ti-adjustments-horizontal"/> Editar fluxograma</div>
@@ -21348,9 +21535,10 @@ function App({currentUser}){
                       onChange={e=>apiRef.current.setSelectedEdgeKind(e.target.value)}>
                       {EDGE_KINDS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
                     </select>}
+                    <button className="tb-btn" onClick={()=>{ const r=window.prompt('Texto da linha (até 120 caracteres; vazio tira o texto):',apiRef.current.rotuloDaSelecionada()); if(r!==null) apiRef.current.setSelectedEdgeLabel(r); }} title="Escrever um texto na linha (também dá com duplo clique na linha)"><i className="ti ti-text-plus"/> Texto na linha</button>
                     <select className="tb-btn tb-select" value="" title="Texto no meio da linha selecionada (ex.: Sim / Não depois de uma decisão)"
                       onChange={e=>{ const v=e.target.value; if(!v) return;
-                        if(v==='__outro'){ const r=window.prompt('Rótulo da linha (até 40 caracteres):',apiRef.current.rotuloDaSelecionada()); if(r!==null) apiRef.current.setSelectedEdgeLabel(r); return; }
+                        if(v==='__outro'){ const r=window.prompt('Texto da linha (até 120 caracteres):',apiRef.current.rotuloDaSelecionada()); if(r!==null) apiRef.current.setSelectedEdgeLabel(r); return; }
                         apiRef.current.setSelectedEdgeLabel(v==='__limpar'?'':v); }}>
                       <option value="">Rótulo…</option>
                       <option value="Sim">Sim</option><option value="Não">Não</option><option value="Compat.">Compat.</option><option value="Clash">Clash</option>
