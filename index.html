@@ -2700,6 +2700,15 @@ function fileToBase64(file){
    evento, nunca conflita). Checklists Padrão fica num documento só (muda
    pouco, risco baixo). */
 const PROJECTS_COL = db.collection('fluxoapp_projects');
+/* O Firestore recusa a gravação INTEIRA se houver qualquer valor "undefined"
+   (ex.: largura de uma tarefa que não foi medida por estar oculta/filtrada).
+   Antes de gravar, tira as chaves undefined (e troca undefined por null em listas). */
+function semUndefined(v){
+  if(v===undefined) return null;
+  if(v===null||typeof v!=='object') return (typeof v==='number'&&!isFinite(v))?null:v;
+  if(Array.isArray(v)) return v.map(x=>x===undefined?null:semUndefined(x));
+  if(v instanceof Date||typeof v.isEqual==='function'||typeof v.toDate==='function') return v; /* FieldValue/Timestamp */
+  const o={}; Object.keys(v).forEach(k=>{ if(v[k]!==undefined) o[k]=semUndefined(v[k]); }); return o; }
 /* Mapas/terrenos (landParcels) de cada empreendimento ficam num documento
    SEPARADO (um por empreendimento), carregado só quando a aba Mapa é aberta.
    Motivo: o geojson dos terrenos é pesado (chega perto de 1 MB) e, guardado
@@ -4769,7 +4778,9 @@ function FlowCanvas({filtroExtra,project,isEditMode,theme,onNodeOpen,onChecklist
           ...(n.data.etapa?{etapa:n.data.etapa}:{}),
           ...(n.data.estudo!=null?{estudo:n.data.estudo}:{}),
           ...(n.data.disciplina!=null?{disciplina:n.data.disciplina}:{}),
-          w:(n.measured&&n.measured.width)||n.width, h:(n.measured&&n.measured.height)||n.height,
+          ...(((n.measured&&n.measured.width)||n.width)?{w:(n.measured&&n.measured.width)||n.width}:{}),
+          ...(((n.measured&&n.measured.height)||n.height)?{h:(n.measured&&n.measured.height)||n.height}:{}),
+          ...(n.data.sector==null?{sector:''}:{}), ...(n.data.status==null?{status:'Não iniciado'}:{}),
         }));
         /* Salva também o lado (handles), o tipo e a rota manual de cada linha,
            pra que ao reabrir/editar a linha volte EXATAMENTE onde estava. */
@@ -19157,7 +19168,7 @@ function App({currentUser}){
         if(!prev){
           const{tasks,landParcels,...rest}=p;
           const taskMap={}; (tasks||[]).forEach(t=>{ taskMap[t.id]=t; });
-          const payload={...rest, tasks:taskMap};
+          const payload=semUndefined({...rest, tasks:taskMap});
           withTimeout(ref.set(payload))
             .then(()=>verifyWrite(ref,payload))
             .then(()=>{ setSyncError(''); })
@@ -19184,6 +19195,7 @@ function App({currentUser}){
           if(!currTaskIds.has(tid)) update['tasks.'+tid]=firebase.firestore.FieldValue.delete();
         });
         if(Object.keys(update).length){
+          Object.keys(update).forEach(k=>{ update[k]=semUndefined(update[k]); });
           withTimeout(ref.update(update))
             .then(()=>setSyncError(''))
             .catch(err=>{
@@ -19692,7 +19704,7 @@ function App({currentUser}){
         return m; });
       const finalTasks=mergedVisible.concat(hiddenTasks);
       const oldConnByKey={}; ((project&&project.connections)||[]).forEach(c=>{ oldConnByKey[connKey(c)]=c; });
-      const connsMerged=connections.map(c=>{ const o=oldConnByKey[connKey(c)]; return o?{...o,...c,status:c.status||o.status,depType:o.depType,lag:o.lag}:c; });
+      const connsMerged=connections.map(c=>{ const o=oldConnByKey[connKey(c)]; return o?{...o,...c,status:c.status||o.status||null,depType:o.depType||'TI',lag:Number(o.lag)||0}:c; });
       /* Linhas com uma ponta fora deste fluxograma (tarefa de outro setor que
          não foi trazida) não estão no canvas: continuam como estavam. */
       const finalIds=new Set(finalTasks.map(t=>String(t.id)));
