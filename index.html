@@ -1038,7 +1038,7 @@
   .cfg-sec-desc{font-size:13px;color:var(--text3);margin-bottom:16px;}
   .settings-row{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
   .settings-row-title{font-size:13px;font-weight:600;margin-bottom:3px;}
-  .settings-row-desc{font-size:11px;color:var(--text2);max-width:760px;}
+  .settings-row-desc{font-size:11px;color:var(--text2);max-width:none;}
   .switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;}
   .switch input{opacity:0;width:0;height:0;position:absolute;}
   .switch-track{position:absolute;inset:0;background:var(--surface3);border-radius:20px;transition:background .15s;cursor:pointer;}
@@ -1623,10 +1623,18 @@
   .auto-st{font-size:11.5px;font-weight:600;color:var(--text3);white-space:nowrap;}
   .auto-st.on{color:var(--green);}
   .auto-row-body{padding:0 0 12px 23px;}
+  .cfg-secao{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;}
+  .cfg-secao-h{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;padding:16px 18px;cursor:pointer;text-align:left;color:var(--text);font:inherit;}
+  .cfg-secao-ic{font-size:17px;color:var(--accent);}
+  .cfg-secao-tx{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .cfg-secao-t{font-size:14px;font-weight:700;}
+  .cfg-secao-d{font-size:11.5px;color:var(--text3);}
+  .cfg-secao-b{padding:0 14px 14px;}
+  .cfg-secao-b>.settings-card:first-child{margin-top:0 !important;}
   .auto-meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:11.5px;color:var(--text3);}
   .auto-meta span{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow-wrap:anywhere;}
   .auto-aviso{font-size:11.5px;color:var(--amber);margin-top:6px;display:flex;gap:5px;align-items:flex-start;}
-  .auto-sub{margin-top:10px;max-width:520px;}
+  .auto-sub{margin-top:10px;max-width:none;}
   /* ───────── Painel de Metas (Portal Diretoria) ───────── */
   .pm-wrap{display:flex;flex-direction:column;gap:14px;}
   .pm-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:10px;border-bottom:2px solid var(--text);}
@@ -7554,7 +7562,7 @@ function PainelMetas({allMetas,onValidar,onIrValidar}){
     <div className="pm-wrap">
       <div className="pm-head">
         <div>
-          <div className="pm-kicker">Portal Diretoria · Controle de Metas</div>
+          <div className="pm-kicker">Gestão · Controle de Metas</div>
           <div className="pm-title">Painel de Metas</div>
         </div>
         {anos.length>0&&<div className="cm-field"><label>Ano da meta</label><select value={anoSel} onChange={e=>setAno(Number(e.target.value))}>{anos.map(a=><option key={a} value={a}>{a}</option>)}</select></div>}
@@ -17142,6 +17150,21 @@ function BulkDeleteModal({projects,onDelete,onClose}){
      • IPTU (4 alertas)           → fluxoapp_meta/iptu config.alertas
    As do Controle Financeiro (medição, NF, cadastro de contrato) são enviadas
    pelo próprio app e passam a respeitar settings.automacoes (autoAtiva). */
+/* Bloco de Configurações que começa FECHADO: só o título (e uma linha de
+   descrição); clicar abre o conteúdo. */
+function CfgSecao({titulo,icone,desc,children,evt}){
+  const[aberto,setAberto]=useState(false); const ref=useRef(null);
+  useEffect(()=>{ if(!evt) return; const f=()=>{ setAberto(true); setTimeout(()=>{ if(ref.current) ref.current.scrollIntoView({behavior:'smooth',block:'start'}); },80); };
+    window.addEventListener(evt,f); return ()=>window.removeEventListener(evt,f); },[evt]);
+  return (<div ref={ref} className={'cfg-secao'+(aberto?' open':'')}>
+    <button type="button" className="cfg-secao-h" onClick={()=>setAberto(v=>!v)} aria-expanded={aberto}>
+      <i className={'ti ti-chevron-'+(aberto?'down':'right')+' auto-chev'}/>
+      {icone&&<i className={'ti '+icone+' cfg-secao-ic'}/>}
+      <span className="cfg-secao-tx"><span className="cfg-secao-t">{titulo}</span>{desc&&<span className="cfg-secao-d">{desc}</span>}</span>
+    </button>
+    {aberto&&<div className="cfg-secao-b">{children}</div>}
+  </div>);
+}
 function AutoSwitch({on,onChange,disabled}){
   return <label className="switch" style={disabled?{opacity:.5,pointerEvents:'none'}:null}><input type="checkbox" checked={!!on} onChange={()=>onChange(!on)}/><span className="switch-track"/></label>;
 }
@@ -17215,7 +17238,7 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
     salvarIptu({...(iptuCfg||{}),alertas:Object.fromEntries(IPTU_ALERTAS.map(a=>[a.k,v]))}); };
   return (<>
     <div className="settings-card auto-top">
-      <div><div className="settings-row-title">{ligadas} de {total} ligados</div><div className="settings-row-desc">Toque na setinha para ver detalhes ou preencher e-mails.</div></div>
+      <div><div className="settings-row-title">{ligadas} de {total} ligados</div></div>
       <div style={{display:'flex',gap:8}}><button className="pdi-btn ghost" onClick={()=>tudo(true)}><i className="ti ti-bell"/> Ligar todos</button><button className="pdi-btn ghost" onClick={()=>tudo(false)}><i className="ti ti-bell-off"/> Desligar todos</button></div>
     </div>
 
@@ -17232,7 +17255,7 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
     <div className="auto-grp">Controle de Vencimentos</div>
     <div className="settings-card auto-card">
       <AutoRow titulo="Alertas de vencimento" desc="Documentos e licenças do Controle de Vencimentos: avisa quando faltam 60, 30 e 15 dias para o prazo, no dia em que vence e no dia seguinte, e lista os já vencidos. Os marcados como Superado não entram." quando="todo dia, por volta das 8h (só quando há algo a avisar)" on={ativa('vencimentos')} onChange={v=>setAuto('vencimentos',v)}
-        aviso="O envio é feito pelo script de e-mail do Google (Apps Script), que lê estas escolhas do app.">
+        >
         <DestinatariosEdit lista={Array.isArray(automacoes&&automacoes.vencEmails)?automacoes.vencEmails:notifyEmails} onChange={l=>setAuto('vencEmails',l)}/>
       </AutoRow>
     </div>
@@ -20765,7 +20788,7 @@ function App({currentUser}){
         {navFerramentas}
         {navPortaisVis.filter(p=>p!==navPortalProprio).map(p=>navPortal(p,true))}
         {acessoResolvido && permVerTudo() && <div className={'app-nav-item'+(navActive==='portaldiretoria'?' active':'')} onClick={()=>setScreen('portaldiretoria')}
-          title="Portal Diretoria"><i className="ti ti-crown"/> Portal Diretoria</div>}
+          title="Gestão"><i className="ti ti-crown"/> Gestão</div>}
         <div className={'app-nav-item'+(navActive==='map'?' active':'')} onClick={()=>setScreen('map')} title="Mapa"><i className="ti ti-map-2"/> Mapa</div>
         <div style={{marginTop:'auto'}}>
           <div className="app-nav-item app-nav-recolher" onClick={()=>trocarNavMini()} title={navMini?'Mostrar o menu completo':'Deixar só os ícones'}>
@@ -20807,7 +20830,7 @@ function App({currentUser}){
         {screen==='checklists'&&<div className="topbar-title"><span className="tt-t">Checklist</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>}
         {screen==='ferramentas'&&<div className="topbar-title"><span className="tt-t">Ferramentas</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>}
         {screen==='dados'&&<div className="topbar-title"><span className="tt-t">Dados dos empreendimentos</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>}
-        {screen==='portaldiretoria'&&<div className="topbar-title"><span className="tt-t">Portal Diretoria</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>}
+        {screen==='portaldiretoria'&&<div className="topbar-title"><span className="tt-t">Gestão</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>}
         {screen==='portaldi'&&<div className="topbar-title"><span className="tt-t">{tituloPortal('portaldi')}</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>}
         {screen==='portal'&&<div className="topbar-title"><span className="tt-t">{tituloPortal(portalId)}</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>}
         {screen==='portalpcp'&&<div className="topbar-title"><span className="tt-t">Portal PCP</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>}
@@ -21303,6 +21326,7 @@ function App({currentUser}){
             <button className="cfg-back" onClick={()=>setCfgTab(null)}><i className="ti ti-arrow-left"/> Configurações</button>
             <div className="cfg-sec-title">Dados</div>
             <div className="cfg-sec-desc">Backup e restauração de tudo que está cadastrado.</div>
+            <CfgSecao titulo="Exportar / Importar" icone="ti-database-export" desc="Backup de tudo o que está cadastrado e restauração a partir dele.">
             <div className="settings-card">
               <div className="sidebar-title">Exportar / Importar</div>
               <div className="settings-row">
@@ -21326,6 +21350,7 @@ function App({currentUser}){
                 </label>
               </div>
             </div>
+            </CfgSecao>
           </>)}
 
           {cfgTab==='automacoes' && (<>
@@ -21342,9 +21367,15 @@ function App({currentUser}){
           {cfgTab==='gerenciar' && permGerenciar() && (<>
             <button className="cfg-back" onClick={()=>setCfgTab(null)}><i className="ti ti-arrow-left"/> Configurações</button>
             <div className="gm-pagehead"><i className="ti ti-users-group"/><div><div className="cfg-sec-title">Gerenciar</div><div className="cfg-sec-desc">Controle de acesso: usuários, papéis, setores e portais.</div></div></div>
-            <GerenciarUsuarios acessoAtivo={acessoAtivo} setAcessoAtivo={setAcessoAtivo} usuarios={usuarios} setUsuarios={setUsuarios} setoresCfg={setoresCfg} onSimular={souMaster?(em=>{ setSimularEmail(em); setScreen('inicio'); }):null}/>
-            <SetoresConfig setoresCfg={setoresCfg} setSetoresCfg={setSetoresCfg} usuarios={usuarios} portais={portais} onAbrirPortais={abrirPortaisGerenciar}/>
-            <PortaisCard portais={portais} setPortais={setPortaisCfgRaw} setoresCfg={setoresCfg}/>
+            <CfgSecao titulo="Usuários e papéis" icone="ti-users" desc="Quem entra no app e o que cada um pode fazer.">
+              <GerenciarUsuarios acessoAtivo={acessoAtivo} setAcessoAtivo={setAcessoAtivo} usuarios={usuarios} setUsuarios={setUsuarios} setoresCfg={setoresCfg} onSimular={souMaster?(em=>{ setSimularEmail(em); setScreen('inicio'); }):null}/>
+            </CfgSecao>
+            <CfgSecao titulo="Setores" icone="ti-building" desc="Siglas, nomes e cores dos setores.">
+              <SetoresConfig setoresCfg={setoresCfg} setSetoresCfg={setSetoresCfg} usuarios={usuarios} portais={portais} onAbrirPortais={abrirPortaisGerenciar}/>
+            </CfgSecao>
+            <CfgSecao evt={ABRIR_PORTAIS_EVT} titulo="Portais" icone="ti-layout-dashboard" desc="Quais setores veem cada portal e as abas de cada um.">
+              <PortaisCard portais={portais} setPortais={setPortaisCfgRaw} setoresCfg={setoresCfg}/>
+            </CfgSecao>
           </>)}
         </div>
       )}
