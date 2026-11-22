@@ -1891,6 +1891,16 @@
   .st-rev .dot{background:var(--st-rev);}
   .st-cancel .dot{background:var(--st-cancel);}
   .st-none .dot{background:var(--st-none);}
+  .dd-sub-emp{display:flex;align-items:center;justify-content:space-between;}
+  .dd-nova-emp{border:1px solid var(--border2);background:var(--surface);color:var(--text2);border-radius:6px;padding:2px 7px;font:inherit;font-size:10.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:3px;text-transform:none;letter-spacing:0;}
+  .dd-nova-emp:hover{color:var(--accent);border-color:var(--accent);}
+  .dest-ed{margin-top:8px;}
+  .dest-resumo{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);border-radius:7px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer;}
+  .dest-resumo .dest-acao{color:var(--accent);font-weight:600;margin-left:4px;}
+  .dest-corpo{margin-top:6px;}
+  .dest-chips{display:flex;flex-wrap:wrap;gap:5px;}
+  .dest-chip{display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:2px 4px 2px 9px;font-size:12px;}
+  .dest-chip button{border:0;background:none;color:var(--text3);cursor:pointer;padding:0 2px;display:inline-flex;}
   .emp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
   .emp-lbl{display:block;font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600;}
   .emp-extra{display:grid;grid-template-columns:1fr 1.4fr 30px;gap:6px;margin-bottom:6px;}
@@ -2044,10 +2054,12 @@
   .nc-meta i{font-size:9.5px;}
   .nc-icons{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;}
   /* Ícones de checklist e anotações/comentários no card: menores (18/11). */
-  .nc-icons .node-checklist-indicator{font-size:8px;gap:2px;}
-  .nc-icons .node-notes-indicator{font-size:8.5px;display:inline-flex;align-items:center;}
-  .nc-icons .node-checklist-indicator .ti,.nc-icons .node-notes-indicator .ti{font-size:9.5px;line-height:1;}
-  .nc-icons .node-notes-n{font-size:7.5px;}
+  .nc-icons{gap:4px !important;opacity:.85;}
+  .nc-icons .node-checklist-indicator{font-size:7px;gap:1px;}
+  .nc-icons .node-notes-indicator{font-size:7px;display:inline-flex;align-items:center;}
+  .nc-icons .node-checklist-indicator .ti,.nc-icons .node-notes-indicator .ti{font-size:7.5px;line-height:1;}
+  .nc-icons .node-notes-n{font-size:6.5px;}
+  .nc-icons .ti{font-size:7.5px !important;}
   .nc-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8px;font-weight:600;color:var(--text3);letter-spacing:.3px;}
   .nc-title{flex:1 1 auto;display:flex;align-items:center;justify-content:center;padding:1px 0 2px;}
   .nc-title>div{font-size:12.5px;font-weight:800;line-height:1.2;text-align:center;color:var(--text);word-wrap:break-word;overflow-wrap:anywhere;}
@@ -11546,7 +11558,7 @@ function ddCidadeFmt(c){ const s=String(c||'').trim(); if(!s) return '';
   const m2=s.match(/^(.+?)\s*[-–\/]\s*([A-Za-z]{2})$/); if(m2) return m2[2].toUpperCase()+' • '+tc(m2[1]);
   return tc(s); }
 function ddQtdMatriculas(t){ return String(t||'').split(/\s+e\s+|[,;\/\n]+/i).map(x=>x.trim()).filter(Boolean).length; }
-const DD_OBRIG=[['city','Cidade'],['oficioMatricula','Matrículas'],['empresaNome','Razão social'],['cnpj','CNPJ']];
+const DD_OBRIG=[]; /* 22/11: nenhum campo obrigatório na aba Dados */
 function ddNorm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
 
 
@@ -11561,6 +11573,8 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
   const inicialRef=useRef('');
   const toastT=useRef(null);
   const sel = selId&&selId!=='__gerais__'&&selId!=='__reps__' ? ativos.find(p=>String(p.id)===String(selId)) : null;
+  const empresasOrd=(Array.isArray(empresas)?empresas:[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt',{sensitivity:'base'}));
+  const empSel=String(selId).startsWith('emp:')?empresasOrd.find(a=>'emp:'+a.id===selId):null;
 
   /* Abre já com o primeiro empreendimento selecionado. */
   useEffect(()=>{ if(!selId&&ativos.length) setSelId(String(ativos[0].id)); },[ativos.length]);
@@ -11584,7 +11598,7 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
   const setCustom=(id,k,v)=>setForm(f=>({...f,custom:f.custom.map(c=>c.id===id?{...c,[k]:v}:c)}));
   const delCustom=(c)=>{ if(c.chave&&!window.confirm('Remover o campo {'+c.chave+'}?')) return; setForm(f=>({...f,custom:f.custom.filter(x=>x.id!==c.id)})); };
   const salvar=()=>{
-    if(selId==='__gerais__'||selId==='__reps__'){ mostrarToast('Esses cadastros são salvos automaticamente.'); return; }
+    if(selId==='__gerais__'||selId==='__reps__'||empSel){ mostrarToast('Esses cadastros são salvos automaticamente.'); return; }
     if(!sel||!form){ mostrarToast('Selecione um empreendimento.','aviso'); return; }
     const dados={}; (form.custom||[]).forEach(c=>{ if(String(c.chave).trim()) dados[String(c.chave).trim()]=c.valor; });
     updateProjectOficio(sel.id,{city:form.city,empresaNome:form.empresaNome,cnpj:form.cnpj,oficioTexto:form.oficioTexto,oficioMatricula:form.oficioMatricula,oficioEndereco:form.oficioEndereco,oficioIndicacao:form.oficioIndicacao,dados});
@@ -11623,15 +11637,23 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
                 <span className="dd-emp-txt">
                   <span className="dd-emp-nome">{p.name}</span>
                   <span className="dd-emp-cid">{ddCidadeFmt(p.city)||'Cidade não informada'}</span>
-                  <span className="dd-emp-mat">{matTxt(n)}</span>
                 </span>
-                {on && <span className="dd-sel-badge"><i className="ti ti-check"/> Selecionado</span>}
               </button>); })}
         </div>
         <div className="dd-side-sub">Cadastros gerais</div>
         <button className={'dd-geral'+(selId==='__gerais__'?' on':'')} onClick={()=>escolher('__gerais__')}><i className="ti ti-world"/> Dados gerais (todos)</button>
         <button className={'dd-geral'+(selId==='__reps__'?' on':'')} onClick={()=>escolher('__reps__')}><i className="ti ti-user-check"/> Representantes</button>
-        {setEmpresas&&<button className={'dd-geral'+(selId==='__emps__'?' on':'')} onClick={()=>escolher('__emps__')}><i className="ti ti-building-skyscraper"/> Empresas</button>}
+        {setEmpresas&&<>
+          <div className="dd-side-sub dd-sub-emp">Empresas
+            <button type="button" className="dd-nova-emp" onClick={()=>{ const id='avl-'+Date.now(); setEmpresas(l=>(Array.isArray(l)?l:[]).concat({id,name:'',city:'',company:{...EMPTY_COMPANY},extras:[],obs:''})); escolher('emp:'+id); }} title="Cadastrar outra empresa"><i className="ti ti-plus"/> Nova</button></div>
+          {empresasOrd.length===0&&<div className="dd-vazio" style={{padding:'4px 2px 8px'}}>Nenhuma empresa cadastrada.</div>}
+          {empresasOrd.map(a=>{ const on=selId==='emp:'+a.id; const c=a.company||{};
+            return <button key={a.id} className={'dd-emp'+(on?' on':'')} onClick={()=>escolher('emp:'+a.id)}>
+              <i className="ti ti-building-skyscraper dd-emp-ic"/>
+              <span className="dd-emp-txt"><span className="dd-emp-nome">{a.name||c.razaoSocial||'Empresa sem nome'}</span>
+                <span className="dd-emp-cid">{ddCidadeFmt(a.city||c.cidade)||'Cidade não informada'}</span></span>
+            </button>; })}
+        </>}
       </aside>
 
       {/* ── Coluna direita ── */}
@@ -11700,10 +11722,11 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
           </section>
         </>)}
 
-        {selId==='__emps__' && setEmpresas && (
+        {empSel && setEmpresas && (
           <section className="dd-sec">
-            <div className="dd-sec-head"><span className="dd-sec-ic"><i className="ti ti-building-skyscraper"/></span><div><div className="dd-sec-t">Empresas</div><div className="dd-sec-s">Dados de outras empresas (parceiros, prestadores, outras SPEs) que não são empreendimentos do app. Também aparecem no Gerador de Ofícios, em "Empresas avulsas".</div></div></div>
-            <CadastroEmpresas empresas={empresas} setEmpresas={setEmpresas}/>
+            <div className="dd-sec-head"><span className="dd-sec-ic"><i className="ti ti-building-skyscraper"/></span><div><div className="dd-sec-t">{empSel.name||'Nova empresa'}</div><div className="dd-sec-s">Outra empresa (parceiro, prestador, outra SPE). Salvo automaticamente; também aparece no Gerador de Ofícios, em "Empresas avulsas".</div></div></div>
+            <EmpresaForm key={empSel.id} emp={empSel} onChange={patch=>setEmpresas(l=>(Array.isArray(l)?l:[]).map(x=>x.id===empSel.id?{...x,...patch}:x))}
+              onDelete={()=>{ if(!window.confirm('Excluir a empresa "'+(empSel.name||'sem nome')+'"?')) return; setEmpresas(l=>(Array.isArray(l)?l:[]).filter(x=>x.id!==empSel.id)); setSelId(''); }}/>
           </section>
         )}
 
@@ -11904,7 +11927,7 @@ function regConta(x){
     ajuste:typeof (x&&x.ajuste)==='number'?x.ajuste:0,
   };
 }
-function regReportCfg(x){ return {enabled:!!(x&&x.enabled), emails:(x&&x.emails)||'', url:(x&&x.url)||'', sentYm:(x&&x.sentYm)||''}; }
+function regReportCfg(x){ return {enabled:!!(x&&x.enabled), emails:(x&&x.emails)||'', emailsProprios:!!(x&&x.emailsProprios), url:(x&&x.url)||'', sentYm:(x&&x.sentYm)||''}; }
 /* Logins editáveis (nov/2026): a lista fica em regCreditos.logins =
    [{id,nome,removido?}]. Sem lista salva, vale o padrão antigo FEW e W&W.
    Excluir um login só o esconde (removido:true) — os lançamentos dele
@@ -12132,7 +12155,7 @@ function RegReportConfig({norm,setReport}){
           <input type="checkbox" checked={rep.enabled} onChange={e=>setReport({enabled:e.target.checked})}/> Enviar automaticamente
         </label>
       </div>
-      <div style={{fontSize:11.5,color:'var(--text3)'}}>Quando ligado, no 1º dia útil de cada mês é enviado o resumo do mês anterior (um bloco por login) para os <b>Destinatários</b> de Configurações → Automações{rep.emails?<>: <b style={{color:'var(--text2)'}}>{rep.emails}</b></>:<span style={{color:'var(--amber)'}}> — nenhum cadastrado ainda</span>}.</div>
+      <div style={{fontSize:11.5,color:'var(--text3)'}}>Quando ligado, no 1º dia útil de cada mês é enviado o resumo do mês anterior (um bloco por login) para os destinatários do Registradores em Configurações → Automações{rep.emails?<>: <b style={{color:'var(--text2)'}}>{rep.emails}</b></>:<span style={{color:'var(--amber)'}}> — nenhum cadastrado ainda</span>}.</div>
     </div>
   );
 }
@@ -16235,7 +16258,13 @@ function IptuGuias({dados,cfg,empNames,exercicio,setExercicio,exercicios,salvar}
 /* ── Tela principal ── */
 function IptuView({projects,registros,salvarUnidades,salvarCertidoesEmps,salvarEmpData,onBack,uid}){
   const[tab,setTab]=useState('geral');
-  const[dados,setDados]=useState(DEMO_MODE?IPTU_DEMO:{processos:[],guias:[],config:{}});
+  const[dadosReais,setDados]=useState(DEMO_MODE?IPTU_DEMO:{processos:[],guias:[],config:{}});
+  /* Só no site de TESTE: "Dados de exemplo" mostra processos e guias fictícios
+     para testar a tela. Ficam só na memória (o teste usa o mesmo banco do
+     oficial, então nada do exemplo é gravado). */
+  const ehTeste=/--teste|localhost|127\.0\.0\.1|app\.local/.test(location.hostname);
+  const[exemplo,setExemplo]=useState(null); /* null = dados reais; objeto = exemplo na memória */
+  const dados=exemplo||dadosReais;
   const[showCfg,setShowCfg]=useState(false);
   const[importando,setImportando]=useState(false);
   const[msg,setMsg]=useState('');
@@ -16248,6 +16277,7 @@ function IptuView({projects,registros,salvarUnidades,salvarCertidoesEmps,salvarE
     return unsub;
   },[]);
   const salvar=(campo,valor)=>{
+    if(exemplo){ setExemplo(d=>({...d,[campo]:valor})); return; } /* exemplo: não grava */
     setDados(d=>({...d,[campo]:valor}));
     if(!DEMO_MODE) IPTU_DOC.set({[campo]:valor},{merge:true}).catch(err=>console.error('Erro ao salvar IPTU:',err));
   };
@@ -16300,6 +16330,9 @@ function IptuView({projects,registros,salvarUnidades,salvarCertidoesEmps,salvarE
         <button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button>
         <div className="fin-tabs iptu-tabs">{TABS.map(t=><button key={t.k} className={'fin-tab'+(tab===t.k?' active':'')} onClick={()=>setTab(t.k)}><i className={'ti ti-'+t.i}/> {t.t}{t.n?<span className="iptu-tab-n">{t.n}</span>:null}</button>)}</div>
         {tab!=='registros' && <div className="iptu-head-actions">
+          {ehTeste&&!DEMO_MODE&&<button className={'pdi-btn ghost'+(exemplo?' on':'')} style={exemplo?{borderColor:'var(--amber)',color:'var(--amber)'}:undefined}
+            onClick={()=>setExemplo(x=>x?null:JSON.parse(JSON.stringify(IPTU_DEMO)))} title="Só no site de teste: mostra dados fictícios (não são gravados)">
+            <i className="ti ti-flask"/> {exemplo?'Sair do exemplo':'Dados de exemplo'}</button>}
           <button className="pdi-btn ghost" onClick={()=>setShowCfg(true)}><i className="ti ti-settings"/> Configurar</button>
           <button className="pdi-btn ghost" onClick={()=>iptuExportar(dados,cfg,true)} title="Planilha modelo, já com os processos abertos no ClickUp"><i className="ti ti-download"/> Baixar modelo</button>
           <button className="pdi-btn ghost" onClick={()=>iptuExportar(dados,cfg,false)}><i className="ti ti-file-export"/> Exportar</button>
@@ -16856,6 +16889,36 @@ function CadastroAssuntos({assuntos,setAssuntos}){
 /* Dados › Empresas: cadastro de outras empresas. Fica na mesma lista dos
    "empreendimentos avulsos" do Gerador de Ofícios (nome/cidade/textos do ofício),
    com os dados da empresa em "company" e campos livres em "extras". */
+function EmpresaForm({emp,onChange,onDelete}){
+  const c={...EMPTY_COMPANY,...(emp.company||{})}; const ex=Array.isArray(emp.extras)?emp.extras:[];
+  const setC=(k,v)=>onChange({company:{...c,[k]:v}});
+  const F=(k,label,span)=>(<div className="pdi-field" style={span?{gridColumn:'span '+span}:undefined}><label className="emp-lbl">{label}</label><input className="pdi-input" value={c[k]||''} onChange={e=>setC(k,e.target.value)}/></div>);
+  const T=(k,label,span)=>(<div className="pdi-field" style={span?{gridColumn:'span '+span}:undefined}><label className="emp-lbl">{label}</label><input className="pdi-input" value={emp[k]||''} onChange={e=>onChange({[k]:e.target.value})}/></div>);
+  return (<div className="emp-form">
+    <div className="emp-grid">
+      {T('name','Nome (como aparece na lista)',2)}{T('city','Cidade')}
+      {F('razaoSocial','Razão social',2)}{F('cnpj','CNPJ')}
+      {F('endereco','Endereço',2)}{F('bairro','Bairro')}
+      {F('cidade','Cidade (endereço)')}{F('uf','UF')}{F('cep','CEP')}
+      {F('telefone','Telefone')}{F('email','E-mail',2)}
+    </div>
+    <div className="emp-lbl" style={{marginTop:14}}>Outras informações</div>
+    {ex.map((x,i)=>(<div key={i} className="emp-extra">
+      <input className="pdi-input" placeholder="Campo (ex.: Responsável técnico)" value={x.chave||''} onChange={e=>onChange({extras:ex.map((y,j)=>j===i?{...y,chave:e.target.value}:y)})}/>
+      <input className="pdi-input" placeholder="Valor" value={x.valor||''} onChange={e=>onChange({extras:ex.map((y,j)=>j===i?{...y,valor:e.target.value}:y)})}/>
+      <button className="emp-x" onClick={()=>onChange({extras:ex.filter((_,j)=>j!==i)})} title="Tirar"><i className="ti ti-x"/></button></div>))}
+    <button className="dd-nova-emp" style={{marginTop:4}} onClick={()=>onChange({extras:ex.concat({chave:'',valor:''})})}><i className="ti ti-plus"/> Adicionar informação</button>
+    <div className="pdi-field" style={{marginTop:12}}><label className="emp-lbl">Observações</label><textarea className="pdi-input" rows={3} value={emp.obs||''} onChange={e=>onChange({obs:e.target.value})}/></div>
+    <details style={{marginTop:10}}><summary className="emp-lbl" style={{cursor:'pointer'}}>Para o Gerador de Ofícios (opcional)</summary>
+      <div className="emp-grid" style={{marginTop:8}}>
+        {T('oficioMatricula','Matrícula')}{T('oficioIndicacao','Indicação fiscal')}{T('oficioEndereco','Endereço do imóvel')}
+        <div className="pdi-field" style={{gridColumn:'1 / -1'}}><label className="emp-lbl">Texto padrão do ofício</label><textarea className="pdi-input" rows={3} value={emp.oficioTexto||''} onChange={e=>onChange({oficioTexto:e.target.value})}/></div>
+      </div></details>
+    <div style={{display:'flex',justifyContent:'flex-end',marginTop:14}}>
+      <button className="pdi-btn ghost" onClick={onDelete}><i className="ti ti-trash"/> Excluir empresa</button>
+    </div>
+  </div>);
+}
 function CadastroEmpresas({empresas,setEmpresas}){
   const lista=(Array.isArray(empresas)?empresas:[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt',{sensitivity:'base'}));
   const vazio=()=>({name:'',city:'',company:{...EMPTY_COMPANY},extras:[],obs:'',oficioTexto:'',oficioMatricula:'',oficioIndicacao:'',oficioEndereco:''});
@@ -17106,6 +17169,30 @@ function AutoRow({titulo,desc,quando,para,on,onChange,aviso,children,status}){
     </div>
   );
 }
+/* Destinatários de UM relatório: fica recolhido ("3 destinatários"); ao abrir,
+   mostra os e-mails cadastrados e deixa adicionar vários de uma vez
+   (separados por vírgula, ponto e vírgula ou espaço). */
+function DestinatariosEdit({lista,onChange,vazio}){
+  const[aberto,setAberto]=useState(false); const[novo,setNovo]=useState('');
+  const RX=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const L=Array.isArray(lista)?lista:[];
+  const partes=novo.split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
+  const validos=partes.filter(x=>RX.test(x)&&!L.includes(x));
+  const add=()=>{ if(!validos.length) return; onChange([...new Set(L.concat(validos))]); setNovo(''); };
+  return (<div className="dest-ed">
+    <button type="button" className="dest-resumo" onClick={()=>setAberto(v=>!v)}>
+      <i className="ti ti-mail"/> {L.length?L.length+' destinatário'+(L.length>1?'s':''):(vazio||'Nenhum destinatário')}
+      <span className="dest-acao">{aberto?'ocultar':'ver / adicionar'}</span><i className={'ti ti-chevron-'+(aberto?'up':'down')}/>
+    </button>
+    {aberto&&<div className="dest-corpo">
+      {L.length>0&&<div className="dest-chips">{L.map(e=><span key={e} className="dest-chip">{e}<button type="button" onClick={()=>onChange(L.filter(x=>x!==e))} title="Tirar"><i className="ti ti-x"/></button></span>)}</div>}
+      <div style={{display:'flex',gap:6,marginTop:6}}>
+        <input className="pdi-input" style={{flex:1}} value={novo} onChange={e=>setNovo(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'){ e.preventDefault(); add(); } }} placeholder="nome@email.com (pode colar vários, separados por vírgula)"/>
+        <button type="button" className="pdi-btn ghost" onClick={add} disabled={!validos.length}><i className="ti ti-plus"/> Adicionar{validos.length>1?' '+validos.length:''}</button>
+      </div>
+    </div>}
+  </div>);
+}
 function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyEnabled,automacoes,setAutomacoes,regCreditos,setRegCreditos,finNfEmail}){
   const setAuto=(k,v)=>setAutomacoes(a=>({...(a||{}),[k]:v}));
   const ativa=k=>!(automacoes&&automacoes[k]===false);
@@ -17118,7 +17205,9 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
   const iptuAl={...IPTU_CFG_PADRAO.alertas,...((iptuCfg&&iptuCfg.alertas)||{})};
   const salvarIptu=nova=>{ setIptuCfg(nova); if(!DEMO_MODE) IPTU_DOC.set({config:nova},{merge:true}).catch(err=>alert('Não consegui salvar: '+(err.message||err))); };
   const setIptuAl=(k,v)=>salvarIptu({...(iptuCfg||{}),alertas:{...iptuAl,[k]:v}});
-  const padrao=notifyEmails.length?notifyEmails.join(', '):'(nenhum destinatário — abra “Destinatários”)';
+  const regEmailsLista=[...new Set(String(rep.emails||'').split(/[,;\s]+/).map(e=>e.trim().toLowerCase()).filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))];
+  const iptuDest=k=>{ const d=(iptuCfg&&iptuCfg.destinatarios&&iptuCfg.destinatarios[k]); return Array.isArray(d)?d:notifyEmails; };
+  const setIptuDest=(k,l)=>salvarIptu({...(iptuCfg||{}),destinatarios:{...((iptuCfg&&iptuCfg.destinatarios)||{}),[k]:l}});
   const fin=finNfEmail?('e-mail do financeiro: '+finNfEmail):'e-mail do financeiro (defina em Controle Financeiro → Configurar)';
   const ligadas=[notifyEnabled,rep.enabled,ativa('finMedicao'),ativa('finNf'),ativa('finCadastro'),...IPTU_ALERTAS.map(a=>iptuAl[a.k])].filter(Boolean).length;
   const total=5+IPTU_ALERTAS.length;
@@ -17130,17 +17219,14 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
       <div style={{display:'flex',gap:8}}><button className="pdi-btn ghost" onClick={()=>tudo(true)}><i className="ti ti-bell"/> Ligar todos</button><button className="pdi-btn ghost" onClick={()=>tudo(false)}><i className="ti ti-bell-off"/> Desligar todos</button></div>
     </div>
 
-    <div className="settings-card auto-card">
-      <AutoRow titulo="Destinatários" status={notifyEmails.length?notifyEmails.length+' e-mail'+(notifyEmails.length===1?'':'s'):'Não configurado'}
-        desc="Único lugar dos e-mails de quem recebe: valem para os relatórios mensais (Pontos de Atenção e Registradores) e os alertas de IPTU. Os e-mails do Controle Financeiro vão para o e-mail do financeiro, definido no próprio Controle Financeiro.">
-        <EmailNotifySettings notifyEmails={notifyEmails} setNotifyEmails={setNotifyEmails} notifyEnabled={notifyEnabled} setNotifyEnabled={setNotifyEnabled} soDestinatarios embutido/>
-      </AutoRow>
-    </div>
-
     <div className="auto-grp">Relatórios mensais</div>
     <div className="settings-card auto-card">
-      <AutoRow titulo="Pontos de Atenção" desc="Relatório por empreendimento com as tarefas atrasadas e as com meta próxima." quando="dia 1º de cada mês" para={'destinatários: '+padrao} on={notifyEnabled} onChange={setNotifyEnabled}/>
-      <AutoRow titulo="Registradores — resumo do mês" desc="Saldo no início e no fim do mês, recargas e gastos de cada login do Registradores, agrupados por empresa." quando="1º dia útil de cada mês (mês anterior)" para={'destinatários: '+padrao} on={rep.enabled} onChange={v=>setRep({enabled:v})}/>
+      <AutoRow titulo="Pontos de Atenção" desc="Relatório por empreendimento com as tarefas atrasadas e as com meta próxima." quando="dia 1º de cada mês" on={notifyEnabled} onChange={setNotifyEnabled}>
+        <DestinatariosEdit lista={notifyEmails} onChange={l=>setNotifyEmails(l)}/>
+      </AutoRow>
+      <AutoRow titulo="Registradores" desc="Saldo no início e no fim do mês, recargas e gastos de cada login do Registradores, agrupados por empresa." quando="1º dia útil de cada mês (mês anterior)" on={rep.enabled} onChange={v=>setRep({enabled:v})}>
+        <DestinatariosEdit lista={regEmailsLista} onChange={l=>setRep({emails:l.join(', '),emailsProprios:true})}/>
+      </AutoRow>
     </div>
 
     <div className="auto-grp">Controle Financeiro</div>
@@ -17152,8 +17238,10 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
 
     <div className="auto-grp">Alertas de IPTU</div>
     <div className="settings-card auto-card">
-      {IPTU_ALERTAS.map(a=><AutoRow key={a.k} titulo={a.t} desc={a.s} para={'destinatários: '+padrao} on={!!iptuAl[a.k]} onChange={v=>setIptuAl(a.k,v)}
-        aviso="O envio depende do script de e-mail do IPTU, que ainda não foi instalado. A escolha já fica salva."/>)}
+      {IPTU_ALERTAS.map(a=><AutoRow key={a.k} titulo={a.t} desc={a.s} on={!!iptuAl[a.k]} onChange={v=>setIptuAl(a.k,v)}
+        aviso="O envio depende do script de e-mail do IPTU, que ainda não foi instalado. A escolha já fica salva.">
+        <DestinatariosEdit lista={iptuDest(a.k)} onChange={l=>setIptuDest(a.k,l)}/>
+      </AutoRow>)}
     </div>
   </>);
 }
@@ -19126,7 +19214,9 @@ function App({currentUser}){
     const atual=String((regCreditos.report&&regCreditos.report.emails)||'').trim();
     const lista=notifyEmails.join(', ');
     if(!notifyEmails.length&&atual){ const arr=[...new Set(atual.split(/[,;\s]+/).map(e=>e.trim().toLowerCase()).filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))]; if(arr.length){ setNotifyEmails(arr); return; } }
-    if(atual!==lista) setRegCreditos(rc=>({...rc,report:{...rc.report,emails:lista}}));
+    /* 22/11: cada relatório tem os próprios destinatários (Automações). A cópia
+       automática só acontece uma vez, quando o Registradores ainda não tem e-mails. */
+    if(!atual&&lista&&!(regCreditos.report&&regCreditos.report.emailsProprios)) setRegCreditos(rc=>({...rc,report:{...rc.report,emails:lista,emailsProprios:true}}));
   },[notifyEmails,regCreditos,cfgCarregada]);
   /* Controle de acesso (fluxoapp_meta/settings): liga/desliga, lista de usuários
      (email, nome, papel, setores) e definição dos setores (código, nome, cor). */
