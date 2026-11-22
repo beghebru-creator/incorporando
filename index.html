@@ -17209,9 +17209,9 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
   const iptuDest=k=>{ const d=(iptuCfg&&iptuCfg.destinatarios&&iptuCfg.destinatarios[k]); return Array.isArray(d)?d:notifyEmails; };
   const setIptuDest=(k,l)=>salvarIptu({...(iptuCfg||{}),destinatarios:{...((iptuCfg&&iptuCfg.destinatarios)||{}),[k]:l}});
   const fin=finNfEmail?('e-mail do financeiro: '+finNfEmail):'e-mail do financeiro (defina em Controle Financeiro → Configurar)';
-  const ligadas=[notifyEnabled,rep.enabled,ativa('finMedicao'),ativa('finNf'),ativa('finCadastro'),...IPTU_ALERTAS.map(a=>iptuAl[a.k])].filter(Boolean).length;
-  const total=5+IPTU_ALERTAS.length;
-  const tudo=v=>{ setNotifyEnabled(v); setRep({enabled:v}); setAutomacoes(a=>({...(a||{}),finMedicao:v,finNf:v,finCadastro:v}));
+  const ligadas=[notifyEnabled,rep.enabled,ativa('vencimentos'),ativa('finMedicao'),ativa('finNf'),ativa('finCadastro'),...IPTU_ALERTAS.map(a=>iptuAl[a.k])].filter(Boolean).length;
+  const total=6+IPTU_ALERTAS.length;
+  const tudo=v=>{ setNotifyEnabled(v); setRep({enabled:v}); setAutomacoes(a=>({...(a||{}),finMedicao:v,finNf:v,finCadastro:v,vencimentos:v}));
     salvarIptu({...(iptuCfg||{}),alertas:Object.fromEntries(IPTU_ALERTAS.map(a=>[a.k,v]))}); };
   return (<>
     <div className="settings-card auto-top">
@@ -17226,6 +17226,14 @@ function AutomacoesEmails({notifyEmails,setNotifyEmails,notifyEnabled,setNotifyE
       </AutoRow>
       <AutoRow titulo="Registradores" desc="Saldo no início e no fim do mês, recargas e gastos de cada login do Registradores, agrupados por empresa." quando="1º dia útil de cada mês (mês anterior)" on={rep.enabled} onChange={v=>setRep({enabled:v})}>
         <DestinatariosEdit lista={regEmailsLista} onChange={l=>setRep({emails:l.join(', '),emailsProprios:true})}/>
+      </AutoRow>
+    </div>
+
+    <div className="auto-grp">Controle de Vencimentos</div>
+    <div className="settings-card auto-card">
+      <AutoRow titulo="Alertas de vencimento" desc="Documentos e licenças do Controle de Vencimentos: avisa quando faltam 60, 30 e 15 dias para o prazo, no dia em que vence e no dia seguinte, e lista os já vencidos. Os marcados como Superado não entram." quando="todo dia, por volta das 8h (só quando há algo a avisar)" on={ativa('vencimentos')} onChange={v=>setAuto('vencimentos',v)}
+        aviso="O envio é feito pelo script de e-mail do Google (Apps Script), que lê estas escolhas do app.">
+        <DestinatariosEdit lista={Array.isArray(automacoes&&automacoes.vencEmails)?automacoes.vencEmails:notifyEmails} onChange={l=>setAuto('vencEmails',l)}/>
       </AutoRow>
     </div>
 
