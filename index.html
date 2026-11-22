@@ -11583,6 +11583,8 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
   const sel = selId&&selId!=='__gerais__'&&selId!=='__reps__' ? ativos.find(p=>String(p.id)===String(selId)) : null;
   const empresasOrd=(Array.isArray(empresas)?empresas:[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt',{sensitivity:'base'}));
   const empSel=String(selId).startsWith('emp:')?empresasOrd.find(a=>'emp:'+a.id===selId):null;
+  const repsOrd=(Array.isArray(representantes)?representantes:[]).slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt',{sensitivity:'base'}));
+  const repSel=String(selId).startsWith('rep:')?repsOrd.find(r=>'rep:'+r.id===selId):null;
 
   /* Abre já com o primeiro empreendimento selecionado. */
   useEffect(()=>{ if(!selId&&ativos.length) setSelId(String(ativos[0].id)); },[ativos.length]);
@@ -11606,7 +11608,7 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
   const setCustom=(id,k,v)=>setForm(f=>({...f,custom:f.custom.map(c=>c.id===id?{...c,[k]:v}:c)}));
   const delCustom=(c)=>{ if(c.chave&&!window.confirm('Remover o campo {'+c.chave+'}?')) return; setForm(f=>({...f,custom:f.custom.filter(x=>x.id!==c.id)})); };
   const salvar=()=>{
-    if(selId==='__gerais__'||selId==='__reps__'||empSel){ mostrarToast('Esses cadastros são salvos automaticamente.'); return; }
+    if(selId==='__gerais__'||selId==='__reps__'||empSel||repSel){ mostrarToast('Esses cadastros são salvos automaticamente.'); return; }
     if(!sel||!form){ mostrarToast('Selecione um empreendimento.','aviso'); return; }
     const dados={}; (form.custom||[]).forEach(c=>{ if(String(c.chave).trim()) dados[String(c.chave).trim()]=c.valor; });
     updateProjectOficio(sel.id,{city:form.city,empresaNome:form.empresaNome,cnpj:form.cnpj,oficioTexto:form.oficioTexto,oficioMatricula:form.oficioMatricula,oficioEndereco:form.oficioEndereco,oficioIndicacao:form.oficioIndicacao,dados});
@@ -11650,7 +11652,15 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
         </div>
         <div className="dd-side-sub">Cadastros gerais</div>
         <button className={'dd-geral'+(selId==='__gerais__'?' on':'')} onClick={()=>escolher('__gerais__')}><i className="ti ti-world"/> Dados gerais (todos)</button>
-        <button className={'dd-geral'+(selId==='__reps__'?' on':'')} onClick={()=>escolher('__reps__')}><i className="ti ti-user-check"/> Representantes</button>
+        <div className="dd-side-sub dd-sub-emp">Representantes
+          <button type="button" className="dd-nova-emp" onClick={()=>{ const id='rep-'+Date.now(); setRepresentantes(l=>(Array.isArray(l)?l:[]).concat({id,nome:'',cargo:'',textoPadrao:''})); escolher('rep:'+id); }} title="Cadastrar outro representante"><i className="ti ti-plus"/> Novo</button></div>
+        {repsOrd.length===0&&<div className="dd-vazio" style={{padding:'4px 2px 8px'}}>Nenhum representante cadastrado.</div>}
+        {repsOrd.map(r=>{ const on=selId==='rep:'+r.id;
+          return <button key={r.id} className={'dd-emp'+(on?' on':'')} onClick={()=>escolher('rep:'+r.id)}>
+            <i className="ti ti-user-check dd-emp-ic"/>
+            <span className="dd-emp-txt"><span className="dd-emp-nome">{r.nome||'Representante sem nome'}</span>
+              <span className="dd-emp-cid">{r.cargo||'Cargo não informado'}</span></span>
+          </button>; })}
         {setEmpresas&&<>
           <div className="dd-side-sub dd-sub-emp">Empresas
             <button type="button" className="dd-nova-emp" onClick={()=>{ const id='avl-'+Date.now(); setEmpresas(l=>(Array.isArray(l)?l:[]).concat({id,name:'',city:'',company:{...EMPTY_COMPANY},extras:[],obs:''})); escolher('emp:'+id); }} title="Cadastrar outra empresa"><i className="ti ti-plus"/> Nova</button></div>
@@ -11729,6 +11739,21 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
             ))}
           </section>
         </>)}
+
+        {repSel && (
+          <section className="dd-sec">
+            <div className="dd-sec-head"><span className="dd-sec-ic"><i className="ti ti-user-check"/></span><div><div className="dd-sec-t">{repSel.nome||'Novo representante'}</div><div className="dd-sec-s">Quem assina os ofícios e contratos. Salvo automaticamente; são os mesmos do Gerador de Ofícios.</div></div></div>
+            <div className="emp-grid">
+              <div className="pdi-field" style={{gridColumn:'span 2'}}><label className="emp-lbl">Nome</label><input className="pdi-input" value={repSel.nome||''} onChange={e=>setRepresentantes(l=>l.map(x=>x.id===repSel.id?{...x,nome:e.target.value}:x))} placeholder="Nome completo"/></div>
+              <div className="pdi-field"><label className="emp-lbl">Cargo (assinatura)</label><input className="pdi-input" value={repSel.cargo||''} onChange={e=>setRepresentantes(l=>l.map(x=>x.id===repSel.id?{...x,cargo:e.target.value}:x))} placeholder="Ex.: Procuradora"/></div>
+              <div className="pdi-field" style={{gridColumn:'1 / -1'}}><label className="emp-lbl">Texto padrão (qualificação)</label><textarea className="pdi-input" rows={5} value={repSel.textoPadrao||''} onChange={e=>setRepresentantes(l=>l.map(x=>x.id===repSel.id?{...x,textoPadrao:e.target.value}:x))} placeholder="representada por sua procuradora, FULANA, brasileira, …"/></div>
+            </div>
+            <div style={{fontSize:11.5,color:'var(--text3)',marginTop:6}}>O texto padrão é a qualificação que entra no início do ofício e no {'{contratante}'} dos contratos.</div>
+            <div style={{display:'flex',justifyContent:'flex-end',marginTop:14}}>
+              <button className="pdi-btn ghost" onClick={()=>{ if(!window.confirm('Excluir o representante "'+(repSel.nome||'sem nome')+'"?')) return; setRepresentantes(l=>l.filter(x=>x.id!==repSel.id)); setSelId(''); }}><i className="ti ti-trash"/> Excluir representante</button>
+            </div>
+          </section>
+        )}
 
         {empSel && setEmpresas && (
           <section className="dd-sec">
