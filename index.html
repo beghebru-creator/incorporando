@@ -1899,6 +1899,11 @@
   .st-rev .dot{background:var(--st-rev);}
   .st-cancel .dot{background:var(--st-cancel);}
   .st-none .dot{background:var(--st-none);}
+  .reg-iptu-sel{border:1px solid var(--border2);background:var(--surface);color:var(--text);border-radius:12px;padding:3px 8px;font:inherit;font-size:11.5px;font-weight:600;max-width:100%;cursor:pointer;}
+  .reg-iptu-sel.vista{background:var(--green-bg);color:var(--green);border-color:transparent;}
+  .reg-iptu-sel.parcelado{background:var(--blue-bg);color:var(--accent);border-color:transparent;}
+  .reg-iptu-sel.aberta{background:var(--surface2);color:var(--text2);}
+  .reg-iptu-sel.suspensa{background:var(--amber-bg);color:var(--amber);border-color:transparent;}
   .dd-sub-emp{display:flex;align-items:center;justify-content:space-between;}
   .dd-nova-emp{border:1px solid var(--border2);background:var(--surface);color:var(--text2);border-radius:6px;padding:2px 7px;font:inherit;font-size:10.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:3px;text-transform:none;letter-spacing:0;}
   .dd-nova-emp:hover{color:var(--accent);border-color:var(--accent);}
@@ -10230,7 +10235,10 @@ function parseRegistrosExcel(file, projNames){
           else quadra=quadra.replace(/^\s*(quadra|qd)\s*[:.\-]?\s*/i,'').trim(); /* "QUADRA A" -> "A" */
           /* Lote = número da coluna UNIDADE, sem o texto. */
           const uniRaw=pick(r,['unidade'])||pick(r,['lote','lt'],['loteamento']);
+          /* "Unidade" livre (texto da planilha). Sem coluna Unidade, junta quadra e lote. */
+          const unidadeTxt=String(pick(r,['unidade'])||'').trim()||[quadra&&quadra!=='-'?'Q'+quadra:'',soNumero(uniRaw)?'L'+soNumero(uniRaw):''].filter(Boolean).join(' · ');
           return {
+            unidade:unidadeTxt,
             id:'un-'+Date.now()+'-'+i,
             emp:stripEmp(pick(r,['empreend','loteamento','projeto'])),
             cliente:String(pick(r,['cliente','comprador','proprietar'],['empreend'])||'').trim(),
@@ -10244,7 +10252,7 @@ function parseRegistrosExcel(file, projNames){
             /* Data da venda (opcional): alimenta "compradores há mais de 90 dias sem transferir" (IPTU). */
             dataVenda:iptuISO(pick(r,['data da venda','data venda','dt venda'],['valor'])),
           };
-        }).filter(u=>(u.emp||u.cliente||u.quadra||u.lote) && !blocked(u.emp) && (matchProj(u.emp)||allowed(u.emp)));
+        }).filter(u=>(u.emp||u.cliente||u.unidade||u.quadra||u.lote) && !blocked(u.emp) && (matchProj(u.emp)||allowed(u.emp)));
         resolve(unidades);
       }catch(err){ reject(err); }
     };
@@ -10304,13 +10312,15 @@ function regUnidadesExemplo(projects){
   const emps=nomes.length?nomes:['Empreendimento A','Empreendimento B'];
   const cli=['Ana Souza','Bruno Lima','Carla Mendes','Diego Rocha','Elisa Prado','Fábio Nunes','Gabriela Reis','Henrique Alves','Isabela Costa','João Pereira','Karina Duarte','Lucas Martins','Mariana Teles','Nelson Ramos','Olívia Freitas','Paulo Batista','Renata Gomes','Sérgio Vidal'];
   const hoje=new Date(); const dia=n=>{ const d=new Date(hoje.getTime()-n*86400000); return d.toISOString().slice(0,10); };
-  return cli.map((c,i)=>({id:'ex'+i,emp:emps[i%emps.length],cliente:c,quadra:String(1+Math.floor(i/6)).padStart(2,'0'),lote:String(1+i%6).padStart(2,'0'),
+  return cli.map((c,i)=>({id:'ex'+i,emp:emps[i%emps.length],cliente:c,unidade:'Q'+String(1+Math.floor(i/6)).padStart(2,'0')+' · L'+String(1+i%6).padStart(2,'0'),iptuSit:['vista','parcelado','aberta','suspensa',''][i%5],
     registrado:i%3!==0, transferido:i%4===0, dataVenda:dia(20+i*23)}));
 }
 function RegistrosUnidades({registros,salvarUnidades:salvarUnidadesReal,salvarCertidoesEmps,salvarEmpData,projects,onBack,uid}){
   const ehTeste=/--teste|localhost|127\.0\.0\.1|app\.local/.test(location.hostname);
   const[exemplo,setExemplo]=useState(null);
   const unidades=exemplo||(Array.isArray(registros&&registros.unidades)?registros.unidades:[]);
+  const unidadeDe=u=>u.unidade||[u.quadra&&u.quadra!=='-'?'Q'+u.quadra:'',u.lote?'L'+u.lote:''].filter(Boolean).join(' · ');
+  const[editUni,setEditUni]=useState(null); /* {id,v} */
   const salvarUnidades=l=>{ if(exemplo){ setExemplo(l); return; } salvarUnidadesReal(l); };
   const certidoes=Array.isArray(registros&&registros.certidoes)?registros.certidoes:[];
   const iptu=(registros&&registros.iptu)||{};
@@ -10343,7 +10353,7 @@ function RegistrosUnidades({registros,salvarUnidades:salvarUnidadesReal,salvarCe
     if(fTransf==='nao'&&u.transferido) return false;
     if(fTransf==='sim'&&!u.transferido) return false;
     const q=busca.trim().toLowerCase();
-    if(q&&!((u.emp+' '+u.cliente+' '+u.quadra+' '+u.lote).toLowerCase().includes(q))) return false;
+    if(q&&!((u.emp+' '+u.cliente+' '+unidadeDe(u)+' '+(u.quadra||'')+' '+(u.lote||'')).toLowerCase().includes(q))) return false;
     return true;
   });
 
@@ -10356,9 +10366,9 @@ function RegistrosUnidades({registros,salvarUnidades:salvarUnidadesReal,salvarCe
       if(!window.confirm(`Importar ${us.length} unidade(s)? Os status de Registrado e Transferido que você já marcou serão mantidos para as unidades que continuarem na planilha.`)) return;
       /* Mantém os status já preenchidos (registrado/transferido) das unidades que
          já existem — casadas por empreendimento + quadra + lote. */
-      const chave=u=>((u.emp||'')+'|'+(u.quadra||'')+'|'+(u.lote||'')).toUpperCase();
-      const anteriores={}; unidades.forEach(u=>{ anteriores[chave(u)]={registrado:u.registrado,transferido:u.transferido}; });
-      const merged=us.map(u=>{ const p=anteriores[chave(u)]; return p ? {...u, registrado:p.registrado, transferido:p.transferido} : u; });
+      const chave=u=>((u.emp||'')+'|'+unidadeDe(u)).toUpperCase();
+      const anteriores={}; unidades.forEach(u=>{ anteriores[chave(u)]={registrado:u.registrado,transferido:u.transferido,...(u.iptuSit?{iptuSit:u.iptuSit}:{}),...(u.unidade?{unidade:u.unidade}:{})}; });
+      const merged=us.map(u=>{ const p=anteriores[chave(u)]; return p ? {...u,...p} : u; });
       salvarUnidades(merged);
     }).catch(err=>{ setImportando(false); setErroImport('Erro ao ler a planilha: '+(err.message||err)); });
   };
@@ -10372,7 +10382,6 @@ function RegistrosUnidades({registros,salvarUnidades:salvarUnidadesReal,salvarCe
         <button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button>
         <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
           {ehTeste&&!DEMO_MODE&&<button className="pdi-btn ghost" style={exemplo?{borderColor:'var(--amber)',color:'var(--amber)'}:undefined} onClick={()=>setExemplo(x=>x?null:regUnidadesExemplo(projects))} title="Só no site de teste: mostra unidades fictícias (não são gravadas)"><i className="ti ti-flask"/> {exemplo?'Sair do exemplo':'Dados de exemplo'}</button>}
-          <button className="pdi-btn ghost" onClick={()=>setShowDados(true)}><i className="ti ti-building-community"/> Dados dos empreendimentos</button>
           {unidades.length>0 && <button className="pdi-btn ghost" onClick={limpar}><i className="ti ti-trash"/> Limpar lista</button>}
           <label className="pdi-btn" style={{cursor:'pointer'}}>
             <i className="ti ti-file-spreadsheet"/> {importando?'Importando…':'Importar planilha (Excel)'}
@@ -10385,7 +10394,7 @@ function RegistrosUnidades({registros,salvarUnidades:salvarUnidadesReal,salvarCe
       {unidades.length===0 ? (
         <div className="pdi-card" style={{maxWidth:760}}>
           <div className="pdi-card-title"><i className="ti ti-home-check"/> Controle de unidades</div>
-          <div className="pdi-card-desc">Suba a planilha Excel com as unidades vendidas. Colunas esperadas: <b>empreendimento, cliente, quadra, lote, registrado, transferido</b> (o app reconhece variações nos títulos). Aqui você acompanha quais unidades ainda estão com a matrícula/cadastro da prefeitura no nosso nome (não transferidas).</div>
+          <div className="pdi-card-desc">Suba a planilha Excel com as unidades vendidas. Colunas esperadas: <b>empreendimento, cliente, unidade (ou quadra e lote), registrado, transferido</b> (o app reconhece variações nos títulos). Aqui você acompanha quais unidades ainda estão com a matrícula/cadastro da prefeitura no nosso nome (não transferidas).</div>
         </div>
       ) : (<>
         <div className="venc-cards pn-cards-compact" style={{gridTemplateColumns:'repeat(4,1fr)'}}>
@@ -10396,38 +10405,45 @@ function RegistrosUnidades({registros,salvarUnidades:salvarUnidadesReal,salvarCe
         </div>
 
         <div className="venc-toolbar">
-          <div className="venc-search"><i className="ti ti-search"/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar cliente, quadra, lote..."/></div>
+          <div className="venc-search"><i className="ti ti-search"/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar cliente ou unidade..."/></div>
           <FilterMenu scope="registros" uid={uid} values={rgFiltros} onApply={aplicarRgFiltros} fields={rgFields}/>
         </div>
 
         <div className="venc-table-wrap">
           <table className="venc-table reg-table">
-            <colgroup><col style={{width:'18%'}}/><col style={{width:'20%'}}/><col style={{width:'9%'}}/><col style={{width:'9%'}}/><col style={{width:'12%'}}/><col style={{width:'10%'}}/><col style={{width:'10%'}}/><col style={{width:'12%'}}/></colgroup>
-            <thead><tr><th>Empreendimento</th><th>Cliente</th><th>Quadra</th><th>Lote</th><th>Venda</th><th>Registrado</th><th>Transferido</th><th>IPTU</th></tr></thead>
+            <colgroup><col style={{width:'18%'}}/><col style={{width:'20%'}}/><col style={{width:'13%'}}/><col style={{width:'12%'}}/><col style={{width:'9%'}}/><col style={{width:'9%'}}/><col style={{width:'19%'}}/></colgroup>
+            <thead><tr><th>Empreendimento</th><th>Cliente</th><th>Unidade</th><th>Venda</th><th>Registrado</th><th>Transferido</th><th>IPTU</th></tr></thead>
             <tbody>
-              {filtered.length===0 && <tr><td colSpan={8}><div className="venc-empty">Nenhuma unidade com os filtros atuais.</div></td></tr>}
+              {filtered.length===0 && <tr><td colSpan={7}><div className="venc-empty">Nenhuma unidade com os filtros atuais.</div></td></tr>}
               {filtered.map(u=>{ const ip=iptu&&iptu[u.id]; return (
                 <tr key={u.id}>
                   <td className="venc-emp">{u.emp}</td>
                   <td>{u.cliente}</td>
-                  <td className="venc-num">{u.quadra}</td>
-                  <td className="venc-num">{u.lote}</td>
+                  <td className="venc-num" style={{cursor:'text'}} onClick={()=>{ if(!editUni||editUni.id!==u.id) setEditUni({id:u.id,v:unidadeDe(u)}); }} title="Clique para mudar o nome da unidade">
+                    {editUni&&editUni.id===u.id
+                      ? <input className="pdi-input" autoFocus style={{padding:'3px 6px',fontSize:12}} value={editUni.v} onChange={e=>setEditUni({id:u.id,v:e.target.value})}
+                          onBlur={()=>{ const v=editUni.v.trim(); if(v!==unidadeDe(u)) salvarUnidades(unidades.map(x=>x.id===u.id?{...x,unidade:v}:x)); setEditUni(null); }}
+                          onKeyDown={e=>{ if(e.key==='Enter') e.currentTarget.blur(); if(e.key==='Escape') setEditUni(null); }}/>
+                      : (unidadeDe(u)||<span style={{color:'var(--text3)'}}>—</span>)}
+                  </td>
                   <td className="venc-date">{u.dataVenda?iptuBR(u.dataVenda):'—'}{!u.transferido&&u.dataVenda&&iptuDias(u.dataVenda)>90 && <div style={{fontSize:10.5,color:'var(--amber)',fontWeight:600,marginTop:3}}>há {iptuDur(iptuDias(u.dataVenda))} sem transferir</div>}</td>
                   <td style={{cursor:'pointer'}} onClick={()=>toggle(u.id,'registrado')} title="Clique para alternar">
                     {badgeSN(u.registrado)}
                     {(u.descricao||u.abertura||u.encerramento) && <div style={{fontSize:10,color:'var(--text2)',marginTop:3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={[u.descricao,u.abertura&&('Abertura: '+u.abertura),u.encerramento&&('Encerramento: '+u.encerramento)].filter(Boolean).join(' · ')}>{u.descricao||[u.abertura&&('Ab: '+u.abertura),u.encerramento&&('Enc: '+u.encerramento)].filter(Boolean).join(' · ')}</div>}
                   </td>
                   <td style={{cursor:'pointer'}} onClick={()=>toggle(u.id,'transferido')} title="Clique para alternar">{badgeSN(u.transferido)}</td>
-                  <td>{u.transferido ? <span style={{color:'var(--text3)',fontSize:11}}>—</span> : (ip ? <span className={'reg-badge '+(ip.situacao==='ok'?'sim':ip.situacao==='debito'?'nao':'neutro')}>{ip.texto||ip.situacao}</span> : <span style={{color:'var(--text3)',fontSize:11}} title={u.inscricao?('Inscrição do lote: '+u.inscricao+' — será consultado pelo robô de IPTU'):'Preenchido automaticamente pelo robô de IPTU'}>aguardando</span>)}</td>
+                  <td>{u.transferido ? <span style={{color:'var(--text3)',fontSize:11}}>—</span> : (
+                    <select className={'reg-iptu-sel '+(u.iptuSit||'')} value={u.iptuSit||''} onChange={e=>salvarUnidades(unidades.map(x=>x.id===u.id?{...x,iptuSit:e.target.value}:x))} title="Situação do IPTU desta unidade">
+                      <option value="">—</option>{Object.keys(IPTU_SITUACAO).map(k=><option key={k} value={k}>{IPTU_SITUACAO[k]}</option>)}
+                    </select>)}</td>
                 </tr>
               ); })}
             </tbody>
           </table>
         </div>
-        <div className="venc-note" style={{maxWidth:'none'}}>Clique nos selos "Registrado" / "Transferido" para alternar rápido. A coluna <b>IPTU</b> (só das não transferidas) é preenchida automaticamente pelo robô de consulta.</div>
+        <div className="venc-note" style={{maxWidth:'none'}}>Clique nos selos "Registrado" / "Transferido" para alternar rápido. Clique na unidade para mudar o nome dela. O IPTU usa as mesmas opções das Guias de IPTU.</div>
       </>)}
 
-      {showDados && <DadosEmpreendimentosModal emps={todosEmps} empData={registros&&registros.empData} salvarEmpData={salvarEmpData} onClose={()=>setShowDados(false)}/>}
     </div>
   );
 }
@@ -15707,7 +15723,7 @@ const IPTU_STATUS={
 };
 const IPTU_ENCERRADOS=['deferido','indeferido','arquivado'];
 const IPTU_TIPOS=['Redução','Impugnação','Contestação','Isenção','Isenção parcial','Revisão','Unificação / subdivisão','Doação de área','Outro'];
-const IPTU_SITUACAO={aberta:'Em aberto',vista:'Pago à vista',parcelado:'Parcelado',suspensa:'Suspensa (processo)'};
+const IPTU_SITUACAO={vista:'Pago à vista',parcelado:'Pago em parcelas',aberta:'A pagar',suspensa:'Suspenso por processo'}; /* mesmas opções nas Guias e nos Registros de unidades */
 const IPTU_DECISAO={pendente:'Pendente',vista:'À vista',parcelar:'Parcelar'};
 const IPTU_ALERTAS=[
   {k:'guia',t:'Guia ou parcela a vencer',s:'7 dias antes, 1 dia antes e no dia do vencimento'},
