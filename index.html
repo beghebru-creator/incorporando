@@ -2597,6 +2597,39 @@
   @media(max-width:1100px){ .iptu-kpis{grid-template-columns:repeat(3,minmax(0,1fr));} }
   @media(max-width:900px){ .iptu-grid2{grid-template-columns:minmax(0,1fr);} .iptu-stack-lg{grid-template-columns:repeat(2,minmax(0,1fr));} .iptu-head-actions{margin-left:0;} }
   @media(max-width:560px){ .iptu-kpis,.iptu-kpis3{grid-template-columns:repeat(2,minmax(0,1fr));} .iptu-g-row{grid-template-columns:minmax(0,1fr) auto;} .iptu-g-row .iptu-strip{grid-column:1/-1;order:3;} .iptu-row3{grid-template-columns:1fr;} }
+
+  /* ═══ Visual do Painel Semanal aplicado ao app TODO (22/11/2026) ═══
+     Mesmas cores; fonte técnica (IBM Plex Sans), cantos retos, indicadores
+     numa faixa única dividida, abas sublinhadas, cabeçalhos de tabela sem
+     maiúsculas. Pílulas de status, selos e chaves continuam arredondados. */
+  :root{--font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--font-display:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;}
+  body,button,input,select,textarea{font-family:var(--font-body);}
+  .app-nav-logo,.app-nav-logo *{font-family:'Outfit',system-ui,sans-serif;} /* a marca continua em Outfit */
+  .activity-card,.ag-col,.app-nav-box,.ata-card,.canvas-painel,.canvas-toolbar,.cfg-secao,.cfg-tile,.chat-win,.cm-card,.cm-kpi,.dash-empty,.dd-hero,.dd-main,.dd-sec,.dd-side,.dd-emp,.dd-geral,.dd-search,.dd-var,.delivery-card,.dw,.fin-dash-card,.fin-kpi,.fin-baixa-box,.fin-vinc-box,.filtro-pop,.fp-pop,.gantt-wrap,.gantt2-scroll,.gm-box,.gm-card,.gm-sub,.gm-user,.imp-list,.info-box,.kpi-card,.map-canvas,.modal,.mstl-card-wrap,.nm-sec,.pdi-card,.pdi-list-item,.pdi-modal-panel,.pdi-parceiros-frame,.pdi-tool,.perf-card,.pn-chart-card,.proj-add-card,.proj-card2,.proj-menu,.rp-card,.rp-sec,.sch-gridscroll,.settings-card,.status-picker-menu,.task-popover,.venc-card,.venc-table-wrap,.iptu-card,.fluxo-abas-lista,.dd-toast,.sch-colsmenu,.sch-ctx,.dd-hero-art{border-radius:4px !important;}
+  .btn-add,.btn-export,.btn-favorites,.btn-modal,.btn-new-project,.ctx-btn,.dd-btn,.filtro-btn,.flow-search,.form-input,.fp-btn,.gm-btn,.gm-input,.gm-sel,.mv-btn,.pdi-btn,.pdi-textarea,.pdi-input,.pn-nav-btn,.pn-today-btn,.proj-btn-primary,.rp-btn,.topbar-search,.venc-add-btn,.venc-search,.dd-input,.tb-btn,.theme-toggle,.app-nav-item,.checklist-add-btn,.proj-kebab,.venc-act-btn,.stcfg-b,.emp-x,.dest-resumo,.fluxo-cfg-btn,.chat-ib,.dd-nova-emp,.fluxo-abas summary,.reg-iptu-sel,.chat-conv select,.chat-env textarea,.chat-emp{border-radius:4px !important;}
+  .proj-mini-stat,.cm-mrow,.cm-groupsel,.gm-novo,.gm-link,.rp-add,.rp-dev,.rp-geral,.rp-img,.rp-obra-it,.rp-tl,.rp-alerta,.rp-fluxo-box,.sch-colmenu,.sch-deptable,.sch-summnote,.iptu-alert-bar,.ata-aviso,.critical-path-banner,.fin-subtabs,.fin-gastos-table,.imp-fe,.cfg-tile-ico,.gm-ic,.dd-sec-ic,.dd-hero-ic,.upcoming-row-days,.checklist-folder,.cmt-item,.dm-item,.grp-box,.map-project-block,.mstl-content,.nm-etapas,.dw-tools,.ag-cfg,.fin-tarefa-link,.mv-group,.fluxo-aviso,.pn-chart-card,.dash-empty{border-radius:4px !important;}
+  .pdi-btn,.btn-modal,.venc-add-btn,.pn-today-btn,.pn-nav-btn,.filtro-btn,.ctx-btn,.dd-btn{font-weight:500;}
+  /* abas sublinhadas */
+  .fin-tabs,.view-tabs{background:none !important;border:0 !important;border-bottom:1px solid var(--border) !important;border-radius:0 !important;padding:0 !important;gap:18px !important;}
+  .fin-tab,.view-tab{background:none !important;border-radius:0 !important;padding:6px 0 !important;font-weight:500 !important;color:var(--text2);border-bottom:2px solid transparent !important;box-shadow:none !important;margin-bottom:-1px;}
+  .fin-tab:hover,.view-tab:hover{color:var(--text);}
+  .fin-tab.active,.view-tab.active{color:var(--text) !important;border-bottom-color:var(--accent) !important;}
+  .fin-tab.active .iptu-tab-n{background:var(--surface3);color:var(--text2);}
+  .pdi-tabs{gap:18px;}
+  .pdi-tabs .pdi-tab{border-radius:0;padding:6px 0;background:none !important;font-weight:500;}
+  .pdi-tabs .pdi-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+  /* indicadores numa faixa única dividida */
+  .venc-cards,.iptu-kpis{gap:0 !important;border:1px solid var(--border);border-radius:4px;background:var(--surface);overflow:hidden;}
+  .venc-cards .venc-card,.iptu-kpis .venc-card{border:none !important;border-right:1px solid var(--border) !important;border-radius:0 !important;background:transparent;box-shadow:none;padding:10px 16px 12px;}
+  .venc-cards .venc-card:last-child,.iptu-kpis .venc-card:last-child{border-right:none !important;}
+  .venc-cards .venc-card:hover,.iptu-kpis .venc-card:hover{background:color-mix(in srgb,var(--surface2) 60%,transparent);}
+  .venc-cards .venc-card.active,.iptu-kpis .venc-card.active{background:var(--surface2);box-shadow:inset 0 -2px 0 var(--accent);}
+  .venc-card-label{font-weight:500;}
+  .venc-card-value{font-weight:600;letter-spacing:-.01em;}
+  /* tabelas */
+  .venc-table thead th,.fin-gastos-table thead th{text-transform:none !important;letter-spacing:0 !important;font-size:12px;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border2);}
+  .venc-emp{font-weight:600;}
+  h1,h2,h3,.pdi-card-title,.dd-sec-t,.cfg-sec-title,.settings-row-title{font-weight:600;}
 </style>
 </head>
 <body>
