@@ -2630,6 +2630,33 @@
   .venc-table thead th,.fin-gastos-table thead th{text-transform:none !important;letter-spacing:0 !important;font-size:12px;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border2);}
   .venc-emp{font-weight:600;}
   h1,h2,h3,.pdi-card-title,.dd-sec-t,.cfg-sec-title,.settings-row-title{font-weight:600;}
+
+  /* ═══ Métricas do topo das abas: padrão do IPTU em todo o app (22/11) ═══
+     Faixa única dividida; rótulo 12px com ícone; número 24px; mesmo espaçamento. */
+  .venc-cards,.iptu-kpis,.fin-kpis,.cm-kpis,.kpi-grid{gap:0 !important;border:1px solid var(--border) !important;border-radius:4px !important;background:var(--surface) !important;overflow:hidden;}
+  .venc-cards>.venc-card,.iptu-kpis>.venc-card,.fin-kpis>.fin-kpi,.cm-kpis>.cm-kpi,.kpi-grid>.kpi-card{border:none !important;border-right:1px solid var(--border) !important;border-radius:0 !important;background:transparent !important;box-shadow:none !important;padding:14px 16px !important;min-width:0;display:flex;flex-direction:column;justify-content:flex-start;}
+  .venc-cards>.venc-card:last-child,.iptu-kpis>.venc-card:last-child,.fin-kpis>.fin-kpi:last-child,.cm-kpis>.cm-kpi:last-child,.kpi-grid>.kpi-card:last-child{border-right:none !important;}
+  .venc-card-label,.fin-kpi-label,.cm-kpi-lbl,.kpi-label{order:0;font-size:12px !important;font-weight:500 !important;color:var(--text2) !important;margin:0 0 8px !important;display:flex;align-items:center;gap:6px;text-transform:none !important;letter-spacing:0 !important;}
+  .venc-card-label i,.cm-kpi-lbl i,.fin-kpi-label i,.kpi-label i{font-size:14px !important;}
+  .venc-card-value,.fin-kpi-value,.cm-kpi-val,.kpi-value,.pn-v2 .venc-cards .venc-card-value{order:1;font-size:24px !important;font-weight:600 !important;line-height:1.1 !important;letter-spacing:-.01em;white-space:nowrap;}
+  .cm-kpi>*:not(.cm-kpi-val):not(.cm-kpi-lbl),.fin-kpi>*:not(.fin-kpi-value):not(.fin-kpi-label),.kpi-card>*:not(.kpi-value):not(.kpi-label){order:2;font-size:11px;margin-top:6px;}
+  @media(max-width:700px){ .venc-cards,.iptu-kpis,.fin-kpis,.cm-kpis,.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;} .venc-cards>.venc-card,.iptu-kpis>.venc-card,.fin-kpis>.fin-kpi,.cm-kpis>.cm-kpi,.kpi-grid>.kpi-card{border-bottom:1px solid var(--border) !important;} }
+  .ini-resumo{gap:0 !important;align-items:stretch !important;}
+  .ini-stat{padding:4px 16px !important;gap:0 !important;}
+  .ini-stat-l{font-weight:500;margin-bottom:8px;}
+  .ini-stat-v{font-weight:600 !important;}
+  .ini-stat>*:not(.ini-stat-l):not(.ini-stat-v){font-size:11px;margin-top:6px;}
+  .pm-kpi{padding:14px 16px !important;}
+  .pm-kpi-h{font-size:12px !important;font-weight:500 !important;color:var(--text2);}
+  .pm-kpi-h i{font-size:14px !important;}
+  .pm-kpi-v{font-size:24px !important;font-weight:600 !important;line-height:1.1 !important;margin-top:8px !important;}
+  .pm-kpi-n{font-size:11px !important;margin-top:6px !important;}
+  /* qualquer grupo de quadrinhos de métrica (.venc-card) vira a mesma faixa do IPTU */
+  :has(> .venc-card):not(.venc-card){gap:0 !important;border:1px solid var(--border) !important;border-radius:4px !important;background:var(--surface) !important;overflow:hidden;}
+  :has(> .venc-card) > .venc-card{border:none !important;border-right:1px solid var(--border) !important;border-radius:0 !important;background:transparent !important;box-shadow:none !important;padding:14px 16px !important;min-width:0;}
+  :has(> .venc-card) > .venc-card:last-child{border-right:none !important;}
+  :has(> .venc-card) > .venc-card.active{background:var(--surface2) !important;box-shadow:inset 0 -2px 0 var(--accent) !important;}
+  .venc-card-value[style]{font-size:24px !important;}
 </style>
 </head>
 <body>
