@@ -2347,11 +2347,6 @@
   .venc-dias.avencer{color:var(--amber);font-weight:600;}
   .venc-empty{padding:40px;text-align:center;color:var(--text2);font-size:13px;}
   .venc-note{font-size:12px;color:var(--text3);margin-top:12px;}
-  /* Certidões: colunas alinhadas iguais nas 3 abas + caixa mais alta */
-  .cert-wrap{min-height:calc(125vh - 215px);max-height:calc(125vh - 215px);}
-  .venc-table.cert-fixed{table-layout:fixed;}
-  .venc-table.cert-fixed .venc-emp{white-space:normal;}
-  .venc-table.cert-fixed td,.venc-table.cert-fixed th{overflow:hidden;text-overflow:ellipsis;}
   .venc-card.superado .venc-card-value{color:var(--text2);}
   .venc-card.superado .venc-card-label i{color:var(--text2);}
   .venc-badge.superado{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);}
@@ -10449,115 +10444,6 @@ function RegistrosUnidades({registros,salvarUnidades:salvarUnidadesReal,salvarCe
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CERTIDÕES NEGATIVAS (Portal DI) — três seções (Imóveis, Empresas, Sócios).
-   Cada certidão: situação, última consulta e vencimento. Imóveis e Empresas
-   puxam de Dados (empreendimentos); Sócios são manuais. Salvo em
-   fluxoapp_meta/portaldi (campo certidoesNeg). Depois um robô pode atualizar.
-   ═══════════════════════════════════════════════════════════════════════════ */
-function certVenceInfo(venc){
-  const d=venc?new Date(venc+'T00:00:00'):null; if(!d||isNaN(d)) return null;
-  const hoje=new Date(); hoje.setHours(0,0,0,0);
-  const dias=Math.round((d-hoje)/86400000);
-  if(dias<0) return {txt:'vencida há '+Math.abs(dias)+'d', cls:'nao'};
-  if(dias<=30) return {txt:'vence em '+dias+'d', cls:'aten'};
-  return {txt:'vence em '+dias+'d', cls:'sim'};
-}
-function certFmtBR(iso){ const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); if(m) return m[3]+'/'+m[2]+'/'+m[1]; if(iso){ const d=new Date(iso); if(!isNaN(d)) return d.toLocaleDateString('pt-BR'); } return '—'; }
-function certSitBadge(s){
-  if(!s) return React.createElement('span',{style:{color:'var(--text3)',fontSize:11}},'— aguardando —');
-  const cls=(s==='Negativa'||s==='Positiva c/ efeito de negativa'||s==='ok')?'sim':(s==='Positiva (débitos)'||s==='pendencia'||s==='nao')?'nao':'neutro';
-  return React.createElement('span',{className:'reg-badge '+cls}, s);
-}
-function CertidoesView({projects,certidoesNeg,setCertidoesNeg,onBack}){
-  const[tab,setTab]=useState('imoveis');
-  const cn=certidoesNeg||{};
-  const imoveisMap=cn.imoveis||{}, empresasMap=cn.empresas||{};
-  const socios=Array.isArray(cn.socios)?cn.socios:[];
-  const ativos=(projects||[]).filter(p=>!p.archived&&!p.deleted);
-  const imoveisList=[...new Set(ativos.map(p=>p.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
-  const empresasList=[...new Set(ativos.map(p=>p.empresaNome).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
-  const emptyCN={imoveis:{},empresas:{},socios:[]};
-  const base=()=>({...emptyCN,...cn});
-  const addSocio=()=>{ const b=base(); setCertidoesNeg({...b,socios:[...(b.socios||[]),{id:'soc-'+Date.now(),nome:'',situacao:'',ultimaConsulta:'',vencimento:''}]}); };
-  const setSocio=(id,patch)=>{ const b=base(); setCertidoesNeg({...b,socios:(b.socios||[]).map(s=>s.id===id?{...s,...patch}:s)}); };
-  const delSocio=(id)=>{ const b=base(); setCertidoesNeg({...b,socios:(b.socios||[]).filter(s=>s.id!==id)}); };
-
-  /* Situação, última consulta e vencimento são SÓ LEITURA aqui — preenchidos
-     pelo robô de certidões. Nos Sócios, só o nome é editável (a lista é manual). */
-  const vencCell=(v)=>{ const info=certVenceInfo(v); if(!info) return <span style={{color:'var(--text3)',fontSize:11}}>—</span>;
-    return <span className={'venc-badge '+(info.cls==='nao'?'vencido':info.cls==='aten'?'avencer':'vigente')}>{info.txt}</span>; };
-
-  /* Larguras fixas compartilhadas pelas 3 abas para alinhar as colunas
-     Situação / Última consulta / Vencimento exatamente na mesma posição. */
-  const certCols=(
-    <colgroup>
-      <col style={{width:'30%'}}/>
-      <col style={{width:'17%'}}/>
-      <col style={{width:'17%'}}/>
-      <col style={{width:'17%'}}/>
-      <col style={{width:'13%'}}/>
-      <col style={{width:'6%'}}/>
-    </colgroup>
-  );
-
-  const tabelaFixa=(lista,mapa,vazioMsg)=>(
-    <div className="venc-table-wrap cert-wrap"><table className="venc-table cert-fixed">
-      {certCols}
-      <thead><tr><th>Identificação</th><th>Situação</th><th>Última consulta</th><th>Vencimento</th><th>Prazo</th><th></th></tr></thead>
-      <tbody>
-        {lista.length===0 && <tr><td colSpan={6}><div className="venc-empty">{vazioMsg}</div></td></tr>}
-        {lista.map(nome=>{ const d=mapa[nome]||{}; return (
-          <tr key={nome}>
-            <td className="venc-emp">{nome}</td>
-            <td>{certSitBadge(d.texto||d.situacao)}</td>
-            <td className="venc-date">{certFmtBR(d.ultimaConsulta||d.atualizadoEm)}</td>
-            <td className="venc-date">{certFmtBR(d.vencimento)}</td>
-            <td>{vencCell(d.vencimento)}</td>
-            <td></td>
-          </tr>
-        ); })}
-      </tbody>
-    </table></div>
-  );
-
-  return (
-    <div className="pdi-wrap">
-      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14,flexWrap:'wrap'}}>
-        <button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button>
-        <div className="fin-tabs">
-          <button className={'fin-tab'+(tab==='imoveis'?' active':'')} onClick={()=>setTab('imoveis')}><i className="ti ti-home"/> Imóveis</button>
-          <button className={'fin-tab'+(tab==='empresas'?' active':'')} onClick={()=>setTab('empresas')}><i className="ti ti-building-skyscraper"/> Empresas</button>
-          <button className={'fin-tab'+(tab==='socios'?' active':'')} onClick={()=>setTab('socios')}><i className="ti ti-users"/> Sócios</button>
-        </div>
-      </div>
-      <div className="venc-note" style={{maxWidth:'none',marginBottom:10}}>Certidões negativas de débitos (CND). A situação, a última consulta e o vencimento são preenchidos automaticamente pelo robô de certidões. Imóveis e Empresas vêm dos empreendimentos cadastrados em Dados; Sócios são adicionados aqui.</div>
-      {tab==='imoveis' && tabelaFixa(imoveisList,imoveisMap,'Nenhum empreendimento cadastrado em Dados ainda.')}
-      {tab==='empresas' && tabelaFixa(empresasList,empresasMap,'Nenhuma empresa cadastrada em Dados ainda (campo "Empresa" dos empreendimentos).')}
-      {tab==='socios' && (<>
-        <div className="venc-table-wrap cert-wrap"><table className="venc-table cert-fixed">
-          {certCols}
-          <thead><tr><th>Sócio</th><th>Situação</th><th>Última consulta</th><th>Vencimento</th><th>Prazo</th><th></th></tr></thead>
-          <tbody>
-            {socios.length===0 && <tr><td colSpan={6}><div className="venc-empty">Nenhum sócio cadastrado. Clique em "Adicionar sócio".</div></td></tr>}
-            {socios.map(s=>(
-              <tr key={s.id}>
-                <td><input className="pdi-input" style={{width:'100%',minWidth:0}} value={s.nome||''} onChange={e=>setSocio(s.id,{nome:e.target.value})} placeholder="Nome do sócio"/></td>
-                <td>{certSitBadge(s.texto||s.situacao)}</td>
-                <td className="venc-date">{certFmtBR(s.ultimaConsulta||s.atualizadoEm)}</td>
-                <td className="venc-date">{certFmtBR(s.vencimento)}</td>
-                <td>{vencCell(s.vencimento)}</td>
-                <td style={{width:40,textAlign:'center'}}><button className="venc-act-btn del" title="Remover sócio" onClick={()=>delSocio(s.id)}><i className="ti ti-trash"/></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table></div>
-        <div style={{marginTop:10}}><button className="pdi-btn ghost" onClick={addSocio}><i className="ti ti-plus"/> Adicionar sócio</button></div>
-      </>)}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
    PRAZOS DE APROVAÇÃO — banco de aprovações de vários empreendimentos,
    agrupadas por tipo, com prazo médio para estimar cronogramas futuros.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -15469,7 +15355,6 @@ const PORTAL_ABAS=[
   {key:'prazos',       nome:'Prazos de Aprovação',     ic:'ti-hourglass',        grupo:'controle', dados:'proprio',       desc:'Prazo médio por tipo de aprovação e órgão.'},
   {key:'registros',    nome:'Registros de Unidades',   ic:'ti-home-check',       grupo:'unidades', dados:'compartilhado', desc:'Unidades vendidas por empreendimento (cliente, quadra, lote), controle de registro e transferência na prefeitura, e — via robô — IPTU das não transferidas.'},
   {key:'iptu',         nome:'IPTU',                    ic:'ti-receipt-2',        grupo:'unidades', dados:'compartilhado', desc:'Processos na prefeitura (redução, impugnação, isenção), guias e pagamentos por empreendimento, decisão à vista × parcelado e visão geral das unidades.'},
-  {key:'certidoes',    nome:'Certidões negativas',     ic:'ti-certificate',      grupo:'unidades', dados:'compartilhado', desc:'CND dos imóveis, das empresas e dos sócios — situação, última consulta e vencimento de cada certidão.'},
   {key:'atas',         nome:'Atas de Reunião',         ic:'ti-notes',            grupo:'acomp', dados:'compartilhado', desc:'Registro das reuniões (prefeitura, órgãos, parceiros) vinculado às tarefas: resumo, decisões, próximos passos e a ata completa — inclusive importada automaticamente do Google Meet (Gemini).'},
   {key:'parceiros',    nome:'Relatório dos Parceiros', ic:'ti-users-group',      grupo:'acomp', dados:'compartilhado', desc:'Relatório mensal para os parceiros por empreendimento: macrofluxo, andamento do mês, linha do tempo, desenvolvimento de projetos, fotos e andamento da obra — com PDF.'},
   {key:'oficio',       nome:'Gerador de Ofícios',      ic:'ti-file-text',        grupo:'documentos', dados:'compartilhado', desc:'Crie ofícios em papel timbrado a partir do empreendimento, representante e assunto — em PDF ou Word.'},
@@ -15486,7 +15371,7 @@ const PORTAL_GRUPOS={
 function portalGrupoDaAba(k){ const a=PORTAL_ABAS.find(x=>x.key===k); return a?a.grupo:null; }
 const PORTAL_ABAS_DADOS_TXT={proprio:'dados próprios do portal',compartilhado:'mesma base em todos os portais'};
 const PORTAL_ICONES=[['ti-layout-grid','Grade'],['ti-file-text','Documento'],['ti-folders','Pastas'],['ti-cash-banknote','Dinheiro'],['ti-report-money','Relatório financeiro'],['ti-building','Prédio'],['ti-briefcase','Maleta'],['ti-chart-bar','Gráfico'],['ti-clipboard-list','Prancheta'],['ti-map-2','Mapa'],['ti-users-group','Pessoas'],['ti-tools','Ferramentas'],['ti-home-check','Casa'],['ti-scale','Jurídico'],['ti-bulldozer','Obra']];
-const PORTAIS_FIXOS={portaldi:{icone:'ti-file-text',abas:['painel','atas','financeiro','vencimentos','contatos','registros','iptu','certidoes','parceiros'],setorBase:'DI'},
+const PORTAIS_FIXOS={portaldi:{icone:'ti-file-text',abas:['painel','atas','financeiro','vencimentos','contatos','registros','iptu','parceiros'],setorBase:'DI'},
                      portalprj:{icone:'ti-folders',abas:['financeiro'],setorBase:'PRJ'}};
 function portalNome(p){ if(!p) return ''; const n=String(p.nome||'').trim(); if(n) return n; if(p.id==='portaldi') return 'Portal '+setorSigla('DI'); if(p.id==='portalprj') return 'Portal '+setorSigla('PRJ'); return 'Portal'; }
 /* Lista completa e normalizada (DI e PRJ sempre presentes). Quando ainda não
@@ -16125,6 +16010,12 @@ function IptuGeral({dados,cfg,unidades,exercicio,setTab,salvarConfig}){
       <div className="pdi-card iptu-card">
         <div className="iptu-card-h"><div><div className="pdi-card-title"><i className="ti ti-home-check"/> Registros de unidades</div><div className="pdi-card-desc">Situação dos lotes dos projetos registrados. Clique para abrir a lista.</div></div><button className="iptu-link" onClick={()=>setTab('registros')}>Abrir <i className="ti ti-arrow-right"/></button></div>
         <IptuDonut fatias={fatias} onClick={()=>setTab('registros')}/>
+        {(()=>{ const nt=unidades.filter(u=>!u.transferido); if(!nt.length) return null;
+          const c={vista:'green',parcelado:'blue',aberta:'gray',suspensa:'amber'};
+          const sem=nt.filter(u=>!IPTU_SITUACAO[u.iptuSit]).length;
+          return <div style={{marginTop:10}}><div className="iptu-sub-t">IPTU das unidades não transferidas</div>
+            <div className="iptu-pills">{Object.keys(IPTU_SITUACAO).map(k=>{ const n=nt.filter(u=>u.iptuSit===k).length; return n?<IptuPill key={k} c={c[k]}>{IPTU_SITUACAO[k]} · {n}</IptuPill>:null; })}
+              {sem>0&&<IptuPill c="gray" title="Escolha a situação na aba Registros de Unidades">Sem informação · {sem}</IptuPill>}</div></div>; })()}
         <div className="venc-note">{totUn?<>Laranja e roxo ainda geram IPTU no nome da empresa: <b>{ncUn} lotes ({iptuPct(ncUn,totUn)}%)</b>.</>:'Importe a planilha em Registros de unidades e informe o total de lotes em Configurar.'}{atrasados>0 && <> · <b style={{color:'var(--amber)'}}>{atrasados} compradores</b> há +90 dias sem transferir.</>}</div>
       </div>
 
@@ -16322,7 +16213,7 @@ function IptuGuias({dados,cfg,empNames,exercicio,setExercicio,exercicios,salvar}
 }
 
 /* ── Tela principal ── */
-function IptuView({projects,registros,salvarUnidades,salvarCertidoesEmps,salvarEmpData,onBack,uid}){
+function IptuView({projects,registros,salvarUnidades,salvarCertidoesEmps,salvarEmpData,onBack,uid,onAbrirRegistros}){
   const[tab,setTab]=useState('geral');
   const[dadosReais,setDados]=useState(DEMO_MODE?IPTU_DEMO:{processos:[],guias:[],config:{}});
   /* Só no site de TESTE: "Dados de exemplo" mostra processos e guias fictícios
@@ -16387,15 +16278,14 @@ function IptuView({projects,registros,salvarUnidades,salvarCertidoesEmps,salvarE
   const TABS=[
     {k:'geral',t:'Visão geral',i:'layout-dashboard'},
     {k:'processos',t:'Processos na prefeitura',i:'file-search',n:abertos},
-    {k:'guias',t:'Guias e pagamentos',i:'cash-banknote'},
-    {k:'registros',t:'Registros de unidades',i:'home-check'}
+    {k:'guias',t:'Guias e pagamentos',i:'cash-banknote'}
   ];
   return (
     <div className="pdi-wrap iptu-wrap">
       <div className="iptu-head">
         <button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button>
         <div className="fin-tabs iptu-tabs">{TABS.map(t=><button key={t.k} className={'fin-tab'+(tab===t.k?' active':'')} onClick={()=>setTab(t.k)}><i className={'ti ti-'+t.i}/> {t.t}{t.n?<span className="iptu-tab-n">{t.n}</span>:null}</button>)}</div>
-        {tab!=='registros' && <div className="iptu-head-actions">
+        {<div className="iptu-head-actions">
           {ehTeste&&!DEMO_MODE&&<button className={'pdi-btn ghost'+(exemplo?' on':'')} style={exemplo?{borderColor:'var(--amber)',color:'var(--amber)'}:undefined}
             onClick={()=>setExemplo(x=>x?null:JSON.parse(JSON.stringify(IPTU_DEMO)))} title="Só no site de teste: mostra dados fictícios (não são gravados)">
             <i className="ti ti-flask"/> {exemplo?'Sair do exemplo':'Dados de exemplo'}</button>}
@@ -16409,13 +16299,9 @@ function IptuView({projects,registros,salvarUnidades,salvarCertidoesEmps,salvarE
       {msg && <div className="venc-note" style={{maxWidth:'none',marginTop:0,marginBottom:12,color:msg.startsWith('Erro')||msg.startsWith('Nada')?'var(--red)':'var(--green)'}}>{msg}</div>}
       {DEMO_MODE && <div className="venc-note" style={{maxWidth:'none',marginTop:0,marginBottom:12}}>Modo demonstração: dados de exemplo, nada é gravado.</div>}
 
-      {tab==='geral' && <IptuGeral dados={dados} cfg={cfg} unidades={unidades} exercicio={exercicio} setTab={setTab} salvarConfig={salvarConfig}/>}
+      {tab==='geral' && <IptuGeral dados={dados} cfg={cfg} unidades={unidades} exercicio={exercicio} setTab={k=>{ if(k==='registros'){ if(onAbrirRegistros) onAbrirRegistros(); } else setTab(k); }} salvarConfig={salvarConfig}/>}
       {tab==='processos' && <IptuProcessos dados={dados} cfg={cfg} projNames={projNames} salvar={salvar}/>}
       {tab==='guias' && <IptuGuias dados={dados} cfg={cfg} empNames={empNames} exercicio={exercicio} setExercicio={setExercicio} exercicios={exercicios} salvar={salvar}/>}
-      {tab==='registros' && (<>
-        {iptuCompradoresAtrasados(unidades).length>0 && <div className="venc-note iptu-alert-bar"><i className="ti ti-alert-triangle"/> <b>{iptuCompradoresAtrasados(unidades).length} compradores</b> compraram há mais de 90 dias e ainda não transferiram. O IPTU deles segue no nome da empresa.</div>}
-        <RegistrosUnidades registros={registros} salvarUnidades={salvarUnidades} salvarCertidoesEmps={salvarCertidoesEmps} salvarEmpData={salvarEmpData} projects={projects} onBack={()=>setTab('geral')} uid={uid}/>
-      </>)}
 
       {showCfg && <IptuConfigModal cfg={cfg} empNames={empNames} onSave={p=>{ salvarConfig(p); setShowCfg(false); }} onClose={()=>setShowCfg(false)}/>}
     </div>
@@ -16557,10 +16443,6 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
     setRegistros(r=>({...r,certidoesEmps}));
     if(!DEMO_MODE) REGISTROS_DOC.set({certidoesEmps},{merge:true}).catch(err=>console.error('Erro ao salvar certidões:',err));
   };
-  const salvarCertidoesNeg=(certidoesNeg)=>{
-    setRegistros(r=>({...r,certidoesNeg}));
-    if(!DEMO_MODE) REGISTROS_DOC.set({certidoesNeg},{merge:true}).catch(err=>console.error('Erro ao salvar certidões negativas:',err));
-  };
   const salvarEmpData=(empData)=>{
     setRegistros(r=>({...r,empData}));
     if(!DEMO_MODE) REGISTROS_DOC.set({empData},{merge:true}).catch(err=>console.error('Erro ao salvar dados dos empreendimentos:',err));
@@ -16618,11 +16500,6 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
             <div className="tt">IPTU</div>
             <div className="dd">Processos na prefeitura (redução, impugnação, isenção), guias e pagamentos por empreendimento, decisão à vista × parcelado e visão geral das unidades.</div>
           </div>
-          <div className="pdi-tool" onClick={()=>setView('certidoes')}>
-            <i className="ti ti-certificate"/>
-            <div className="tt">Certidões negativas</div>
-            <div className="dd">CND dos imóveis, das empresas e dos sócios — situação, última consulta e vencimento de cada certidão. Depois, um robô poderá atualizar automaticamente.</div>
-          </div>
           <div className="pdi-tool" onClick={()=>setView('parceiros')}>
             <i className="ti ti-users-group"/>
             <div className="tt">Relatório dos Parceiros</div>
@@ -16635,16 +16512,13 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
 
   /* ─── Ferramenta: IPTU (processos, guias e pagamentos; Registros de Unidades continua como card próprio) ─── */
   if(view==='iptu'){
-    return <IptuView projects={projects} registros={registros} salvarUnidades={salvarUnidades} salvarCertidoesEmps={salvarCertidoesEmps} salvarEmpData={salvarEmpData} onBack={()=>setView('home')} uid={uid}/>;
+    return <IptuView onAbrirRegistros={()=>setView('registros')} projects={projects} registros={registros} salvarUnidades={salvarUnidades} salvarCertidoesEmps={salvarCertidoesEmps} salvarEmpData={salvarEmpData} onBack={()=>setView('home')} uid={uid}/>;
   }
   /* ─── Ferramenta: Registros de Unidades ─── */
   if(view==='registros'){
     return <RegistrosUnidades registros={registros} salvarUnidades={salvarUnidades} salvarCertidoesEmps={salvarCertidoesEmps} salvarEmpData={salvarEmpData} projects={projects} onBack={()=>setView('home')} uid={uid}/>;
   }
   /* ─── Ferramenta: Certidões negativas (CND de imóveis, empresas, sócios) ─── */
-  if(view==='certidoes'){
-    return <CertidoesView projects={projects} certidoesNeg={registros&&registros.certidoesNeg} setCertidoesNeg={salvarCertidoesNeg} onBack={()=>setView('home')}/>;
-  }
 
   /* ─── Ferramenta: Painel Semanal ─── */
   if(view==='painel'){
@@ -18826,8 +18700,8 @@ function PortalPRJ({ projects, currentUser, view, setView, finContratos, setFinC
 const SCREEN_TO_PATH={dashboard:'/dashboard',projects:'/projetos',project:'/projetos',checklists:'/checklist',ferramentas:'/ferramentas',dados:'/dados',portaldi:'/portal-di',portaldiretoria:'/portal-diretoria',portalpcp:'/portal-pcp',portalprj:'/portal-prj',map:'/mapa',tarefas:'/tarefas',inicio:'/inicio',settings:'/configuracoes'};
 const PATH_TO_SCREEN={'/':'inicio','/inicio':'inicio','/tarefas':'tarefas','/dashboard':'dashboard','/projetos':'projects','/checklist':'checklists','/checklists':'checklists','/ferramentas':'ferramentas','/dados':'dados','/portal-di':'portaldi','/portaldi':'portaldi','/portal-diretoria':'portaldiretoria','/portaldiretoria':'portaldiretoria','/diretoria':'portaldiretoria','/portal-pcp':'portalpcp','/portalpcp':'portalpcp','/pcp':'portalpcp','/portal-prj':'portalprj','/portalprj':'portalprj','/prj':'portalprj','/mapa':'map','/map':'map','/configuracoes':'settings','/config':'settings','/settings':'settings'};
 /* Sub-ambientes do Portal DI também têm endereço próprio, ex.: /portal-di/painel-semanal */
-const PORTAL_VIEW_TO_SLUG={painel:'painel-semanal',oficio:'oficios',contratos:'contratos',financeiro:'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',certidoes:'certidoes',parceiros:'parceiros'};
-const SLUG_TO_PORTAL_VIEW={'painel-semanal':'painel','painel':'painel',oficios:'oficio',oficio:'oficio','gerador-oficios':'oficio',contratos:'contratos',financeiro:'financeiro','controle-financeiro':'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',certidoes:'certidoes','certidoes-negativas':'certidoes',parceiros:'parceiros'};
+const PORTAL_VIEW_TO_SLUG={painel:'painel-semanal',oficio:'oficios',contratos:'contratos',financeiro:'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',parceiros:'parceiros'};
+const SLUG_TO_PORTAL_VIEW={'painel-semanal':'painel','painel':'painel',oficios:'oficio',oficio:'oficio','gerador-oficios':'oficio',contratos:'contratos',financeiro:'financeiro','controle-financeiro':'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',parceiros:'parceiros'};
 function pathToPortalId(){ try{ const m=(location.pathname||'').match(/^\/portal\/([^\/]+)/i); return m?decodeURIComponent(m[1]):''; }catch(e){ return ''; } }
 function pathToPortalXView(){ try{ const m=(location.pathname||'').replace(/\/+$/,'').match(/^\/portal\/[^\/]+\/(.+)$/i); return m?(SLUG_TO_PORTAL_VIEW[m[1].toLowerCase()]||(m[1].toLowerCase()==='financeiro-projetos'?'financeiro':'home')):'home'; }catch(e){ return 'home'; } }
 function pathToScreen(){ try{ const p=(location.pathname||'/').replace(/\/+$/,'')||'/'; if(/^\/portal\/[^\/]+/i.test(p)) return 'portal'; if(/^\/portal-?di(\/|$)/i.test(p)) return 'portaldi'; if(/^\/projetos\/[^\/]+/i.test(p)) return 'project'; return PATH_TO_SCREEN[p]||'inicio'; }catch(e){ return 'inicio'; } }
