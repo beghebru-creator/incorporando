@@ -32,7 +32,7 @@
 <meta name="twitter:description" content="Plataforma para acompanhar fluxogramas, cronogramas e checklists de empreendimentos imobiliários.">
 <meta name="twitter:image" content="/logo-conecta.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="https://esm.sh/@xyflow/react@12.3.5/dist/style.css">
@@ -82,7 +82,7 @@
     --edge:rgba(140,203,169,0.72);--edge-sel:#BFE3CF;
     --font-display:'Outfit',system-ui,sans-serif;
     --font-body:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
-    --font-data:'Outfit',system-ui,sans-serif; /* números na fonte da identidade (Outfit), com dígitos tabulares */
+    --font-data:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; /* 22/11: números em IBM Plex Sans (a do IPTU) em todo o app, dígitos tabulares */
   }
   /* ─── Tema claro (alternável pelo botão no topbar) ─── papel vegetal */
   [data-theme="light"] {
@@ -1139,7 +1139,7 @@
      mais sóbria/profissional, com algarismos de mesma largura (tabulares). */
   :root{--font-num:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;}
   .venc-card-value,.kpi-value,.fin-kpi-value,.cm-kpi-val,.ini-stat-v,.delivery-card-pct,.rp-geral-pct,.pn-pct,.venc-num,.venc-date,
-  .react-flow__node .node-date-value,svg text{font-family:var(--font-num) !important;font-variant-numeric:tabular-nums;}
+  .react-flow__node .node-date-value,svg text,.iptu-kpi-v,.iptu-pb,.sch-c-num,.sch-c-pct,.sch-c-dur,.sch-c-date,.fin-num,.fin-bar-val,.perf-bar-pct,.perf-legend-value,.sector-load-value,.proj-ring-count,.dd-count,.gm-count{font-family:var(--font-num) !important;font-variant-numeric:tabular-nums;}
   .venc-card-value,.kpi-value,.fin-kpi-value,.cm-kpi-val,.ini-stat-v,.delivery-card-pct,.rp-geral-pct{font-weight:600 !important;letter-spacing:-.01em;}
   /* ═══ Painel Semanal — visual novo (teste, nov/2026) ═══
      Mesmas cores; muda só o FORMATO e a FONTE: fonte técnica (IBM Plex Sans),
@@ -10298,8 +10298,20 @@ function DadosEmpreendimentosModal({emps, empData, salvarEmpData, onClose}){
   );
 }
 
-function RegistrosUnidades({registros,salvarUnidades,salvarCertidoesEmps,salvarEmpData,projects,onBack,uid}){
-  const unidades=Array.isArray(registros&&registros.unidades)?registros.unidades:[];
+/* Unidades fictícias para ver a tela no site de TESTE (ficam só na memória). */
+function regUnidadesExemplo(projects){
+  const nomes=(projects||[]).filter(p=>!p.archived&&!p.deleted).map(p=>p.name).filter(Boolean).slice(0,2);
+  const emps=nomes.length?nomes:['Empreendimento A','Empreendimento B'];
+  const cli=['Ana Souza','Bruno Lima','Carla Mendes','Diego Rocha','Elisa Prado','Fábio Nunes','Gabriela Reis','Henrique Alves','Isabela Costa','João Pereira','Karina Duarte','Lucas Martins','Mariana Teles','Nelson Ramos','Olívia Freitas','Paulo Batista','Renata Gomes','Sérgio Vidal'];
+  const hoje=new Date(); const dia=n=>{ const d=new Date(hoje.getTime()-n*86400000); return d.toISOString().slice(0,10); };
+  return cli.map((c,i)=>({id:'ex'+i,emp:emps[i%emps.length],cliente:c,quadra:String(1+Math.floor(i/6)).padStart(2,'0'),lote:String(1+i%6).padStart(2,'0'),
+    registrado:i%3!==0, transferido:i%4===0, dataVenda:dia(20+i*23)}));
+}
+function RegistrosUnidades({registros,salvarUnidades:salvarUnidadesReal,salvarCertidoesEmps,salvarEmpData,projects,onBack,uid}){
+  const ehTeste=/--teste|localhost|127\.0\.0\.1|app\.local/.test(location.hostname);
+  const[exemplo,setExemplo]=useState(null);
+  const unidades=exemplo||(Array.isArray(registros&&registros.unidades)?registros.unidades:[]);
+  const salvarUnidades=l=>{ if(exemplo){ setExemplo(l); return; } salvarUnidadesReal(l); };
   const certidoes=Array.isArray(registros&&registros.certidoes)?registros.certidoes:[];
   const iptu=(registros&&registros.iptu)||{};
   const[busca,setBusca]=useState('');
@@ -10359,6 +10371,7 @@ function RegistrosUnidades({registros,salvarUnidades,salvarCertidoesEmps,salvarE
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',maxWidth:'none',marginBottom:14,gap:12,flexWrap:'wrap'}}>
         <button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button>
         <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          {ehTeste&&!DEMO_MODE&&<button className="pdi-btn ghost" style={exemplo?{borderColor:'var(--amber)',color:'var(--amber)'}:undefined} onClick={()=>setExemplo(x=>x?null:regUnidadesExemplo(projects))} title="Só no site de teste: mostra unidades fictícias (não são gravadas)"><i className="ti ti-flask"/> {exemplo?'Sair do exemplo':'Dados de exemplo'}</button>}
           <button className="pdi-btn ghost" onClick={()=>setShowDados(true)}><i className="ti ti-building-community"/> Dados dos empreendimentos</button>
           {unidades.length>0 && <button className="pdi-btn ghost" onClick={limpar}><i className="ti ti-trash"/> Limpar lista</button>}
           <label className="pdi-btn" style={{cursor:'pointer'}}>
@@ -10372,7 +10385,7 @@ function RegistrosUnidades({registros,salvarUnidades,salvarCertidoesEmps,salvarE
       {unidades.length===0 ? (
         <div className="pdi-card" style={{maxWidth:760}}>
           <div className="pdi-card-title"><i className="ti ti-home-check"/> Controle de unidades</div>
-          <div className="pdi-card-desc">Suba a planilha Excel com as unidades vendidas. Colunas esperadas: <b>empreendimento, cliente, quadra, lote, registrado, transferido</b> (o app reconhece variações nos títulos). Aqui você acompanha quais unidades ainda estão com a matrícula/cadastro da prefeitura no nosso nome (não transferidas). Depois, um robô preenche automaticamente o IPTU dessas unidades e as certidões negativas do empreendimento.</div>
+          <div className="pdi-card-desc">Suba a planilha Excel com as unidades vendidas. Colunas esperadas: <b>empreendimento, cliente, quadra, lote, registrado, transferido</b> (o app reconhece variações nos títulos). Aqui você acompanha quais unidades ainda estão com a matrícula/cadastro da prefeitura no nosso nome (não transferidas).</div>
         </div>
       ) : (<>
         <div className="venc-cards pn-cards-compact" style={{gridTemplateColumns:'repeat(4,1fr)'}}>
@@ -10932,6 +10945,7 @@ function autoFillVar(varName, proj, dadosGerais, rep){
     CIDADE:cidade, LOCALIZACAO:cidade, LOCAL:cidade,
     ENDERECO:proj&&proj.oficioEndereco, ENDERECO_IMOVEL:proj&&proj.oficioEndereco, ENDERECO_EMPREENDIMENTO:proj&&proj.oficioEndereco,
     MATRICULA:proj&&proj.oficioMatricula, MATRICULA_IMOVEL:proj&&proj.oficioMatricula,
+    AREA_TERRENO:proj&&proj.areaTerreno, AREA_CONSTRUIDA:proj&&proj.areaConstruida, NUMERO_UNIDADES:proj&&proj.numUnidades, UNIDADES:proj&&proj.numUnidades,
     INDICACAO_FISCAL:proj&&proj.oficioIndicacao, INDICACAOFISCAL:proj&&proj.oficioIndicacao,
     REPRESENTANTE:rep&&rep.nome, RESPONSAVEL:rep&&rep.nome, QUALIFICACAO:proj&&proj.oficioTexto,
     EMPRESA:empNome, NOME_EMPRESA:empNome, CNPJ:proj&&proj.cnpj,
@@ -11593,6 +11607,7 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
     const f={
       city:sel.city||'', oficioMatricula:sel.oficioMatricula||'', empresaNome:sel.empresaNome||'', cnpj:sel.cnpj||'',
       oficioIndicacao:sel.oficioIndicacao||'', oficioEndereco:sel.oficioEndereco||'', oficioTexto:sel.oficioTexto||'',
+      areaTerreno:sel.areaTerreno||'', areaConstruida:sel.areaConstruida||'', numUnidades:sel.numUnidades||'',
       custom:Object.keys(sel.dados||{}).map((chave,i)=>({id:'c'+i,chave,valor:(sel.dados||{})[chave]}))
     };
     setForm(f); inicialRef.current=JSON.stringify(f); setErros([]); setEditVar(null);
@@ -11611,7 +11626,7 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
     if(selId==='__gerais__'||selId==='__reps__'||empSel||repSel){ mostrarToast('Esses cadastros são salvos automaticamente.'); return; }
     if(!sel||!form){ mostrarToast('Selecione um empreendimento.','aviso'); return; }
     const dados={}; (form.custom||[]).forEach(c=>{ if(String(c.chave).trim()) dados[String(c.chave).trim()]=c.valor; });
-    updateProjectOficio(sel.id,{city:form.city,empresaNome:form.empresaNome,cnpj:form.cnpj,oficioTexto:form.oficioTexto,oficioMatricula:form.oficioMatricula,oficioEndereco:form.oficioEndereco,oficioIndicacao:form.oficioIndicacao,dados});
+    updateProjectOficio(sel.id,{areaTerreno:form.areaTerreno,areaConstruida:form.areaConstruida,numUnidades:form.numUnidades,city:form.city,empresaNome:form.empresaNome,cnpj:form.cnpj,oficioTexto:form.oficioTexto,oficioMatricula:form.oficioMatricula,oficioEndereco:form.oficioEndereco,oficioIndicacao:form.oficioIndicacao,dados});
     inicialRef.current=JSON.stringify(form); setEditVar(null);
     const falta=DD_OBRIG.filter(([k])=>!String(form[k]||'').trim());
     setErros(falta.map(([k])=>k));
@@ -11634,6 +11649,7 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
     <div className="dd-wrap">
       {/* ── Coluna esquerda: empreendimentos ── */}
       <aside className="dd-side">
+        <button className={'dd-geral'+(selId==='__gerais__'?' on':'')} style={{marginBottom:12}} onClick={()=>escolher('__gerais__')}><i className="ti ti-world"/> Dados gerais (todos)</button>
         <div className="dd-side-head">
           <i className="ti ti-stack-2"/><span>Empreendimentos</span><span className="dd-count">{ativos.length}</span>
         </div>
@@ -11650,8 +11666,6 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
                 </span>
               </button>); })}
         </div>
-        <div className="dd-side-sub">Cadastros gerais</div>
-        <button className={'dd-geral'+(selId==='__gerais__'?' on':'')} onClick={()=>escolher('__gerais__')}><i className="ti ti-world"/> Dados gerais (todos)</button>
         <div className="dd-side-sub dd-sub-emp">Representantes
           <button type="button" className="dd-nova-emp" onClick={()=>{ const id='rep-'+Date.now(); setRepresentantes(l=>(Array.isArray(l)?l:[]).concat({id,nome:'',cargo:'',textoPadrao:''})); escolher('rep:'+id); }} title="Cadastrar outro representante"><i className="ti ti-plus"/> Novo</button></div>
         {repsOrd.length===0&&<div className="dd-vazio" style={{padding:'4px 2px 8px'}}>Nenhum representante cadastrado.</div>}
@@ -11700,6 +11714,9 @@ function DadosView({projects,updateProjectOficio,dadosGerais,setDadosGerais,repr
               <div><Lbl k="oficioMatricula">Matrículas</Lbl>{inp('oficioMatricula','Ex.: 43.566 e 43.634')}</div>
               <div><Lbl k="oficioIndicacao">Indicação fiscal</Lbl>{inp('oficioIndicacao','Ex.: 43.216.0078')}</div>
               <div><Lbl k="oficioEndereco">Endereço</Lbl>{inp('oficioEndereco','Rua, número – bairro')}</div>
+              <div><Lbl k="areaTerreno">Área do terreno (m²)</Lbl>{inp('areaTerreno','Ex.: 12.450,00')}</div>
+              <div><Lbl k="areaConstruida">Área construída (m²)</Lbl>{inp('areaConstruida','Ex.: 8.320,50')}</div>
+              <div><Lbl k="numUnidades">Número de unidades</Lbl>{inp('numUnidades','Ex.: 120')}</div>
             </div>
           </section>
 
