@@ -2748,6 +2748,15 @@
   .dd-side-head .dd-count{height:18px;min-width:20px;font-size:10.5px;letter-spacing:0;}
   @media(max-width:1100px){ .dd-wrap{grid-template-columns:360px minmax(0,1fr) !important;} }
   @media(max-width:1000px){ .dd-wrap{grid-template-columns:1fr !important;} }
+
+  .gantt2-twist{width:16px;height:16px;flex-shrink:0;border:0;background:none;color:var(--text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:3px;}
+  .gantt2-twist:hover{background:var(--surface2);color:var(--text);}
+  .gantt2-twist.sp{cursor:default;}
+  .gantt2-twist.sp:hover{background:none;}
+  .gantt2-row.mae .gantt2-labeltxt{font-weight:600;}
+  .gantt2-labeltxt{cursor:pointer;}
+  .gantt2-cod{font-weight:600;color:var(--text3);margin-right:5px;font-size:11px;}
+  .gantt2-bar.sum{border-radius:1px !important;opacity:.85;}
 </style>
 </head>
 <body>
@@ -7217,6 +7226,10 @@ function FiltrosBotao({filtro,setFiltro,project,fases}){
 }
 function GanttChart({tasks,connections,onTaskOpen}){
   const [pxPerDay,setPxPerDay]=useState(6);
+  /* Estrutura igual à do Cronograma (tarefa-mãe › subtarefas). Começa tudo recolhido. */
+  const [abertos,setAbertos]=useState(()=>new Set());
+  const alterna=id=>setAbertos(a=>{ const n=new Set(a); if(n.has(id)) n.delete(id); else n.add(id); return n; });
+  const totalDaysRef=useRef(0);
   const scrollRef=useRef(null);
   const didCenterRef=useRef(false);
   const hojeXRef=useRef(null);
@@ -7251,7 +7264,7 @@ function GanttChart({tasks,connections,onTaskOpen}){
   const timelineEnd=new Date(maxD.getFullYear(),maxD.getMonth()+1,0);
   const dayIndex=(d)=>Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime()-timelineStart.getTime())/DAY);
   const totalDays=dayIndex(timelineEnd)+1;
-  const totalW=totalDays*pxPerDay;
+  const totalW=totalDays*pxPerDay; totalDaysRef.current=totalDays;
   const LABEL_W=210, ROW_H=34, HEAD_H=44, PHASE_H=28, BAR_H=13, BAR_TOP=5, BL_H=7, BL_TOP=BAR_TOP+BAR_H+3;
 
   /* Marcadores de mês (posição e largura em px). */
@@ -7263,26 +7276,32 @@ function GanttChart({tasks,connections,onTaskOpen}){
       d=new Date(d.getFullYear(),d.getMonth()+1,1);
     } }
 
-  /* Layout das linhas + retângulo de cada tarefa (para desenhar as setas). */
-  const FSg=fasesDoProjeto(PROJ_ATUAL); const idsFSg=new Set(FSg.map(f=>f.id));
-  const grouped=FSg.map((ph,i)=>({phase:ph,tasks:tasks.filter(t=>{ const f=idsFSg.has(t.phase)?t.phase:FSg[0].id; return f===ph.id; })})).filter(g=>g.tasks.length);
+  /* Árvore como no Cronograma: raízes = sem mãe (ou mãe fora da lista/filtro). */
+  const idsT=new Set(tasks.map(t=>String(t.id)));
+  const filhos={}; tasks.forEach(t=>{ const p=t.parentId!=null&&idsT.has(String(t.parentId))?String(t.parentId):'__raiz'; (filhos[p]=filhos[p]||[]).push(t); });
+  Object.keys(filhos).forEach(k=>filhos[k].sort(schedSiblingSort));
+  /* datas da tarefa-mãe = do começo da 1ª ao fim da última subtarefa (se ela não tiver as próprias) */
+  const rollup={}; const calc=t=>{ const id=String(t.id); if(rollup[id]) return rollup[id];
+    let s0=parseFlexDate(realIni(t)), e0=parseFlexDate(realFim(t));
+    (filhos[id]||[]).forEach(c=>{ const r=calc(c); if(r.s&&(!s0||r.s<s0)) s0=r.s; if(r.e&&(!e0||r.e>e0)) e0=r.e; });
+    return (rollup[id]={s:s0,e:e0}); };
+  const linhas=[]; const andar=(lista,nivel)=>lista.forEach(t=>{ const tem=(filhos[String(t.id)]||[]).length>0; linhas.push({t,nivel,tem}); if(tem&&abertos.has(String(t.id))) andar(filhos[String(t.id)],nivel+1); });
+  andar(filhos.__raiz||[],0);
   const rectById={};
   let yCur=0;
-  const groupsLayout=grouped.map(g=>{
-    const headY=yCur; yCur+=PHASE_H;
-    const rows=g.tasks.map(t=>{
-      const s=parseFlexDate(realIni(t)), e=parseFlexDate(realFim(t)), meta=parseFlexDate(t.clickupDate);
-      const bs=s||meta||e, be=e||meta||s;
-      const rowTop=yCur; yCur+=ROW_H;
-      let barLeft=null, barW=0;
-      if(bs){ barLeft=dayIndex(bs)*pxPerDay; barW=Math.max((dayIndex(be)-dayIndex(bs)+1)*pxPerDay,3); }
-      const ls=parseFlexDate(t.baselineStart), le=parseFlexDate(t.baselineEnd);
-      let blLeft=null, blW=0;
-      if(ls&&le){ blLeft=dayIndex(ls)*pxPerDay; blW=Math.max((dayIndex(le)-dayIndex(ls)+1)*pxPerDay,3); }
-      rectById[t.id]={left:barLeft,w:barW,cy:rowTop+BAR_TOP+BAR_H/2,hasDate:bs!=null};
-      return {t,rowTop,barLeft,barW,blLeft,blW,s,e,hasDate:bs!=null||blLeft!=null,temReal:bs!=null};
-    });
-    return {g,headY,rows};
+  const rowsLayout=linhas.map(({t,nivel,tem})=>{
+    const r=tem?calc(t):{s:parseFlexDate(realIni(t)),e:parseFlexDate(realFim(t))};
+    const meta=parseFlexDate(t.clickupDate);
+    const s=r.s, e=r.e;
+    const bs=s||meta||e, be=e||meta||s;
+    const rowTop=yCur; yCur+=ROW_H;
+    let barLeft=null, barW=0;
+    if(bs){ barLeft=dayIndex(bs)*pxPerDay; barW=Math.max((dayIndex(be)-dayIndex(bs)+1)*pxPerDay,3); }
+    const ls=parseFlexDate(t.baselineStart), le=parseFlexDate(t.baselineEnd);
+    let blLeft=null, blW=0;
+    if(ls&&le){ blLeft=dayIndex(ls)*pxPerDay; blW=Math.max((dayIndex(le)-dayIndex(ls)+1)*pxPerDay,3); }
+    rectById[t.id]={left:barLeft,w:barW,cy:rowTop+BAR_TOP+BAR_H/2,hasDate:bs!=null};
+    return {t,nivel,tem,rowTop,barLeft,barW,blLeft,blW,s,e,hasDate:bs!=null||blLeft!=null,temReal:bs!=null};
   });
   const bodyH=yCur;
 
@@ -7298,7 +7317,9 @@ function GanttChart({tasks,connections,onTaskOpen}){
 
   const hojeX=(()=>{ const t=new Date(); t.setHours(0,0,0,0); if(t<timelineStart||t>timelineEnd) return null; return dayIndex(t)*pxPerDay; })();
   hojeXRef.current=hojeX;
-  const zoom=(dir)=>setPxPerDay(v=>Math.min(40,Math.max(2, dir>0?Math.max(v+1,Math.round(v*1.4)):Math.min(v-1,Math.round(v/1.4)))));
+  const zoom=(dir)=>setPxPerDay(v=>Math.min(40,Math.max(0.3, dir>0?(v<2?v*1.4:Math.max(v+1,Math.round(v*1.4))):(v<=2?v/1.4:Math.min(v-1,Math.round(v/1.4))))));
+  /* Enquadrar (como no ClickUp): ajusta o zoom para caber todo o período na tela. */
+  const enquadrar=()=>{ const el=scrollRef.current; if(!el||!totalDaysRef.current) return; const w=el.clientWidth-LABEL_W-24; setPxPerDay(Math.max(0.3,Math.min(40,w/totalDaysRef.current))); setTimeout(()=>{ if(scrollRef.current) scrollRef.current.scrollTo({left:0,behavior:'smooth'}); },30); };
 
   return(
     <div className="gantt2">
@@ -7320,34 +7341,26 @@ function GanttChart({tasks,connections,onTaskOpen}){
               <defs><marker id="ganttArrow" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--text3)"/></marker></defs>
               {arrows.map(a=><path key={a.key} d={a.d} fill="none" stroke="var(--text3)" strokeWidth="1.3" markerEnd="url(#ganttArrow)" opacity="0.7"/>)}
             </svg>
-            {groupsLayout.map(gl=>(
-              <React.Fragment key={gl.g.phase.id}>
-                <div className="gantt2-phase-row" style={{top:gl.headY+'px',height:PHASE_H+'px'}}>
-                  <div className="gantt2-phasecell" style={{width:LABEL_W+'px'}}>
-                    <span className="gantt2-phase-badge" style={{background:gl.g.phase.labelBg,color:gl.g.phase.labelColor}}>{gl.g.phase.name}</span>
-                  </div>
-                </div>
-                {gl.rows.map(r=>(
-                  <div key={r.t.id} className="gantt2-row" style={{top:r.rowTop+'px',height:ROW_H+'px'}}>
-                    <div className="gantt2-label" style={{width:LABEL_W+'px'}} onClick={()=>onTaskOpen(r.t)} title={r.t.label}>
+            {rowsLayout.map(r=>(
+                  <div key={r.t.id} className={'gantt2-row'+(r.tem?' mae':'')} style={{top:r.rowTop+'px',height:ROW_H+'px'}}>
+                    <div className="gantt2-label" style={{width:LABEL_W+'px',paddingLeft:(8+r.nivel*14)+'px'}} title={r.t.label}>
+                      {r.tem?<button type="button" className="gantt2-twist" onClick={e=>{ e.stopPropagation(); alterna(String(r.t.id)); }} title={abertos.has(String(r.t.id))?'Recolher':'Mostrar as subtarefas'}><i className={'ti ti-chevron-'+(abertos.has(String(r.t.id))?'down':'right')}/></button>:<span className="gantt2-twist sp"/>}
                       <span className="dot" style={{background:statusColor(r.t.status)}}/>
-                      <span className="gantt2-labeltxt">{r.t.label}</span>
+                      <span className="gantt2-labeltxt" onClick={()=>onTaskOpen(r.t)}>{r.t.code?<b className="gantt2-cod">{r.t.code}</b>:null}{r.t.label}</span>
                     </div>
                     <div className="gantt2-track" style={{width:totalW+'px'}}>
                       {r.temReal ? (
-                        <div className="gantt2-bar" onClick={()=>onTaskOpen(r.t)}
-                          style={{left:r.barLeft+'px',width:r.barW+'px',top:BAR_TOP+'px',height:BAR_H+'px',background:statusColor(r.t.status)}}
-                          title={r.t.label+' · Real'+(r.s?' · Início '+formatDateShort(realIni(r.t)):'')+(r.e?' · Término '+formatDateShort(realFim(r.t)):'')}/>
+                        <div className={'gantt2-bar'+(r.tem?' sum':'')} onClick={()=>onTaskOpen(r.t)}
+                          style={{left:r.barLeft+'px',width:r.barW+'px',top:(r.tem?BAR_TOP+3:BAR_TOP)+'px',height:(r.tem?BAR_H-6:BAR_H)+'px',background:r.tem?'var(--text2)':statusColor(r.t.status)}}
+                          title={r.t.label+(r.tem?' · Tarefa-mãe':' · Real')+(r.s?' · Início '+formatDateShort(r.s.toISOString().slice(0,10)):'')+(r.e?' · Término '+formatDateShort(r.e.toISOString().slice(0,10)):'')}/>
                       ) : null}
                       {r.blLeft!=null&&<div className="gantt2-blbar" onClick={()=>onTaskOpen(r.t)}
                           style={{left:r.blLeft+'px',width:r.blW+'px',top:BL_TOP+'px',height:BL_H+'px'}}
                           title={r.t.label+' · Linha de base · Início '+formatDateShort(r.t.baselineStart)+' · Término '+formatDateShort(r.t.baselineEnd)}/>}
-                      {r.temReal&&r.e&&<span className="gantt2-bdate" style={{left:(Math.max(r.barLeft+r.barW,r.blLeft!=null?r.blLeft+r.blW:0)+12)+'px'}}>{formatDateShort(realFim(r.t))}</span>}
+                      {r.temReal&&r.e&&<span className="gantt2-bdate" style={{left:(Math.max(r.barLeft+r.barW,r.blLeft!=null?r.blLeft+r.blW:0)+12)+'px'}}>{formatDateShort(r.e.toISOString().slice(0,10))}</span>}
                       {!r.hasDate&&<span className="gantt2-nodate">sem data</span>}
                     </div>
                   </div>
-                ))}
-              </React.Fragment>
             ))}
           </div>
         </div>
@@ -7360,7 +7373,10 @@ function GanttChart({tasks,connections,onTaskOpen}){
         <button className="gantt2-zbtn" onClick={()=>scrollSide(-1)} title="Rolar para a esquerda (voltar no tempo)"><i className="ti ti-chevron-left"/></button>
         <button className="gantt2-zbtn" onClick={()=>scrollSide(1)} title="Rolar para a direita (avançar no tempo)"><i className="ti ti-chevron-right"/></button>
         <button className="gantt2-hoje" onClick={goHoje} title="Ir para o dia de hoje">Hoje</button>
-        <span className="gantt2-hint">Use as setas para navegar no tempo · clique numa tarefa para abrir</span>
+        <button className="gantt2-hoje" onClick={enquadrar} title="Ajustar o zoom para ver o período inteiro na tela"><i className="ti ti-arrows-maximize"/> Enquadrar</button>
+        <button className="gantt2-hoje" onClick={()=>setAbertos(new Set(tasks.filter(t=>tasks.some(c=>String(c.parentId)===String(t.id))).map(t=>String(t.id))))} title="Mostrar todas as subtarefas">Expandir tudo</button>
+        <button className="gantt2-hoje" onClick={()=>setAbertos(new Set())} title="Recolher todas as tarefas-mãe">Recolher tudo</button>
+        <span className="gantt2-hint">Clique na setinha para ver as subtarefas · clique no nome para abrir</span>
       </div>
       <div className="gantt-legend">
         <span className="gantt-legend-item"><span className="gantt2-legbar"/> Real (início e término)</span>
