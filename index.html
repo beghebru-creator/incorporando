@@ -2664,6 +2664,25 @@
   :has(> .venc-card) > .venc-card .venc-card-label{margin-bottom:6px !important;}
   :has(> .venc-card) > .venc-card > *:not(.venc-card-label):not(.venc-card-value){order:2;font-size:11px !important;margin-top:5px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .pm-kpi-d{display:none !important;}
+
+  /* ═══ Menos "cara de IA" (22/11): sem degradês, chat discreto, tabelas mais densas ═══ */
+  .app-nav-logo{position:relative;}
+  .app-nav-logo .app-brand{flex-shrink:0;overflow:visible !important;text-overflow:clip !important;max-width:none !important;}
+  .app-nav-colapsar{margin-left:auto;width:24px;height:24px;flex-shrink:0;border:0;background:none;color:var(--text3);border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+  .app-nav-colapsar:hover{background:var(--surface2);color:var(--text);}
+  .app-nav.mini .app-nav-logo{flex-direction:column;gap:6px;}
+  .app-nav .sec-curto{display:none;}
+  .app-nav.mini .app-nav-sec{display:block !important;text-align:center;font-size:9px !important;margin:10px 0 4px !important;padding-top:8px;border-top:1px solid var(--border);}
+  .app-nav.mini .app-nav-sec .sec-full{display:none;}
+  .app-nav.mini .app-nav-sec .sec-curto{display:inline;}
+  .theme-toggle.on{color:var(--accent);border-color:var(--accent);}
+  .proj-card2-thumb{background:var(--surface2) !important;}
+  .proj-card2-thumb[style]{background-size:cover !important;}
+  .dd-hero-art{display:none !important;}
+  .chat-fab{width:40px !important;height:40px !important;border-radius:6px !important;font-size:19px !important;box-shadow:0 4px 14px rgba(0,0,0,.25) !important;}
+  .ini-hello{font-size:20px !important;font-weight:600 !important;}
+  .venc-table tbody td{padding-top:8px !important;padding-bottom:8px !important;}
+  .topbar-title .tt-s:empty{display:none;}
 </style>
 </head>
 <body>
@@ -17879,8 +17898,7 @@ function InicioView({projects,painelTarefas,setPainelTarefas,vencimentos,usuario
     <div className="dash">
       <div className="ini-top">
         <div>
-          <div className="ini-hello">{primeiro?`Olá, ${primeiro}`:'Olá'}{pessoa!==eu&&<span className="ini-vendo"> · vendo o Início de {nome||pessoa.email}</span>}</div>
-          <div className="ini-date">{dataHoje.charAt(0).toUpperCase()+dataHoje.slice(1)}</div>
+          <div className="ini-hello">{dataHoje.charAt(0).toUpperCase()+dataHoje.slice(1)}{pessoa!==eu&&<span className="ini-vendo"> · Início de {nome||pessoa.email}</span>}</div>
         </div>
         <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
           {isAdmin && pessoas.length>1 && (
@@ -20585,12 +20603,12 @@ function App({currentUser}){
     const abas=(p.abas||[]).filter(k=>PORTAL_ABAS.some(a=>a.key===k));
     const aberto=portalAberto(p.id), vAtual=portalViewDe(p.id);
     return (<React.Fragment key={'portal-'+p.id}>
-      {comTitulo && <div className="app-nav-sec" title={portalNome(p)}>{portalNome(p)}</div>}
+      {comTitulo && <div className="app-nav-sec" title={portalNome(p)}><span className="sec-full">{portalNome(p)}</span><span className="sec-curto">{portalNome(p).replace(/^portal\s+/i,'')}</span></div>}
       {abas.length===0
         ? <div className={'app-nav-item'+(aberto?' active':'')+(comTitulo?' sub':'')} onClick={()=>abrirAbaPortal(p.id,'home')} title="Portal sem abas — adicione em Configurações → Portais"><i className={'ti '+(p.icone||'ti-layout-grid')}/> {portalNome(p)}</div>
-        : Object.keys(PORTAL_GRUPOS).map(g=>{ const doGrupo=abas.filter(k=>portalGrupoDaAba(k)===g); if(!doGrupo.length) return null;
+        : Object.keys(PORTAL_GRUPOS).sort((a,b)=>PORTAL_GRUPOS[a].nome.localeCompare(PORTAL_GRUPOS[b].nome,'pt-BR')).map(g=>{ const doGrupo=abas.filter(k=>portalGrupoDaAba(k)===g); if(!doGrupo.length) return null;
             return navGrupo('p-'+p.id+'-'+g,PORTAL_GRUPOS[g].icone,PORTAL_GRUPOS[g].nome,
-              doGrupo.map(k=>{ const a=PORTAL_ABAS.find(x=>x.key===k); return {k,label:a.nome,ativo:aberto&&vAtual===k,abrir:()=>abrirAbaPortal(p.id,k)}; }),comTitulo); })}
+              doGrupo.map(k=>{ const a=PORTAL_ABAS.find(x=>x.key===k); return {k,label:a.nome,ativo:aberto&&vAtual===k,abrir:()=>abrirAbaPortal(p.id,k)}; }).sort((x,y)=>x.label.localeCompare(y.label,'pt-BR')),comTitulo); })}
     </React.Fragment>); };
   const navPortaisVis=acessoResolvido?portais.filter(p=>!p.removido&&verPortal(p.id)):[];
   const navMeusSetores=(PERM.ativo&&!PERM.isMaster&&(PERM.isAdmin||PERM.isRestrito))?(PERM.setores||[]):[];
@@ -20602,19 +20620,7 @@ function App({currentUser}){
   /* Subtítulo de cada aba (embaixo do título, no topo da página). */
   const topSub=(()=>{
     if(screen==='portaldi'||screen==='portalprj'||screen==='portal'){ const pid=screen==='portal'?portalId:screen; const v=portalViewDe(pid); const a=PORTAL_ABAS.find(x=>x.key===v); return a?a.nome:'Escolha uma opção no menu ao lado.'; }
-    return ({
-      inicio:'Suas atividades, tarefas, empreendimentos e avisos.',
-      dashboard:'Métricas de desempenho dos empreendimentos e setores.',
-      projects:'Todos os empreendimentos e o andamento de cada um.',
-      map:'Localização dos empreendimentos.',
-      checklists:'Checklists padrão por cidade.',
-      ferramentas:'Checklist, gerador de contratos e gerador de ofícios.',
-      dados:'Gerencie as informações cadastrais utilizadas nos documentos e contratos.',
-      portaldiretoria:'Visão geral e aprovações da diretoria.',
-      portalpcp:'Acompanhamento de pedidos.',
-      tarefas:'Tarefas da equipe por responsável.',
-      settings:'Preferências, automações, portais e acessos.',
-    })[screen]||'';
+    return ({})[screen]||'';
   })();
   /* liveProjects = tudo que NÃO foi excluído (soft delete). Todas as telas
      partem daqui, então empreendimentos marcados como deleted:true nunca
@@ -20766,6 +20772,7 @@ function App({currentUser}){
       <div ref={navRef} className={'app-nav'+(navMini?' mini':'')+(navArrastando?' arrastando':'')} style={{width:navMini?64:navW}}>
         <div className="app-nav-logo" title="Incorporando">
           <ConectaMark size={30}/><span className="app-brand">incorporando</span>
+          <button type="button" className="app-nav-colapsar" onClick={e=>{ e.stopPropagation(); trocarNavMini(); }} title={navMini?'Mostrar o menu completo':'Deixar só os ícones'}><i className={'ti '+(navMini?'ti-chevrons-right':'ti-chevrons-left')}/></button>
         </div>
         <div className="app-nav-grip" onPointerDown={iniciarArrasteNav} onDoubleClick={()=>{ setNavW(NAV_W_PADRAO); try{ localStorage.setItem('inc_nav_w',String(NAV_W_PADRAO)); }catch(e){} }} title="Arraste para mudar a largura do menu (duplo clique volta ao padrão)"/>
         {/* Rótulo de quem está logado (ex.: "Portal DI"), embaixo do logo. */}
@@ -20790,9 +20797,6 @@ function App({currentUser}){
           title="Gestão"><i className="ti ti-crown"/> Gestão</div>}
         <div className={'app-nav-item'+(navActive==='map'?' active':'')} onClick={()=>setScreen('map')} title="Mapa"><i className="ti ti-map-2"/> Mapa</div>
         <div style={{marginTop:'auto'}}>
-          <div className="app-nav-item app-nav-recolher" onClick={()=>trocarNavMini()} title={navMini?'Mostrar o menu completo':'Deixar só os ícones'}>
-            <i className={'ti '+(navMini?'ti-layout-sidebar-left-expand':'ti-layout-sidebar-left-collapse')}/> Recolher menu</div>
-          <div className={'app-nav-item'+(navActive==='settings'?' active':'')} onClick={()=>{setCfgTab(null);setScreen('settings');}} title="Configurações"><i className="ti ti-settings"/> Configurações</div>
           <div className="app-nav-user" style={{borderTop:'1px solid var(--border)',marginTop:8,paddingTop:12,display:'flex',alignItems:'center',gap:10,padding:'12px 6px 0'}}>
             <div className="user-avatar" title="Sair da conta" style={{cursor:'pointer',overflow:'hidden'}}
               onClick={()=>{ if(window.confirm('Sair da conta?')) auth.signOut(); }}>
@@ -20821,7 +20825,7 @@ function App({currentUser}){
           </div>
         </>)}
         {screen==='projects'&&(<>
-          <div className="topbar-title"><span className="tt-t">Empreendimentos</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>
+          <div className="topbar-title"><span className="tt-t">Projetos</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>
           <div className="topbar-search"><i className="ti ti-search"/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar projeto..."/></div>
         </>)}
         {screen==='dashboard'&&<div className="topbar-title"><span className="tt-t">Dashboard</span>{topSub&&<span className="tt-s">{topSub}</span>}</div>}
@@ -20849,6 +20853,7 @@ function App({currentUser}){
           {screen==='project'&&viewMode==='flow'&&isEditMode&&<button className="edit-btn cancel" onClick={handleCancelEdit}><i className="ti ti-x"/> Cancelar</button>}
           {screen==='project'&&viewMode==='flow'&&isEditMode&&<button className="edit-btn save" onClick={handleSave}><i className="ti ti-check"/> Salvar</button>}
           {screen==='project'&&(viewMode==='gantt'||viewMode==='crono')&&permEstrutura()&&<button className="edit-btn" onClick={()=>{setGanttAddParent(null);setShowGanttAddModal(true);}}><i className="ti ti-plus"/> Nova Tarefa</button>}
+          <button className={'theme-toggle'+(screen==='settings'?' on':'')} onClick={()=>{setCfgTab(null);setScreen('settings');}} title="Configurações"><i className="ti ti-settings"/></button>
           <button className="theme-toggle" onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}
             title={theme==='dark'?'Modo claro':'Modo escuro'}>
             <i className={theme==='dark'?'ti ti-sun':'ti ti-moon'}/>
@@ -21073,8 +21078,8 @@ function App({currentUser}){
           return dashLayout.length===0
             ? <div className="dash-empty">
                 <i className="ti ti-layout-dashboard"/>
-                <div className="dash-empty-t">Seu dashboard está vazio</div>
-                <div className="dash-empty-d">Escolha os quadros que fazem sentido para você. Depois dá para arrastar para mudar a ordem e puxar o canto para mudar o tamanho.</div>
+                <div className="dash-empty-t">Nenhum quadro.</div>
+
                 <button className="pdi-btn" onClick={()=>setShowDashManage(true)}><i className="ti ti-plus"/> Adicionar quadros</button>
               </div>
             : <DashGrid layout={dashLayout} blocks={dashBlocks} onChange={setDashLayout} onCommit={salvarDashLayout}/>;
