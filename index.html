@@ -2667,8 +2667,7 @@
 
   /* ═══ Menos "cara de IA" (22/11): sem degradês, chat discreto, tabelas mais densas ═══ */
   .theme-toggle.on{color:var(--accent);border-color:var(--accent);}
-  .proj-card2-thumb{background:var(--surface2) !important;}
-  .proj-card2-thumb[style]{background-size:cover !important;}
+  .proj-card2-thumb:not([style]){background:var(--surface2) !important;} /* sem foto: fundo liso; com foto: a foto */
   .dd-hero-art{display:none !important;}
   .chat-fab{width:40px !important;height:40px !important;border-radius:6px !important;font-size:19px !important;box-shadow:0 4px 14px rgba(0,0,0,.25) !important;}
   .ini-hello{font-size:20px !important;font-weight:600 !important;}
