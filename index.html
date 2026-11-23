@@ -20649,7 +20649,8 @@ function App({currentUser}){
   /* Largura do menu lateral (arrastável) e modo só-ícones — lembrados no aparelho. */
   const NAV_W_MIN=170, NAV_W_MAX=380, NAV_W_PADRAO=220;
   const[navW,setNavW]=useState(()=>{ const v=Number(localStorage.getItem('inc_nav_w')); return v>=NAV_W_MIN&&v<=NAV_W_MAX?v:NAV_W_PADRAO; });
-  const[navMini,setNavMini]=useState(()=>localStorage.getItem('inc_nav_mini')==='1');
+  /* 23/11: ao abrir ou atualizar a página o menu começa sempre recolhido (só ícones) e com as seções fechadas. */
+  const[navMini,setNavMini]=useState(true);
   const[navArrastando,setNavArrastando]=useState(false);
   const navRef=useRef(null);
   const trocarNavMini=(v)=>{ const n=typeof v==='boolean'?v:!navMini; setNavMini(n); try{ localStorage.setItem('inc_nav_mini',n?'1':'0'); }catch(e){} };
@@ -20666,8 +20667,8 @@ function App({currentUser}){
   const[buscaGeral,setBuscaGeral]=useState(false);
   const[menuUser,setMenuUser]=useState(false);
   useEffect(()=>{ const f=e=>{ if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='k'){ e.preventDefault(); setBuscaGeral(v=>!v); } }; window.addEventListener('keydown',f); return ()=>window.removeEventListener('keydown',f); },[]);
-  const[navAbertos,setNavAbertos]=useState(()=>{ try{ const v=JSON.parse(localStorage.getItem('inc_nav_abertos')||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; } });
-  const toggleNav=(k)=>setNavAbertos(a=>{ const n=a.includes(k)?a.filter(x=>x!==k):a.concat(k); try{ localStorage.setItem('inc_nav_abertos',JSON.stringify(n)); }catch(e){} return n; });
+  const[navAbertos,setNavAbertos]=useState([]);
+  const toggleNav=(k)=>setNavAbertos(a=>a.includes(k)?a.filter(x=>x!==k):a.concat(k));
   const portalViewDe=(pid)=>pid==='portaldi'?portalView:pid==='portalprj'?prjView:portalXView;
   const portalAberto=(pid)=>pid==='portaldi'?screen==='portaldi':pid==='portalprj'?screen==='portalprj':(screen==='portal'&&portalId===pid);
   const abrirAbaPortal=(pid,v)=>{ if(pid==='portaldi'){ setPortalView(v); setScreen('portaldi'); } else if(pid==='portalprj'){ setPrjView(v); setScreen('portalprj'); } else { setPortalId(pid); setPortalXView(v); setScreen('portal'); } };
@@ -20690,7 +20691,7 @@ function App({currentUser}){
       </div>}
     </div>); };
   /* Seção do menu: rótulo pequeno e cinza que abre/fecha; itens com ícone. */
-  const navSecao=(key,nome,itens)=>{ const fechada=navAbertos.includes('x-'+key);
+  const navSecao=(key,nome,itens)=>{ const fechada=!navAbertos.includes('x-'+key); /* 'x-'+key na lista = seção ABERTA */
     return (<div key={key} className="app-nav-secao">
       <div className="app-nav-sec" onClick={()=>toggleNav('x-'+key)} title={nome}><span className="sec-full">{nome}</span><span className="sec-curto">{({Documentos:'Docs',Favoritos:'Fav.'})[nome]||String(nome).replace(/^portal\s+/i,'').slice(0,6)}</span><i className={'ti ti-chevron-down app-nav-chev'+(fechada?'':' aberto')}/></div>
       {!fechada&&itens.map(it=>(
