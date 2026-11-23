@@ -2757,6 +2757,11 @@
   .gantt2-labeltxt{cursor:pointer;}
   .gantt2-cod{font-weight:600;color:var(--text3);margin-right:5px;font-size:11px;}
   .gantt2-bar.sum{border-radius:1px !important;opacity:.85;}
+
+  .flow-linhas-btn{position:absolute;left:56px;bottom:15px;z-index:5;height:28px;padding:0 10px;border:1px solid var(--border2);border-radius:4px;background:var(--surface);color:var(--text2);font-family:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+  .flow-linhas-btn.on{color:var(--text);}
+  .flow-linhas-btn:not(.on){color:var(--text3);border-style:dashed;}
+  .flow-linhas-btn ~ .flow-ocultos-btn{left:150px;}
 </style>
 </head>
 <body>
@@ -5436,6 +5441,15 @@ function FlowCanvas({filtroExtra,project,isEditMode,theme,onNodeOpen,onChecklist
   },[setEdges]);
   const beginEdgeEdit=useCallback(()=>{ try{ pushHistory(); }catch(e){} },[pushHistory]);
   const[mostrarOcultos,setMostrarOcultos]=useState(false); /* botão "Ocultos" (como no EW) */
+  /* Ligações visíveis ou não (preferência de cada pessoa). Escondidas: ao passar o
+     mouse numa tarefa aparecem só as linhas que chegam nela e as que saem dela. */
+  const chaveLinhas='inc_fluxo_linhas_'+String((EU&&EU.email)||'');
+  const[linhasOn,setLinhasOn]=useState(()=>{ try{ return localStorage.getItem(chaveLinhas)!=='0'; }catch(e){ return true; } });
+  const[hoverNo,setHoverNo]=useState(null);
+  useEffect(()=>{ if(DEMO_MODE) return; const u=auth.currentUser; if(!u) return;
+    USERPREFS_COL.doc(u.uid).get().then(d=>{ const v=d.exists&&d.data().fluxoLinhas; if(typeof v==='boolean'){ setLinhasOn(v); try{ localStorage.setItem(chaveLinhas,v?'1':'0'); }catch(e){} } }).catch(()=>{}); },[]);
+  const trocarLinhas=()=>setLinhasOn(v=>{ const n=!v; try{ localStorage.setItem(chaveLinhas,n?'1':'0'); }catch(e){}
+    if(!DEMO_MODE&&auth.currentUser) USERPREFS_COL.doc(auth.currentUser.uid).set({fluxoLinhas:n},{merge:true}).catch(()=>{}); return n; });
   const edgeEditValue=React.useMemo(()=>({isEditMode,mostrarOcultos,setManualPts,clearManualPts,setEdgeData,beginEdgeEdit}),[isEditMode,mostrarOcultos,setManualPts,clearManualPts,setEdgeData,beginEdgeEdit]);
 
   const onSelectionChange=useCallback(({nodes:ns,edges:es})=>{
@@ -5560,12 +5574,17 @@ function FlowCanvas({filtroExtra,project,isEditMode,theme,onNodeOpen,onChecklist
     });
   },[nodesBase,filterSectors,filterStatuses,filterPhases,searchTerm,statFilter,criticalPathIds,destravaVer,liveById,ocultosPorNo,foraPorNo,filtroExtra]);
   void nodes;
+  const edgesForRender=React.useMemo(()=>{
+    if(linhasOn||isEditMode) return edges;
+    return edges.map(e=>{ const v=hoverNo&&(String(e.source)===String(hoverNo)||String(e.target)===String(hoverNo)); return v?e:{...e,hidden:true}; });
+  },[edges,linhasOn,isEditMode,hoverNo]);
 
   return(
     <EdgeEditContext.Provider value={edgeEditValue}>
       <SwimlaneLayer swimlanes={swimlaneData}/>
       <ReactFlow
-        nodes={nodesForRender} edges={edges}
+        nodes={nodesForRender} edges={edgesForRender}
+        onNodeMouseEnter={(e,n)=>{ if(!linhasOn) setHoverNo(n.id); }} onNodeMouseLeave={()=>{ if(hoverNo) setHoverNo(null); }}
         onNodesChange={handleNodesChange} onEdgesChange={onEdgesChange}
         onConnect={onConnect} onConnectStart={onConnectStart} onConnectEnd={onConnectEnd}
         onNodeDragStart={onNodeDragStart} onNodeDrag={onNodeDrag} onNodeDragStop={onNodeDragStop}
@@ -5590,6 +5609,8 @@ function FlowCanvas({filtroExtra,project,isEditMode,theme,onNodeOpen,onChecklist
           nodeColor={n=>statusColor(n.data?.status)}
           maskColor={theme==='dark'?'rgba(19,23,20,0.7)':'rgba(238,240,234,0.7)'} style={{background:'var(--surface)'}}/>
         <Controls showInteractive={false}/>
+        {!isEditMode&&<button className={'flow-linhas-btn'+(linhasOn?' on':'')} onClick={trocarLinhas}
+            title={linhasOn?'Esconder as ligações (passe o mouse numa tarefa para ver as dela)':'Mostrar todas as ligações'}><i className={'ti '+(linhasOn?'ti-line':'ti-line-dashed')}/> Ligações</button>}
         {edges.some(e=>e.data&&e.data.kind==='oculto')&&!isEditMode&&(
           <button className={'flow-ocultos-btn'+(mostrarOcultos?' on':'')} onClick={()=>setMostrarOcultos(v=>!v)}
             title="Mostrar temporariamente as linhas dos vínculos ocultos (não saem nas exportações)"><i className="ti ti-eye"/> Ocultos</button>)}
