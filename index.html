@@ -20693,7 +20693,7 @@ function App({currentUser}){
   const navPortal=(p,comTitulo)=>{
     const abas=(p.abas||[]).filter(k=>PORTAL_ABAS.some(a=>a.key===k));
     const aberto=portalAberto(p.id), vAtual=portalViewDe(p.id);
-    const itens=abas.length?abas.map(k=>{ const a=PORTAL_ABAS.find(x=>x.key===k); return {k,label:NAV_NOME_CURTO[k]||a.nome,titulo:a.nome,ic:a.ic||'ti-point',ativo:aberto&&vAtual===k,abrir:()=>abrirAbaPortal(p.id,k)}; })
+    const itens=abas.length?abas.map(k=>{ const a=PORTAL_ABAS.find(x=>x.key===k); return {k,label:NAV_NOME_CURTO[k]||a.nome,titulo:a.nome,ic:a.ic||'ti-point',ativo:aberto&&vAtual===k,abrir:()=>abrirAbaPortal(p.id,k)}; }).sort((x,y)=>x.label.localeCompare(y.label,'pt-BR'))
       :[{k:'home',label:portalNome(p),ic:p.icone||'ti-layout-grid',ativo:aberto,abrir:()=>abrirAbaPortal(p.id,'home')}];
     return navSecao('portal-'+p.id,portalNome(p),itens); };
   const navPortaisVis=acessoResolvido?portais.filter(p=>!p.removido&&verPortal(p.id)):[];
@@ -20897,9 +20897,6 @@ function App({currentUser}){
           {menuUser&&<>
             <div className="app-nav-user-fundo" onClick={()=>setMenuUser(false)}/>
             <div className="app-nav-user-menu">
-              <button onClick={()=>{ setMenuUser(false); setCfgTab(null); setScreen('settings'); }}><i className="ti ti-settings"/> Configurações</button>
-              <button onClick={()=>{ setMenuUser(false); setTheme(t=>t==='dark'?'light':'dark'); }}><i className={'ti '+(theme==='dark'?'ti-sun':'ti-moon')}/> {theme==='dark'?'Tema claro':'Tema escuro'}</button>
-              <div className="sep"/>
               <button onClick={()=>{ setMenuUser(false); if(window.confirm('Sair da conta?')) auth.signOut(); }}><i className="ti ti-logout"/> Sair</button>
             </div>
           </>}
@@ -20951,6 +20948,7 @@ function App({currentUser}){
           {screen==='project'&&viewMode==='flow'&&isEditMode&&<button className="edit-btn cancel" onClick={handleCancelEdit}><i className="ti ti-x"/> Cancelar</button>}
           {screen==='project'&&viewMode==='flow'&&isEditMode&&<button className="edit-btn save" onClick={handleSave}><i className="ti ti-check"/> Salvar</button>}
           {screen==='project'&&(viewMode==='gantt'||viewMode==='crono')&&permEstrutura()&&<button className="edit-btn" onClick={()=>{setGanttAddParent(null);setShowGanttAddModal(true);}}><i className="ti ti-plus"/> Nova Tarefa</button>}
+          <button className={'theme-toggle'+(screen==='settings'?' on':'')} onClick={()=>{setCfgTab(null);setScreen('settings');}} title="Configurações"><i className="ti ti-settings"/></button>
           <button className="theme-toggle" onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}
             title={theme==='dark'?'Modo claro':'Modo escuro'}>
             <i className={theme==='dark'?'ti ti-sun':'ti ti-moon'}/>
