@@ -2740,6 +2740,14 @@
   .proj-legenda span{display:inline-flex;align-items:center;gap:6px;}
   .proj-legenda i{width:9px;height:9px;border-radius:50%;display:inline-block;}
   .proj-mini-stat{padding:6px 4px !important;}
+
+  /* Dados: título "Empreendimentos" no mesmo estilo de "Representantes"; coluna da esquerda mais larga */
+  .dd-wrap{grid-template-columns:440px minmax(0,1fr) !important;}
+  .dd-side-head{font-family:inherit !important;font-size:10px !important;font-weight:800 !important;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);padding:0 !important;margin:4px 2px -2px;}
+  .dd-side-head > i{display:none;}
+  .dd-side-head .dd-count{height:18px;min-width:20px;font-size:10.5px;letter-spacing:0;}
+  @media(max-width:1100px){ .dd-wrap{grid-template-columns:360px minmax(0,1fr) !important;} }
+  @media(max-width:1000px){ .dd-wrap{grid-template-columns:1fr !important;} }
 </style>
 </head>
 <body>
