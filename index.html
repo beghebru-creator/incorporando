@@ -2441,7 +2441,7 @@
   .ata-badge.gemini{color:#1a73e8;border-color:rgba(26,115,232,.35);background:rgba(26,115,232,.08);}
   .ata-badge.pasta{color:var(--text2);}
   .ata-badge.revisar{color:var(--amber,#b45309);border-color:var(--amber,#f59e0b);background:var(--amber-bg,rgba(245,158,11,.1));}
-  .ata-ta{min-height:70px;resize:vertical;font-family:inherit;}
+  .ata-ta{min-height:140px;resize:vertical;font-family:inherit;overflow:hidden;line-height:1.5;}
   .ata-ta.grande{min-height:260px;font-size:12.5px;line-height:1.5;margin-top:6px;}
   .ata-vazio{font-size:12.5px;color:var(--text3);font-style:italic;padding:4px 0;}
   .ata-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
@@ -14853,8 +14853,16 @@ async function ataSalvar(ata,textoCompleto){
    já escrevem (Gemini, Zoom, Teams, tl;dv, Otter, Fireflies, Read.ai…) ou que a
    pessoa usou na ata feita à mão. Não usa IA. Sem títulos reconhecidos, o
    começo do texto vira o resumo (o texto inteiro fica guardado na ata). */
+/* Caixa de texto da ata: começa mais alta e cresce conforme o texto. */
+function AtaTextarea({value,onChange,disabled,placeholder}){
+  const ref=useRef(null);
+  const ajustar=()=>{ const el=ref.current; if(!el) return; el.style.height='auto'; el.style.height=Math.max(140,el.scrollHeight+2)+'px'; };
+  useEffect(ajustar,[value]);
+  return <textarea ref={ref} className="form-input ata-ta" value={value} disabled={disabled} placeholder={placeholder} onChange={e=>{ onChange(e.target.value); }} onInput={ajustar}/>;
+}
 function ataLimparLegenda(texto){
-  const t=String(texto||'').replace(/\r/g,'');
+  /* 23/11: o Google Docs usa \r e \v (quebra suave) nas Anotações do Gemini; antes eram apagados e o texto ficava grudado. */
+  const t=String(texto||'').replace(/\r\n?/g,'\n').replace(/[\u000b\u2028\u2029]/g,'\n');
   const ehLegenda=/^\s*WEBVTT/.test(t)||/\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}/.test(t);
   if(!ehLegenda) return t;
   const out=[]; let ant='';
@@ -14923,7 +14931,7 @@ function ataSugerirVinculos(projects,texto){
 
 /* Código do Apps Script que a pessoa cola na própria conta Google. */
 function ataScriptCodigo(token){
-  return `/* Incorporando — leitor da PASTA DE ATAS (versão 5)
+  return `/* Incorporando — leitor da PASTA DE ATAS (versão 6)
    Instale na conta Google onde ficam as atas. Ele só lê a pasta que você
    escolher no app (e as subpastas dela). Serve para qualquer app que salve a
    ata ali: Google Meet/Gemini, Zoom, Teams, tl;dv, Otter, Fireflies, ou ata à mão.
@@ -14940,7 +14948,7 @@ function ataScriptCodigo(token){
    (criada sozinha dentro da pasta de atas). Ata feita no Incorporando, sem arquivo,
    vira um Google Docs nessa mesma subpasta. */
 const CODIGO = '${token}';
-const VERSAO = 5;
+const VERSAO = 6;
 const NOMES_ATA = /(anota[çc][õo]es do gemini|notes by gemini|anota[çc][õo]es da reuni[ãa]o|transcri[çc][ãa]o|transcript)/i;
 const EXT_TEXTO = /\\.(txt|md|vtt|srt|sbv|csv|json)$/i;
 const CONVERTER = {
@@ -15011,16 +15019,18 @@ function lerDoc(id) {
     const visitar = function (abas) {
       abas.forEach(function (aba) {
         partes.push('### ' + aba.getTitle());
-        partes.push(aba.asDocumentTab().getBody().getText());
+        partes.push(textoComQuebras(aba.asDocumentTab().getBody().getText()));
         visitar(aba.getChildTabs());
       });
     };
     visitar(doc.getTabs());
     return partes.join('\\n\\n');
   } catch (e) {
-    return doc.getBody().getText();
+    return textoComQuebras(doc.getBody().getText());
   }
 }
+/* O Docs usa \\r e \\v nas quebras de linha suaves (Gemini): vira \\n para não grudar. */
+function textoComQuebras(t) { return String(t || '').replace(/\\r\\n?/g, '\\n').replace(/[\\u000b\\u2028\\u2029]/g, '\\n'); }
 
 /* Word/PDF/RTF: cria uma cópia temporária em Google Docs, lê e apaga. */
 function converter(f) {
@@ -15088,13 +15098,18 @@ function coletarCompartilhadas() {
   const it = DriveApp.searchFiles('mimeType = "application/vnd.google-apps.document" and modifiedDate > "' + desde + '" and trashed = false');
   const pronto = Date.now() - 20 * 60000; /* espera 20 min depois da última edição (o Gemini termina de escrever) */
   let n = 0;
+  /* Dono desta conta, pelo próprio Drive (sem pedir a permissão extra de e-mail do Google,
+     que travava o coletor nas contas da empresa). */
+  let eu = '';
+  try { eu = DriveApp.getRootFolder().getOwner().getEmail(); } catch (e0) {}
   while (it.hasNext()) {
     const f = it.next();
     if (feitos[f.getId()] || !NOMES_ATA.test(f.getName())) continue;
     if (f.getLastUpdated().getTime() > pronto) continue;
     if (dentroDaPasta(f, pastaId)) { feitos[f.getId()] = Date.now(); continue; }
     try {
-      if (f.getOwner() && f.getOwner().getEmail() === Session.getEffectiveUser().getEmail()) f.moveTo(pasta); /* é desta conta: só muda de pasta */
+      let dono = ''; try { dono = f.getOwner() ? f.getOwner().getEmail() : ''; } catch (e1) {}
+      if (eu && dono === eu) f.moveTo(pasta); /* é desta conta: só muda de pasta */
       else { const c = f.makeCopy(f.getName(), pasta); feitos[c.getId()] = Date.now(); } /* é de outra pessoa: guarda uma cópia */
       feitos[f.getId()] = Date.now(); n++;
     }
@@ -15294,11 +15309,11 @@ function AtaModal({inicial,projects,onClose,onAbrirTarefa}){
         </div>
 
         <div className="modal-field"><label className="modal-field-label">Resumo</label>
-          <textarea className="form-input ata-ta" value={a.resumo||''} disabled={!pode} onChange={e=>up('resumo',e.target.value)} placeholder="O que foi tratado (dá para ditar pelo microfone do teclado do celular)"/></div>
+          <AtaTextarea value={a.resumo||''} disabled={!pode} onChange={v=>up('resumo',v)} placeholder="O que foi tratado (dá para ditar pelo microfone do teclado do celular)"/></div>
         <div className="modal-field"><label className="modal-field-label">Decisões</label>
-          <textarea className="form-input ata-ta" value={a.decisoes||''} disabled={!pode} onChange={e=>up('decisoes',e.target.value)} placeholder="O que ficou decidido"/></div>
+          <AtaTextarea value={a.decisoes||''} disabled={!pode} onChange={v=>up('decisoes',v)} placeholder="O que ficou decidido"/></div>
         <div className="modal-field"><label className="modal-field-label">Próximos passos / prazos</label>
-          <textarea className="form-input ata-ta" value={a.proximos||''} disabled={!pode} onChange={e=>up('proximos',e.target.value)} placeholder="Ex.: reapresentar o projeto em 15 dias — responsável: Fulano"/></div>
+          <AtaTextarea value={a.proximos||''} disabled={!pode} onChange={v=>up('proximos',v)} placeholder="Ex.: reapresentar o projeto em 15 dias — responsável: Fulano"/></div>
 
         <div className="modal-field">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
@@ -15351,6 +15366,7 @@ function AtasIntegracaoModal({fontes,salvarFontes,onClose}){
                 <div style={{fontWeight:600}}>{f.nome||'Conexão'}{f.compartilhada&&<span className="ata-badge" style={{marginLeft:8}}>Conta da empresa · para todos</span>}</div>
                 <div className="ata-meta" style={{margin:0}}>{f.filtro?<>Só nomes com “{f.filtro}”</>:'Todos os arquivos da pasta'} · {f.ultimaTentativa?'última leitura: '+new Date(f.ultimaTentativa).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'ainda não sincronizou'}</div>
                 {f.ultimoErro&&<div className="ata-meta" style={{margin:0,color:'var(--red,#c0392b)'}}>Erro: {f.ultimoErro}</div>}
+                {f.ultimaTentativa&&Number(f.versaoScript)>=2&&Number(f.versaoScript)<6&&<div className="ata-meta" style={{margin:0,color:'var(--amber,#b7791f)'}}>Há uma versão nova do script (corrige o coletor das atas do Meet e o texto grudado). Clique no lápis e siga “Atualizar o script”.</div>}
                 {f.ultimaTentativa&&!(Number(f.versaoScript)>=2)&&<div className="ata-meta" style={{margin:0,color:'var(--amber,#b7791f)'}}>Script antigo: só lê Google Docs. Clique no lápis e siga “Atualizar o script”.</div>}
               </div>
               <button className="btn-modal ghost" onClick={()=>{setEdit({...f});setTeste('');}}><i className="ti ti-pencil"/></button>
