@@ -2735,6 +2735,11 @@
   .app-nav.mini .app-nav-sec{display:block !important;text-align:center;font-size:9px !important;font-weight:600 !important;margin:0 0 4px !important;padding:0 !important;color:var(--text3) !important;white-space:nowrap;overflow:hidden;}
   .app-nav.mini .app-nav-sec .sec-full,.app-nav.mini .app-nav-sec .app-nav-chev{display:none !important;}
   .app-nav.mini .app-nav-sec .sec-curto{display:inline;}
+
+  .proj-legenda{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin:0 0 12px;}
+  .proj-legenda span{display:inline-flex;align-items:center;gap:6px;}
+  .proj-legenda i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .proj-mini-stat{padding:6px 4px !important;}
 </style>
 </head>
 <body>
@@ -6418,9 +6423,9 @@ function ProjectCard({p,onOpen,onRename,onImageChange,onArchive,onDelete,onToggl
         <div className="proj-card2-title">{p.name}</div>
         <div className="proj-card2-addr">{p.city||' '}</div>
         <div className="proj-mini-stats">
-          <div className="proj-mini-stat"><div className="n" style={{color:'var(--amber)'}}>{wip}</div><div className="l">Em andamento</div></div>
-          <div className="proj-mini-stat"><div className="n" style={{color:'var(--text2)'}}>{Math.max(0,todo)}</div><div className="l">A fazer</div></div>
-          <div className="proj-mini-stat"><div className="n" style={{color:'var(--green)'}}>{done}</div><div className="l">Concluídas</div></div>
+          <div className="proj-mini-stat" title="Em andamento"><div className="n" style={{color:'var(--amber)'}}>{wip}</div></div>
+          <div className="proj-mini-stat" title="A fazer"><div className="n" style={{color:'var(--text2)'}}>{Math.max(0,todo)}</div></div>
+          <div className="proj-mini-stat" title="Concluídas"><div className="n" style={{color:'var(--green)'}}>{done}</div></div>
         </div>
         <div className="proj-card2-actions" style={{position:'relative'}}>
           <button className="proj-btn-primary" onClick={onOpen}>Visualizar Fluxograma</button>
@@ -21197,6 +21202,11 @@ function App({currentUser}){
               <div className="empty-state-desc">Clique na estrela no canto do card de um empreendimento pra marcá-lo como favorito.</div>
             </div>
           )}
+          {filteredProjects.length>0&&<div className="proj-legenda" aria-label="Legenda das cores">
+            <span><i style={{background:'var(--amber)'}}/>Em andamento</span>
+            <span><i style={{background:'var(--text2)'}}/>A fazer</span>
+            <span><i style={{background:'var(--green)'}}/>Concluídas</span>
+          </div>}
           <div className="projects-grid">
             {filteredProjects.map(p=>(
               <ProjectCard key={p.id} p={p} onOpen={()=>openProject(p.id)}
