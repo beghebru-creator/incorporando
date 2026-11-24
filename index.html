@@ -84,6 +84,13 @@
     --font-body:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
     --font-data:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; /* 22/11: números em IBM Plex Sans (a do IPTU) em todo o app, dígitos tabulares */
   }
+  /* 24/11: listas de opções (select) legíveis no modo escuro — o navegador desenhava
+     a lista com fundo branco e texto claro. color-scheme avisa o tema ao navegador. */
+  :root{color-scheme:dark;}
+  [data-theme="light"]{color-scheme:light;}
+  select option,select optgroup{background:var(--surface2);color:var(--text);}
+  select option:disabled{color:var(--text3);}
+  select option:checked{background:var(--accent);color:var(--on-accent);}
   /* ─── Tema claro (alternável pelo botão no topbar) ─── papel vegetal */
   [data-theme="light"] {
     --bg:#F3F1EA;--surface:#FFFFFF;--surface2:#ECE9E0;--surface3:#E0DCD1;
