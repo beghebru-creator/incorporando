@@ -17,6 +17,7 @@
       "**/*.exe",
       "**/*.zip",
       "functions/**",
+      "robo/**",
       "index.backup-*.html",
       "node-v*/**",
       "_ferramentas/**",

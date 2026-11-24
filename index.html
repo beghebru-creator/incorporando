@@ -2467,6 +2467,35 @@
   .ata-codigo{margin-bottom:12px;font-size:12px;}
   .ata-codigo pre{max-height:220px;overflow:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;white-space:pre;}
   @keyframes ataGira{to{transform:rotate(360deg);}} .ata-gira{display:inline-block;animation:ataGira 1s linear infinite;}
+  /* Protocolos */
+  .proto-modal{width:720px;}
+  .proto-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border:1px solid var(--border2);border-radius:20px;padding:2px 9px;color:var(--text2);background:var(--surface);white-space:nowrap;}
+  .proto-badge.mov{color:#c2410c;border-color:rgba(232,101,12,.45);background:rgba(232,101,12,.10);}
+  .proto-badge.aviso{color:var(--amber,#b45309);border-color:var(--amber,#f59e0b);background:var(--amber-bg,rgba(245,158,11,.1));}
+  .proto-badge.aguarda{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent);}
+  .proto-badge.enc{opacity:.7;}
+  .proto-num{font-family:var(--font-data,inherit);font-weight:700;font-size:13px;letter-spacing:.2px;}
+  .proto-card.nova{border-left:4px solid #e8650c;}
+  .proto-linhas{font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:3px;margin:6px 0 8px;}
+  .proto-linhas i{font-size:12px;color:var(--text3);}
+  .proto-consulta.compacto .btn-modal{padding:4px 10px;font-size:12px;}
+  .proto-robo-msg{font-size:11.5px;color:var(--text3);}
+  .proto-registro{margin-top:8px;padding:10px;border:1px dashed var(--border2);border-radius:9px;background:var(--surface2);}
+  .proto-registro-t{font-size:12.5px;font-weight:600;margin-bottom:7px;}
+  .proto-registro-t span{font-weight:400;color:var(--text2);}
+  .proto-dica{font-size:11.5px;color:var(--text2);margin-top:5px;line-height:1.5;}
+  .proto-dica a{color:var(--accent);font-weight:600;}
+  .proto-hist{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;}
+  .proto-hist-it{border:1px solid var(--border);border-left:3px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12.5px;}
+  .proto-hist-it.mov{border-left-color:#e8650c;}
+  .proto-hist-it.aviso{border-left-color:var(--amber,#f59e0b);}
+  .proto-hist-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .proto-hist-h span{margin-left:auto;font-size:11.5px;color:var(--text3);}
+  .proto-hist-t{white-space:pre-line;color:var(--text2);margin-top:4px;}
+  .proto-tarefa-it{border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin-top:6px;cursor:pointer;display:flex;flex-direction:column;gap:6px;}
+  .proto-tarefa-it:hover{border-color:var(--accent);}
+  .proto-tarefa-mov{font-size:12px;color:var(--text2);white-space:pre-line;}
+  .node-proto-indicator.nova{color:#e8650c !important;}
   /* ── IPTU (Portal DI) ──
      Cores dos gráficos (identidade de cada fatia/série). Validadas para
      daltonismo nos dois temas; no claro ficam um pouco mais escuras. */
@@ -3728,13 +3757,15 @@ function TaskCardBody({id,data}){
   const ocult=((data.ocPre&&data.ocPre.length)||(data.ocSuc&&data.ocSuc.length));
   const trazer=(e,o)=>{ e.stopPropagation(); window.dispatchEvent(new CustomEvent('cw-fluxo-trazer',{detail:{id:o.id,perto:id}})); };
   const etapa=etapaDaTarefa(PROJ_ATUAL,data);
+  const temProto=protosDaTarefa(useProtocolos(),PROJ_ATUAL&&PROJ_ATUAL.id,id).some(p=>p.situacao!=='encerrado');
   return(<>
     {etapa&&<div className="nc-etapa" style={{'--ec':etapa.cor||'#9ca3af'}} title={'Etapa do fluxo: '+etapa.nome}>{etapa.nome}</div>}
     {etapa&&<div className="nc-etapa-esp"/>}
-    {(meta||data.code||(data.checklist&&data.checklist.length)||(data.notes&&data.notes.trim())||(data.comentarios&&data.comentarios.length))?
+    {(meta||temProto||data.code||(data.checklist&&data.checklist.length)||(data.notes&&data.notes.trim())||(data.comentarios&&data.comentarios.length))?
     <div className="nc-top">
       <span className="nc-meta">{meta?<><i className="ti ti-target-arrow"/> Meta: {formatDateShort(meta)}</>:null}</span>
       <span className="nc-icons">
+        <ProtocoloIndicator projId={PROJ_ATUAL&&PROJ_ATUAL.id} taskId={id}/>
         <ChecklistIndicator checklist={data.checklist}/>
         <NotesIndicator notes={data.notes} comentarios={data.comentarios}/>
         {data.code?<span className="nc-code" title="Código da tarefa">{data.code}</span>:null}
@@ -5924,6 +5955,9 @@ function NodeModal({node,onClose,onSave,onResetSize,metaEditable,usuarios,contra
             <div className="nm-pn">{pn.slice().sort((a,b)=>String(pnBrToISO(b.dataPlanejada)||'').localeCompare(String(pnBrToISO(a.dataPlanejada)||''))).map(a=>(
               <div key={a.id} className="nm-pn-it"><span className="nm-pn-d">{a.dataPlanejada||'—'}</span><span className="nm-pn-t">{a.atividade}</span><span className={'nm-pn-s'+(a.status==='Concluída'||statusBase(a.status)==='Concluído'?' ok':'')}>{a.status||'—'}</span><span className="nm-pn-a">{a.analista||''}</span></div>))}</div>
           </NmSecao>; })()}
+        {!DEMO_MODE&&<NmSecao icone="ti-file-search" titulo="Protocolos" resumo={(()=>{ const ps=protosDaTarefa(PROTOS_CACHE,projId,node.id); return ps.length?ps.map(p=>p.numero).join(' · '):'vincular e consultar'; })()}>
+          <ProtocolosDaTarefa projId={projId} taskId={node.id} taskLabel={node.data.label} projects={projects}/>
+        </NmSecao>}
         {!DEMO_MODE&&<NmSecao icone="ti-notes" titulo="Atas de reunião" resumo="registrar e consultar">
           <AtasDaTarefa projId={projId} taskId={node.id} taskLabel={node.data.label} projects={projects}/>
         </NmSecao>}
@@ -15544,6 +15578,341 @@ function AtasDaTarefa({projId,taskId,taskLabel,projects}){
   );
 }
 
+/* ═══════════ PROTOCOLOS ═══════════
+   Protocolos dos órgãos (prefeitura, IAT, INIS, cartório…) vinculados às
+   tarefas. Consulta MANUAL: o botão "Consultar" abre o site de consulta do
+   órgão já com o número (quando o site aceita o número no endereço) e copia
+   o número para colar, se precisar. Depois:
+     • a pessoa registra o que viu (sem movimentação / teve movimentação), e/ou
+     • o robô (GitHub Actions, robo/protocolos.js) abre a mesma página,
+       compara com a leitura anterior e grava se houve ou não movimentação.
+   O robô só lê os protocolos em que alguém clicou em Consultar (robo.pedidoEm).
+   Cada protocolo é um documento fluxoapp_meta/proto_<id> {tipo:'protocolo'}.
+   O texto da última leitura do robô fica em fluxoapp_meta/protobase_<id>
+   (só o robô usa; o app não baixa). */
+const PROTO_DOC=(id)=>db.collection('fluxoapp_meta').doc('proto_'+id);
+function protoNovoId(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+const PROTO_DIAS_ALERTA=15; /* "não consultado há X dias" a partir daqui */
+
+let PROTOS_CACHE=[]; const PROTOS_OUVINTES=new Set(); let PROTOS_UNSUB=null;
+function useProtocolos(){
+  const[lista,setLista]=useState(PROTOS_CACHE);
+  useEffect(()=>{
+    PROTOS_OUVINTES.add(setLista); setLista(PROTOS_CACHE);
+    if(!PROTOS_UNSUB&&!DEMO_MODE){
+      PROTOS_UNSUB=db.collection('fluxoapp_meta').where('tipo','==','protocolo').onSnapshot(snap=>{
+        PROTOS_CACHE=snap.docs.map(d=>({...d.data(),_docId:d.id})).filter(p=>!p.removido);
+        PROTOS_OUVINTES.forEach(f=>f(PROTOS_CACHE));
+      },err=>console.error('Erro ao ler protocolos:',err));
+    }
+    return ()=>{ PROTOS_OUVINTES.delete(setLista); };
+  },[]);
+  return lista;
+}
+function protosDaTarefa(lista,projId,taskId){
+  return (lista||[]).filter(p=>String(p.taskId||'')===String(taskId)&&(!projId||!p.projId||String(p.projId)===String(projId)));
+}
+
+/* Link de consulta. Pode ser o endereço com o número dentro (como aparece no
+   navegador depois de consultar) ou um modelo: {numero} vira o número inteiro,
+   {seq} a parte antes da barra e {ano} o ano (ex.: 01-123456/2026). */
+function protoMontarLink(link,numero){
+  let u=String(link||'').trim(); if(!u) return '';
+  if(!/^https?:\/\//i.test(u)) u='https://'+u;
+  const n=String(numero||'').trim(); const m=n.match(/^(.*?)[\/\-](\d{4})$/);
+  const seq=m?m[1]:n, ano=m?m[2]:'';
+  /* {numero} entra como está (só espaço, &, ? e # são codificados — muitos sites
+     esperam a barra crua); {numero_url} entra todo codificado (%2F). */
+  const leve=v=>String(v).replace(/[ &?#]/g,c=>encodeURIComponent(c));
+  return u.replace(/\{numero_url\}/gi,encodeURIComponent(n)).replace(/\{numero\}|\{num\}/gi,leve(n)).replace(/\{ano\}/gi,leve(ano)).replace(/\{seq\}/gi,leve(seq));
+}
+/* Modelo reaproveitável por órgão: troca o número que está no link por {numero}. */
+function protoModeloDoLink(link,numero){
+  const n=String(numero||'').trim(); const l=String(link||'');
+  if(!n||!l) return '';
+  if(/\{numero(_url)?\}|\{num\}|\{seq\}|\{ano\}/i.test(l)) return l;
+  if(l.includes(n)) return l.split(n).join('{numero}');
+  const enc=encodeURIComponent(n); if(l.includes(enc)) return l.split(enc).join('{numero_url}');
+  return '';
+}
+function protoLinkPreenche(link,numero){ return /\{numero(_url)?\}|\{num\}|\{seq\}|\{ano\}/i.test(String(link||''))||(!!numero&&String(link||'').includes(String(numero).trim())); }
+function protoDias(ms){ return ms?Math.floor((Date.now()-Number(ms))/86400000):null; }
+function protoQuando(ms){ if(!ms) return '—'; const d=new Date(Number(ms)); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function protoDataCurta(ms){ return ms?new Date(Number(ms)).toLocaleDateString('pt-BR'):'—'; }
+function protoHistorico(p){ return (Array.isArray(p&&p.historico)?p.historico:[]).slice().sort((a,b)=>(Number(b.em)||0)-(Number(a.em)||0)); }
+const PROTO_RES={
+  sem:    {txt:'Sem movimentação',      cls:'sem', ic:'ti-minus'},
+  mov:    {txt:'Teve movimentação',     cls:'mov', ic:'ti-bell-ringing'},
+  base:   {txt:'Primeira leitura',      cls:'sem', ic:'ti-file-search'},
+  nao_leu:{txt:'Robô não leu a página', cls:'aviso', ic:'ti-alert-triangle'},
+  erro:   {txt:'Erro na leitura',       cls:'aviso', ic:'ti-alert-triangle'},
+};
+/* Situação resumida para a lista e para o card da tarefa. */
+function protoSituacao(p){
+  if(p.situacao==='encerrado') return {txt:'Encerrado',cls:'enc',ic:'ti-archive'};
+  if(p.novaMov) return {txt:'Movimentação nova',cls:'mov',ic:'ti-bell-ringing'};
+  const r=p.robo||{};
+  if(r.status==='aguardando'&&(Number(r.pedidoEm)||0)>(Number(r.lidoEm)||0)) return {txt:'Robô vai conferir',cls:'aguarda',ic:'ti-robot'};
+  const d=protoDias(p.ultimaConsultaEm);
+  if(d==null) return {txt:'Nunca consultado',cls:'aviso',ic:'ti-clock'};
+  if(d>=PROTO_DIAS_ALERTA) return {txt:'Não consultado há '+d+'d',cls:'aviso',ic:'ti-clock'};
+  const h=protoHistorico(p)[0]; const res=h&&PROTO_RES[h.resultado];
+  return res?{txt:res.txt,cls:res.cls,ic:res.ic}:{txt:'Consultado',cls:'sem',ic:'ti-check'};
+}
+function ProtoBadge({p}){ const s=protoSituacao(p); return <span className={'proto-badge '+s.cls}><i className={'ti '+s.ic}/> {s.txt}</span>; }
+
+/* Abre o site de consulta (síncrono, dentro do clique — senão o navegador
+   bloqueia a janela), copia o número e pede a leitura ao robô. */
+function protoConsultar(p){
+  const url=protoMontarLink(p.link,p.numero);
+  try{ if(navigator.clipboard) navigator.clipboard.writeText(String(p.numero||'')); }catch(e){}
+  if(url) window.open(url,'_blank','noopener');
+  else alert('Este protocolo ainda não tem o link de consulta. Abra o protocolo e cole o endereço da página de consulta do órgão.');
+  if(DEMO_MODE) return Promise.resolve();
+  const agora=Date.now();
+  return PROTO_DOC(p.id).set({ultimaConsultaEm:agora,ultimaConsultaPor:EU.nome||EU.email||'',
+    robo:{...(p.robo||{}),pedidoEm:agora,status:'aguardando',msg:''}},{merge:true}).catch(e=>console.error('Erro ao registrar a consulta:',e));
+}
+/* Registro feito pela pessoa (o que ela viu na página do órgão). */
+async function protoRegistrar(p,resultado,texto){
+  if(DEMO_MODE) return;
+  const FV=firebase.firestore.FieldValue; const agora=Date.now();
+  const h={id:'h'+agora.toString(36)+Math.random().toString(36).slice(2,5),em:agora,por:EU.nome||EU.email||'',origem:'manual',resultado,texto:String(texto||'').trim()};
+  const patch={historico:FV.arrayUnion(h),ultimaConsultaEm:agora,ultimaConsultaPor:h.por,novaMov:false};
+  if(resultado==='mov'){ patch.ultimaMovEm=agora; patch.ultimaMovTexto=h.texto; patch.ultimaMovOrigem='manual'; }
+  await PROTO_DOC(p.id).set(patch,{merge:true});
+}
+
+/* Caixa "Consultar" + registro do resultado (janela do protocolo e tarefa). */
+function ProtoConsultaBox({p,compacto}){
+  const pode=permEditarNotas();
+  const[aberto,setAberto]=useState(false);
+  const[modo,setModo]=useState(''); const[texto,setTexto]=useState(''); const[salvando,setSalvando]=useState(false);
+  const r=p.robo||{}; const aguardando=r.status==='aguardando'&&(Number(r.pedidoEm)||0)>(Number(r.lidoEm)||0);
+  const registrar=async(res)=>{ setSalvando(true); try{ await protoRegistrar(p,res,texto); setAberto(false); setModo(''); setTexto(''); }catch(e){ alert('Não consegui registrar: '+(e.message||e)); } setSalvando(false); };
+  return (
+    <div className={'proto-consulta'+(compacto?' compacto':'')}>
+      <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+        <button type="button" className="btn-modal" onClick={e=>{ e.stopPropagation(); protoConsultar(p); if(pode) setAberto(true); }} title={protoLinkPreenche(p.link,p.numero)?'Abre o site do órgão já com o número':'Abre o site do órgão e copia o número para você colar'}>
+          <i className="ti ti-external-link"/> Consultar</button>
+        {pode&&!aberto&&<button type="button" className="btn-modal ghost" onClick={e=>{e.stopPropagation(); setAberto(true);}}><i className="ti ti-pencil"/> Registrar resultado</button>}
+        {aguardando&&<span className="proto-robo-msg"><i className="ti ti-robot"/> O robô vai conferir a página na próxima rodada.</span>}
+        {!aguardando&&r.lidoEm&&r.status&&PROTO_RES[r.status]&&<span className="proto-robo-msg"><i className="ti ti-robot"/> Robô em {protoQuando(r.lidoEm)}: {PROTO_RES[r.status].txt}{r.msg?' — '+r.msg:''}</span>}
+      </div>
+      {aberto&&<div className="proto-registro" onClick={e=>e.stopPropagation()}>
+        <div className="proto-registro-t">O que apareceu na consulta?{!protoLinkPreenche(p.link,p.numero)&&<span> O número foi copiado: é só colar no site.</span>}</div>
+        {modo!=='mov'?<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <button type="button" className="btn-modal ghost" disabled={salvando} onClick={()=>registrar('sem')}><i className="ti ti-minus"/> Sem movimentação</button>
+          <button type="button" className="btn-modal ghost" onClick={()=>setModo('mov')}><i className="ti ti-bell-ringing"/> Teve movimentação</button>
+          <button type="button" className="btn-modal ghost" onClick={()=>{setAberto(false);setModo('');}}>Deixar para o robô</button>
+        </div>:<>
+          <textarea className="form-input" rows={3} autoFocus value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Cole ou escreva a última movimentação (ex.: 20/11 — Devolvido com exigência: ajustar recuo frontal)"/>
+          <div style={{display:'flex',gap:8,marginTop:6}}>
+            <button type="button" className="btn-modal" disabled={salvando||!texto.trim()} onClick={()=>registrar('mov')}><i className="ti ti-check"/> Salvar movimentação</button>
+            <button type="button" className="btn-modal ghost" onClick={()=>setModo('')}>Voltar</button>
+          </div>
+        </>}
+      </div>}
+    </div>
+  );
+}
+
+/* Janela do protocolo: cadastro, consulta e histórico. */
+function ProtocoloModal({inicial,projects,onClose,onAbrirTarefa}){
+  const todos=useProtocolos();
+  const nova=!inicial||!inicial.id;
+  const vivo=!nova?(todos.find(x=>x.id===inicial.id)||inicial):null; /* histórico atualiza sozinho */
+  const[p,setP]=useState(()=>({numero:'',orgao:'',assunto:'',link:'',projId:'',projNome:'',taskId:'',taskLabel:'',situacao:'ativo',...(inicial||{})}));
+  const[salvando,setSalvando]=useState(false);
+  const pode=permEditarNotas();
+  const up=(k,v)=>setP(x=>({...x,[k]:v}));
+  /* Abriu um protocolo com movimentação nova: marca como vista. */
+  useEffect(()=>{ if(!nova&&pode&&inicial.novaMov&&!DEMO_MODE) PROTO_DOC(inicial.id).set({novaMov:false},{merge:true}).catch(()=>{}); },[]);
+  const ativos=(projects||[]).filter(x=>x&&!x.deleted).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt'));
+  const projSel=ativos.find(x=>String(x.id)===String(p.projId));
+  const tarefas=projSel?(projSel.tasks||[]).filter(t=>t&&t.label&&!t.deleted).slice().sort((a,b)=>String(a.label).localeCompare(String(b.label),'pt')):[];
+  /* Órgãos já usados, com o modelo de link de cada um (para não colar de novo). */
+  const orgaos=React.useMemo(()=>{ const m={}; todos.forEach(x=>{ const o=String(x.orgao||'').trim(); if(!o) return; const mod=protoModeloDoLink(x.link,x.numero); if(!(o in m)) m[o]=''; if(mod) m[o]=mod; }); return m; },[todos]);
+  const escolherOrgao=(v)=>{ setP(x=>{ const n={...x,orgao:v}; if(!String(x.link||'').trim()&&orgaos[v]) n.link=orgaos[v]; return n; }); };
+  const urlTeste=protoMontarLink(p.link,p.numero);
+  const salvar=async()=>{
+    if(!String(p.numero||'').trim()){ alert('Informe o número do protocolo.'); return; }
+    setSalvando(true);
+    try{
+      const t=tarefas.find(x=>String(x.id)===String(p.taskId));
+      const dados={...p,id:p.id||protoNovoId(),numero:String(p.numero).trim(),orgao:String(p.orgao||'').trim(),assunto:String(p.assunto||'').trim(),link:String(p.link||'').trim(),
+        projNome:projSel?projSel.name:'',taskLabel:t?t.label:'',taskId:t?t.id:'',tipo:'protocolo',atualizadoEm:Date.now(),atualizadoPor:EU.nome||EU.email||''};
+      delete dados._docId; delete dados.historico; delete dados.robo; delete dados.novaMov;
+      ['ultimaConsultaEm','ultimaConsultaPor','ultimaMovEm','ultimaMovTexto','ultimaMovOrigem'].forEach(k=>delete dados[k]);
+      if(nova){ dados.criadoEm=Date.now(); dados.criadoPor=EU.nome||EU.email||''; dados.historico=[]; }
+      if(!DEMO_MODE) await PROTO_DOC(dados.id).set(dados,{merge:true});
+      onClose();
+    }catch(e){ console.error(e); alert('Não consegui salvar o protocolo: '+(e.message||e)); }
+    setSalvando(false);
+  };
+  const excluir=async()=>{ if(!window.confirm('Excluir este protocolo? O histórico de consultas some junto.')) return;
+    try{ await PROTO_DOC(p.id).set({removido:true,atualizadoEm:Date.now(),atualizadoPor:EU.nome||EU.email||''},{merge:true}); onClose(); }catch(e){ alert('Não consegui excluir: '+(e.message||e)); } };
+  const hist=vivo?protoHistorico(vivo):[];
+  return (
+    <div className="modal-overlay" onClick={e=>{if(e.target.classList.contains('modal-overlay'))onClose();}}>
+      <div className="modal proto-modal">
+        <div className="ata-modal-h">
+          <div style={{fontWeight:700,fontSize:16}}><i className="ti ti-file-search"/> {nova?'Novo protocolo':'Protocolo '+(vivo.numero||'')}</div>
+          {!nova&&<ProtoBadge p={vivo}/>}
+        </div>
+        <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          <div style={{flex:1,minWidth:170}}><label className="modal-field-label">Número do protocolo</label>
+            <input className="form-input" value={p.numero} disabled={!pode} onChange={e=>up('numero',e.target.value)} placeholder="Ex.: 01-123456/2026"/></div>
+          <div style={{flex:1.4,minWidth:200}}><label className="modal-field-label">Órgão</label>
+            <input className="form-input" list="proto-orgaos" value={p.orgao} disabled={!pode} onChange={e=>escolherOrgao(e.target.value)} placeholder="Ex.: Prefeitura de Itajaí"/>
+            <datalist id="proto-orgaos">{Object.keys(orgaos).sort((a,b)=>a.localeCompare(b,'pt')).map(o=><option key={o} value={o}/>)}</datalist></div>
+        </div>
+        <div className="modal-field"><label className="modal-field-label">Assunto</label>
+          <input className="form-input" value={p.assunto} disabled={!pode} onChange={e=>up('assunto',e.target.value)} placeholder="Ex.: Aprovação do projeto de loteamento"/></div>
+        <div className="modal-field"><label className="modal-field-label"><i className="ti ti-link"/> Link de consulta</label>
+          <input className="form-input" value={p.link} disabled={!pode} onChange={e=>up('link',e.target.value)} placeholder="Cole o endereço da página de consulta do órgão"/>
+          <div className="proto-dica">
+            {!String(p.link||'').trim()
+              ?<>Consulte o protocolo uma vez no site do órgão e copie o endereço da página do resultado. Se o número aparecer no endereço, o app já abre preenchido nas próximas vezes (e reaproveita o link para outros protocolos do mesmo órgão).</>
+              :protoLinkPreenche(p.link,p.numero)
+                ?<><i className="ti ti-circle-check" style={{color:'var(--green,#16a34a)'}}/> O site abre já com o número preenchido.</>
+                :<><i className="ti ti-info-circle"/> O número não está no endereço: o app abre o site e copia o número para colar. Se souber onde o número entra no link, escreva <b>{'{numero}'}</b> nesse lugar.</>}
+            {urlTeste&&<> <a href={urlTeste} target="_blank" rel="noopener">Testar link</a></>}
+          </div></div>
+        <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          <div style={{flex:1,minWidth:170}}><label className="modal-field-label">Empreendimento</label>
+            <select className="form-input" value={p.projId||''} disabled={!pode} onChange={e=>setP(x=>({...x,projId:e.target.value,taskId:''}))}>
+              <option value="">—</option>{ativos.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></div>
+          <div style={{flex:1.4,minWidth:200}}><label className="modal-field-label">Tarefa vinculada</label>
+            <div style={{display:'flex',gap:6}}>
+              <select className="form-input" style={{flex:1}} value={p.taskId||''} disabled={!pode||!projSel} onChange={e=>up('taskId',e.target.value)}>
+                <option value="">{projSel?'Escolha a tarefa…':'Escolha o empreendimento'}</option>{tarefas.map(t=><option key={t.id} value={t.id}>{t.code?t.code+' · ':''}{t.label}</option>)}</select>
+              {!nova&&p.taskId&&onAbrirTarefa&&<button type="button" className="btn-modal ghost" style={{padding:'4px 10px'}} title="Abrir a tarefa" onClick={()=>onAbrirTarefa(p.projId,p.taskId)}><i className="ti ti-arrow-up-right"/></button>}
+            </div></div>
+        </div>
+        {!nova&&<div className="modal-field"><label className="modal-field-label">Situação</label>
+          <select className="form-input" style={{maxWidth:240}} value={p.situacao||'ativo'} disabled={!pode} onChange={e=>up('situacao',e.target.value)}>
+            <option value="ativo">Em andamento</option><option value="encerrado">Encerrado (deferido/arquivado)</option></select></div>}
+
+        {!nova&&<>
+          <div className="nm-sub" style={{marginTop:6}}><i className="ti ti-search"/> Consulta</div>
+          <ProtoConsultaBox p={vivo}/>
+          <div className="nm-sub" style={{marginTop:12}}><i className="ti ti-history"/> Histórico ({hist.length})</div>
+          {hist.length===0&&<div className="ata-vazio">Nenhuma consulta registrada ainda.</div>}
+          <div className="proto-hist">
+            {hist.map(h=>{ const r=PROTO_RES[h.resultado]||{txt:h.resultado,cls:'sem',ic:'ti-point'}; return (
+              <div key={h.id||h.em} className={'proto-hist-it '+r.cls}>
+                <div className="proto-hist-h"><i className={'ti '+r.ic}/> <b>{r.txt}</b><span>{protoQuando(h.em)} · {h.origem==='robo'?<><i className="ti ti-robot"/> robô</>:(h.por||'—')}</span></div>
+                {h.texto&&<div className="proto-hist-t">{h.texto}</div>}
+              </div>); })}
+          </div>
+        </>}
+        <div className="modal-footer" style={{justifyContent:'space-between'}}>
+          {!nova&&pode?<button className="btn-modal ghost" style={{color:'var(--red,#dc2626)'}} onClick={excluir}><i className="ti ti-trash"/> Excluir</button>:<span/>}
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn-modal ghost" onClick={onClose}>Fechar</button>
+            {pode&&<button className="btn-modal" disabled={salvando} onClick={salvar}>{nova?'Cadastrar':'Salvar'}</button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Aba "Protocolos": todos os protocolos, com filtros e o botão Consultar. */
+function ProtocolosView({onBack,projects,onOpenTask}){
+  const protos=useProtocolos();
+  const[busca,setBusca]=useState(''); const[fProj,setFProj]=useState(''); const[fSit,setFSit]=useState('ativos');
+  const[aberto,setAberto]=useState(null);
+  const ativos=(projects||[]).filter(p=>p&&!p.deleted).sort((x,y)=>String(x.name||'').localeCompare(String(y.name||''),'pt'));
+  const nNovas=protos.filter(p=>p.novaMov&&p.situacao!=='encerrado').length;
+  const nAtrasados=protos.filter(p=>p.situacao!=='encerrado'&&(protoDias(p.ultimaConsultaEm)==null||protoDias(p.ultimaConsultaEm)>=PROTO_DIAS_ALERTA)).length;
+  const filtrados=React.useMemo(()=>{
+    const q=busca.trim().toLowerCase();
+    return protos.filter(p=>{
+      if(fSit==='ativos'&&p.situacao==='encerrado') return false;
+      if(fSit==='novas'&&!(p.novaMov&&p.situacao!=='encerrado')) return false;
+      if(fSit==='atrasados'&&!(p.situacao!=='encerrado'&&(protoDias(p.ultimaConsultaEm)==null||protoDias(p.ultimaConsultaEm)>=PROTO_DIAS_ALERTA))) return false;
+      if(fSit==='encerrados'&&p.situacao!=='encerrado') return false;
+      if(fProj&&String(p.projId)!==String(fProj)) return false;
+      if(!q) return true;
+      return [p.numero,p.orgao,p.assunto,p.projNome,p.taskLabel,p.ultimaMovTexto].join(' ').toLowerCase().includes(q);
+    }).sort((a,b)=>(b.novaMov?1:0)-(a.novaMov?1:0)||(Number(b.ultimaMovEm)||0)-(Number(a.ultimaMovEm)||0)||String(a.numero||'').localeCompare(String(b.numero||''),'pt'));
+  },[protos,busca,fProj,fSit]);
+  return (
+    <div className="pdi-wrap">
+      <div style={{marginBottom:16}}><button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button></div>
+      <div className="venc-toolbar">
+        <div className="venc-search"><i className="ti ti-search"/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar número, órgão, assunto, tarefa…"/></div>
+        <select className="pdi-select" style={{maxWidth:220}} value={fProj} onChange={e=>setFProj(e.target.value)}><option value="">Todos os empreendimentos</option>{ativos.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <select className="pdi-select" style={{maxWidth:230}} value={fSit} onChange={e=>setFSit(e.target.value)}>
+          <option value="ativos">Em andamento</option>
+          <option value="novas">Com movimentação nova{nNovas?` (${nNovas})`:''}</option>
+          <option value="atrasados">Sem consulta há {PROTO_DIAS_ALERTA}+ dias{nAtrasados?` (${nAtrasados})`:''}</option>
+          <option value="encerrados">Encerrados</option>
+          <option value="todos">Todos</option>
+        </select>
+        <div style={{marginLeft:'auto'}}>{permEditarNotas()&&<button className="venc-add-btn" onClick={()=>setAberto({})}><i className="ti ti-plus"/> Novo protocolo</button>}</div>
+      </div>
+      <div className="ata-aviso" style={{marginBottom:12}}><i className="ti ti-info-circle"/> Clique em <b>Consultar</b> para abrir o site do órgão (já com o número, quando o site permite). Depois registre o que apareceu, ou deixe o robô conferir: ele lê a mesma página e marca se houve movimentação.</div>
+      {filtrados.length===0&&<div className="pdi-empty">{protos.length?'Nenhum protocolo com esses filtros.':'Nenhum protocolo cadastrado ainda. Clique em “Novo protocolo” ou cadastre pela janela da tarefa.'}</div>}
+      <div className="ata-lista">
+        {filtrados.map(p=>(
+          <div key={p.id} className={'ata-card proto-card'+(p.novaMov&&p.situacao!=='encerrado'?' nova':'')} onClick={()=>setAberto(p)}>
+            <div className="ata-card-h">
+              <span className="proto-num">{p.numero||'—'}</span>
+              <ProtoBadge p={p}/>
+            </div>
+            {(p.orgao||p.assunto)&&<div className="ata-card-t" style={{fontSize:13.5}}>{[p.orgao,p.assunto].filter(Boolean).join(' — ')}</div>}
+            {p.projNome&&<div className="ata-chips"><span className="ata-chip" style={{paddingRight:9}}><span className="ata-chip-t" title={p.taskId?'Abrir a tarefa':''} onClick={e=>{ if(p.taskId&&onOpenTask){ e.stopPropagation(); onOpenTask(p.projId,p.taskId); } }}>{p.projNome}{p.taskLabel?' · '+p.taskLabel:''}</span></span></div>}
+            <div className="proto-linhas">
+              <div><i className="ti ti-clock"/> Última consulta: <b>{protoDataCurta(p.ultimaConsultaEm)}</b>{p.ultimaConsultaPor?' · '+p.ultimaConsultaPor:''}</div>
+              <div><i className="ti ti-bell"/> Última movimentação: <b>{protoDataCurta(p.ultimaMovEm)}</b>{p.ultimaMovTexto?' — '+(p.ultimaMovTexto.length>160?p.ultimaMovTexto.slice(0,160)+'…':p.ultimaMovTexto):''}</div>
+            </div>
+            <div onClick={e=>e.stopPropagation()}><ProtoConsultaBox p={p} compacto/></div>
+          </div>))}
+      </div>
+      {aberto&&<ProtocoloModal inicial={aberto.id?aberto:null} projects={projects} onClose={()=>setAberto(null)} onAbrirTarefa={onOpenTask?(pid,tid)=>{setAberto(null);onOpenTask(pid,tid);}:null}/>}
+    </div>
+  );
+}
+
+/* ─── Bloco "Protocolos" dentro da janela da tarefa ─── */
+function ProtocolosDaTarefa({projId,taskId,taskLabel,projects}){
+  const protos=useProtocolos();
+  const[aberto,setAberto]=useState(null);
+  const proj=(projects||[]).find(p=>String(p.id)===String(projId));
+  const daTarefa=protosDaTarefa(protos,projId,taskId).sort((a,b)=>String(a.numero||'').localeCompare(String(b.numero||''),'pt'));
+  return (
+    <div className="fin-vinc-box">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6,gap:8}}>
+        <div className="modal-field-label" style={{margin:0}}><i className="ti ti-file-search"/> Protocolos ({daTarefa.length})</div>
+        {permEditarNotas()&&<button type="button" className="btn-modal ghost" style={{padding:'4px 10px'}} onClick={()=>setAberto({projId:projId||'',projNome:proj?proj.name:'',taskId,taskLabel:taskLabel||''})}><i className="ti ti-plus"/> Adicionar protocolo</button>}
+      </div>
+      {daTarefa.length===0&&<div className="ata-vazio">Nenhum protocolo vinculado a esta tarefa.</div>}
+      {daTarefa.map(p=>(
+        <div key={p.id} className="proto-tarefa-it" onClick={()=>setAberto(p)}>
+          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+            <span className="proto-num">{p.numero}</span>{p.orgao&&<span style={{fontSize:12,color:'var(--text2)'}}>{p.orgao}</span>}<ProtoBadge p={p}/>
+          </div>
+          {p.ultimaMovTexto&&<div className="proto-tarefa-mov">{protoDataCurta(p.ultimaMovEm)} — {p.ultimaMovTexto}</div>}
+          <ProtoConsultaBox p={p} compacto/>
+        </div>))}
+      {aberto&&<ProtocoloModal inicial={aberto.id?aberto:{...aberto}} projects={projects} onClose={()=>setAberto(null)}/>}
+    </div>
+  );
+}
+
+/* Símbolo no card da tarefa (número de protocolos; laranja com movimentação nova). */
+function ProtocoloIndicator({projId,taskId}){
+  const protos=useProtocolos();
+  const ps=protosDaTarefa(protos,projId,taskId).filter(p=>p.situacao!=='encerrado');
+  if(!ps.length) return null;
+  const nova=ps.some(p=>p.novaMov);
+  const tit='Protocolo'+(ps.length>1?'s':'')+': '+ps.map(p=>p.numero+(p.orgao?' ('+p.orgao+')':'')+(p.novaMov?' — movimentação nova':'')).join(' · ');
+  return <span className={'node-checklist-indicator node-proto-indicator'+(nova?' nova':'')} title={tit}><i className="ti ti-file-search"/>{ps.length>1?' '+ps.length:''}</span>;
+}
+
 /* ═══════════ PORTAIS CONFIGURÁVEIS ═══════════
    Catálogo das abas (ferramentas) que podem entrar num portal. Os portais são
    montados em Configurações → Portais (só administradores): nome, ícone,
@@ -15560,6 +15929,7 @@ const PORTAL_ABAS=[
   {key:'registros',    nome:'Registros de Unidades',   ic:'ti-home-check',       grupo:'unidades', dados:'compartilhado', desc:'Unidades vendidas por empreendimento (cliente, quadra, lote), controle de registro e transferência na prefeitura, e — via robô — IPTU das não transferidas.'},
   {key:'iptu',         nome:'IPTU',                    ic:'ti-receipt-2',        grupo:'unidades', dados:'compartilhado', desc:'Processos na prefeitura (redução, impugnação, isenção), guias e pagamentos por empreendimento, decisão à vista × parcelado e visão geral das unidades.'},
   {key:'atas',         nome:'Atas de Reunião',         ic:'ti-notes',            grupo:'acomp', dados:'compartilhado', desc:'Registro das reuniões (prefeitura, órgãos, parceiros) vinculado às tarefas: resumo, decisões, próximos passos e a ata completa — inclusive importada automaticamente do Google Meet (Gemini).'},
+  {key:'protocolos',   nome:'Protocolos',              ic:'ti-file-search',      grupo:'acomp', dados:'compartilhado', desc:'Protocolos dos órgãos vinculados às tarefas: botão Consultar que abre o site já com o número, histórico de consultas e robô que confere se houve movimentação.'},
   {key:'parceiros',    nome:'Relatório dos Parceiros', ic:'ti-users-group',      grupo:'acomp', dados:'compartilhado', desc:'Relatório mensal para os parceiros por empreendimento: macrofluxo, andamento do mês, linha do tempo, desenvolvimento de projetos, fotos e andamento da obra — com PDF.'},
   {key:'oficio',       nome:'Gerador de Ofícios',      ic:'ti-file-text',        grupo:'documentos', dados:'compartilhado', desc:'Crie ofícios em papel timbrado a partir do empreendimento, representante e assunto — em PDF ou Word.'},
   {key:'contratos',    nome:'Gerador de Contratos',    ic:'ti-file-certificate', grupo:'documentos', dados:'compartilhado', desc:'Importe um modelo, marque as variáveis com {CHAVE}, preencha o formulário e exporte o contrato em PDF.'},
@@ -15573,11 +15943,11 @@ const PORTAL_GRUPOS={
   documentos:{nome:'Documentos',     icone:'ti-file-text'},
 };
 /* Nomes diretos no menu lateral (a tela continua com o nome completo). */
-const NAV_NOME_CURTO={painel:'Painel Semanal',atas:'Atas',parceiros:'Parceiros',financeiro:'Financeiro',vencimentos:'Vencimentos',contatos:'Contatos',prazos:'Prazos',registros:'Registros',iptu:'IPTU',oficio:'Ofícios',contratos:'Contratos'};
+const NAV_NOME_CURTO={painel:'Painel Semanal',atas:'Atas',protocolos:'Protocolos',parceiros:'Parceiros',financeiro:'Financeiro',vencimentos:'Vencimentos',contatos:'Contatos',prazos:'Prazos',registros:'Registros',iptu:'IPTU',oficio:'Ofícios',contratos:'Contratos'};
 function portalGrupoDaAba(k){ const a=PORTAL_ABAS.find(x=>x.key===k); return a?a.grupo:null; }
 const PORTAL_ABAS_DADOS_TXT={proprio:'dados próprios do portal',compartilhado:'mesma base em todos os portais'};
 const PORTAL_ICONES=[['ti-layout-grid','Grade'],['ti-file-text','Documento'],['ti-folders','Pastas'],['ti-cash-banknote','Dinheiro'],['ti-report-money','Relatório financeiro'],['ti-building','Prédio'],['ti-briefcase','Maleta'],['ti-chart-bar','Gráfico'],['ti-clipboard-list','Prancheta'],['ti-map-2','Mapa'],['ti-users-group','Pessoas'],['ti-tools','Ferramentas'],['ti-home-check','Casa'],['ti-scale','Jurídico'],['ti-bulldozer','Obra']];
-const PORTAIS_FIXOS={portaldi:{icone:'ti-file-text',abas:['painel','atas','financeiro','vencimentos','contatos','registros','iptu','parceiros'],setorBase:'DI'},
+const PORTAIS_FIXOS={portaldi:{icone:'ti-file-text',abas:['painel','atas','protocolos','financeiro','vencimentos','contatos','registros','iptu','parceiros'],setorBase:'DI'},
                      portalprj:{icone:'ti-folders',abas:['financeiro'],setorBase:'PRJ'}};
 function portalNome(p){ if(!p) return ''; const n=String(p.nome||'').trim(); if(n) return n; if(p.id==='portaldi') return 'Portal '+setorSigla('DI'); if(p.id==='portalprj') return 'Portal '+setorSigla('PRJ'); return 'Portal'; }
 /* Lista completa e normalizada (DI e PRJ sempre presentes). Quando ainda não
@@ -15595,6 +15965,8 @@ function normalizarPortais(raw, setoresCfg){
     /* Aba nova (Atas, nov/2026): entra sozinha no Portal DI já configurado. */
     if(pid==='portaldi'&&salvo&&Array.isArray(salvo.abas)&&!salvo.abas.includes('atas')){ abasS=abasS.slice(); const i=abasS.indexOf('painel'); abasS.splice(i>=0?i+1:0,0,'atas'); }
     /* Aba nova (IPTU, nov/2026): entra sozinha no Portal DI já configurado, logo depois de Registros. */
+    /* Aba nova (Protocolos, nov/2026): entra sozinha no Portal DI já configurado, logo depois de Atas. */
+    if(pid==='portaldi'&&salvo&&Array.isArray(salvo.abas)&&!salvo.abas.includes('protocolos')&&!abasS.includes('protocolos')){ abasS=abasS.slice(); const i=abasS.indexOf('atas'); abasS.splice(i>=0?i+1:abasS.length,0,'protocolos'); }
     if(pid==='portaldi'&&salvo&&Array.isArray(salvo.abas)&&!salvo.abas.includes('iptu')&&!abasS.includes('iptu')){ abasS=abasS.slice(); const i=abasS.indexOf('registros'); abasS.splice(i>=0?i+1:abasS.length,0,'iptu'); }
     return salvo?{...base,...salvo,fixo:true,removido:false,abas:abasS,setores:Array.isArray(salvo.setores)?salvo.setores:base.setores}:base; };
   const outros=lista.filter(x=>!PORTAIS_FIXOS[x.id]).map(x=>({...x,fixo:false,abas:portalAbasLimpa(x.abas),setores:Array.isArray(x.setores)?x.setores:[]}));
@@ -16681,6 +17053,11 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
             <div className="tt">Atas de Reunião</div>
             <div className="dd">Registro das reuniões vinculado às tarefas, com a ata completa — inclusive importada da pasta de atas (Meet, Zoom, Teams, arquivo…).</div>
           </div>
+          <div className="pdi-tool" onClick={()=>setView('protocolos')}>
+            <i className="ti ti-file-search"/>
+            <div className="tt">Protocolos</div>
+            <div className="dd">Protocolos dos órgãos vinculados às tarefas: consulta com um clique no site do órgão, histórico e robô que confere se houve movimentação.</div>
+          </div>
           <div className="pdi-tool" onClick={()=>setView('financeiro')}>
             <i className="ti ti-cash-banknote"/>
             <div className="tt">Controle Financeiro</div>
@@ -16729,6 +17106,11 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
   /* ─── Ferramenta: Painel Semanal ─── */
   if(view==='painel'){
     return <PainelSemanal tarefas={painelTarefas} setTarefas={setPainelTarefas} projects={projects} avulsos={avulsosSalvos} onBack={()=>setView('home')} uid={uid} onOpenTask={onOpenTask} escopo="di"/>;
+  }
+
+  /* ─── Ferramenta: Protocolos ─── */
+  if(view==='protocolos'){
+    return <ProtocolosView onBack={()=>setView('home')} projects={projects} onOpenTask={onOpenTask}/>;
   }
 
   /* ─── Ferramenta: Atas de Reunião ─── */
@@ -18905,8 +19287,8 @@ function PortalPRJ({ projects, currentUser, view, setView, finContratos, setFinC
 const SCREEN_TO_PATH={dashboard:'/dashboard',projects:'/projetos',project:'/projetos',checklists:'/checklist',ferramentas:'/ferramentas',dados:'/dados',portaldi:'/portal-di',portaldiretoria:'/portal-diretoria',portalpcp:'/portal-pcp',portalprj:'/portal-prj',map:'/mapa',tarefas:'/tarefas',inicio:'/inicio',settings:'/configuracoes'};
 const PATH_TO_SCREEN={'/':'inicio','/inicio':'inicio','/tarefas':'tarefas','/dashboard':'dashboard','/projetos':'projects','/checklist':'checklists','/checklists':'checklists','/ferramentas':'ferramentas','/dados':'dados','/portal-di':'portaldi','/portaldi':'portaldi','/portal-diretoria':'portaldiretoria','/portaldiretoria':'portaldiretoria','/diretoria':'portaldiretoria','/portal-pcp':'portalpcp','/portalpcp':'portalpcp','/pcp':'portalpcp','/portal-prj':'portalprj','/portalprj':'portalprj','/prj':'portalprj','/mapa':'map','/map':'map','/configuracoes':'settings','/config':'settings','/settings':'settings'};
 /* Sub-ambientes do Portal DI também têm endereço próprio, ex.: /portal-di/painel-semanal */
-const PORTAL_VIEW_TO_SLUG={painel:'painel-semanal',oficio:'oficios',contratos:'contratos',financeiro:'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',parceiros:'parceiros'};
-const SLUG_TO_PORTAL_VIEW={'painel-semanal':'painel','painel':'painel',oficios:'oficio',oficio:'oficio','gerador-oficios':'oficio',contratos:'contratos',financeiro:'financeiro','controle-financeiro':'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',parceiros:'parceiros'};
+const PORTAL_VIEW_TO_SLUG={painel:'painel-semanal',protocolos:'protocolos',oficio:'oficios',contratos:'contratos',financeiro:'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',parceiros:'parceiros'};
+const SLUG_TO_PORTAL_VIEW={'painel-semanal':'painel',protocolos:'protocolos','painel':'painel',oficios:'oficio',oficio:'oficio','gerador-oficios':'oficio',contratos:'contratos',financeiro:'financeiro','controle-financeiro':'financeiro',contatos:'contatos',prazos:'prazos',vencimentos:'vencimentos',registros:'registros',iptu:'iptu',parceiros:'parceiros'};
 function pathToPortalId(){ try{ const m=(location.pathname||'').match(/^\/portal\/([^\/]+)/i); return m?decodeURIComponent(m[1]):''; }catch(e){ return ''; } }
 function pathToPortalXView(){ try{ const m=(location.pathname||'').replace(/\/+$/,'').match(/^\/portal\/[^\/]+\/(.+)$/i); return m?(SLUG_TO_PORTAL_VIEW[m[1].toLowerCase()]||(m[1].toLowerCase()==='financeiro-projetos'?'financeiro':'home')):'home'; }catch(e){ return 'home'; } }
 function pathToScreen(){ try{ const p=(location.pathname||'/').replace(/\/+$/,'')||'/'; if(/^\/portal\/[^\/]+/i.test(p)) return 'portal'; if(/^\/portal-?di(\/|$)/i.test(p)) return 'portaldi'; if(/^\/projetos\/[^\/]+/i.test(p)) return 'project'; return PATH_TO_SCREEN[p]||'inicio'; }catch(e){ return 'inicio'; } }
