@@ -2971,6 +2971,19 @@ const PORTALDI_DOC = db.collection('fluxoapp_meta').doc('portaldi');
    fornecedores e e-mail do financeiro), separados do Portal DI. */
 const PORTALPRJ_DOC = db.collection('fluxoapp_meta').doc('portalprj');
 const SETTINGS_DOC = db.collection('fluxoapp_meta').doc('settings');
+/* 24/11: lista de e-mails que podem ENTRAR no app ({emails:[...]}, minúsculos).
+   Espelho dos usuários de Configurações › Usuários, gravado só pelo admin master.
+   As regras do Firestore leem este documento para liberar o banco. */
+const ACESSOS_DOC = db.collection('fluxoapp_meta').doc('acessos');
+/* Login: o admin master sempre entra; os demais só se o e-mail estiver em
+   fluxoapp_meta/acessos. Se a leitura falhar (regras recusam), não entra. */
+async function acessoPermitido(email){
+  const em=String(email||'').trim().toLowerCase();
+  if(!em) return false;
+  if(emailPermitido(em)) return true;
+  try{ const snap=await ACESSOS_DOC.get(); const l=(snap.exists&&Array.isArray(snap.data().emails))?snap.data().emails:[]; return l.includes(em); }
+  catch(e){ return false; }
+}
 /* Início da semana (segunda-feira 00:00) para podar o histórico. */
 function inicioDaSemana(d){ const x=new Date(d); x.setHours(0,0,0,0); const dow=(x.getDay()+6)%7; x.setDate(x.getDate()-dow); return x.getTime(); }
 /* Registros de unidades (Portal DI): unidades vendidas + status de registro/
@@ -9084,7 +9097,7 @@ function LoginScreen(){
       provider.setCustomParameters({prompt:'select_account'});
       const result=await auth.signInWithPopup(provider);
       const email=(result.user.email||'').toLowerCase();
-      if(!emailPermitido(email)){
+      if(!(await acessoPermitido(email))){
         await auth.signOut();
         setError('Esta conta não tem acesso. Entre com o e-mail autorizado.');
       }
@@ -9131,8 +9144,8 @@ function AuthGate(){
   if(DEMO_MODE){ return <App currentUser={{displayName:'Visitante (demo)',email:'demo@exemplo.com'}}/>; }
   const[user,setUser]=useState(undefined); // undefined = checando sessão, null = deslogado
   useEffect(()=>{
-    const unsub=auth.onAuthStateChanged((u)=>{
-      if(u&&emailPermitido(u.email)){
+    const unsub=auth.onAuthStateChanged(async (u)=>{
+      if(u&&(await acessoPermitido(u.email))){
         setUser(u);
       }else{
         if(u) auth.signOut();
@@ -20170,6 +20183,17 @@ function App({currentUser}){
     }, (err)=>console.error('Erro ao ler configurações do Firestore:',err));
     return unsub;
   },[]);
+  /* 24/11: espelha os e-mails de Configurações › Usuários em fluxoapp_meta/acessos
+     (quem pode entrar). Só o admin master grava; as regras do banco também exigem isso. */
+  const acessosGravadoRef=useRef('');
+  useEffect(()=>{
+    if(DEMO_MODE||!cfgCarregada.settings) return;
+    if(String(currentUser&&currentUser.email||'').toLowerCase()!==MASTER_ADMIN_EMAIL) return;
+    const emails=[...new Set((Array.isArray(usuarios)?usuarios:[]).map(u=>String(u&&u.email||'').trim().toLowerCase()).filter(e=>e&&e.includes('@')&&e!==MASTER_ADMIN_EMAIL))].sort();
+    const chave=emails.join(',');
+    if(chave===acessosGravadoRef.current) return;
+    ACESSOS_DOC.set({emails,atualizadoEm:new Date().toISOString()}).then(()=>{ acessosGravadoRef.current=chave; }).catch(err=>console.error('Erro ao gravar lista de acessos:',err));
+  },[usuarios,cfgCarregada.settings]);
   useEffect(()=>{
     if(!loadedSettingsRef.current||DEMO_MODE) return;
     if(skipSettingsWriteRef.current){ skipSettingsWriteRef.current=false; return; }

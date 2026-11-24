@@ -3,11 +3,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isCompanyUser() {
-      // CONECTA: somente este e-mail tem acesso ao banco.
+    // Admin master: sempre tem acesso.
+    function isMaster() {
       return request.auth != null
         && request.auth.token.email == 'beghebru@gmail.com'
         && request.auth.token.email_verified == true;
+    }
+
+    // 24/11/2026: equipe. Entra quem o admin master cadastrou em
+    // Configuracoes > Usuarios. O app espelha esses e-mails no documento
+    // fluxoapp_meta/acessos (campo "emails", tudo minusculo).
+    function isEquipe() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/fluxoapp_meta/acessos)
+        && request.auth.token.email.lower() in
+           get(/databases/$(database)/documents/fluxoapp_meta/acessos).data.emails;
+    }
+
+    function isCompanyUser() {
+      return isMaster() || isEquipe();
     }
 
     match /fluxoapp_projects/{docId} {
@@ -23,8 +38,11 @@ service cloud.firestore {
       allow read, write: if isCompanyUser();
     }
 
+    // A lista de quem pode entrar (acessos) so o admin master altera;
+    // os demais documentos de configuracao seguem liberados para a equipe.
     match /fluxoapp_meta/{docId} {
-      allow read, write: if isCompanyUser();
+      allow read: if isCompanyUser();
+      allow write: if isMaster() || (isCompanyUser() && docId != 'acessos');
     }
 
     // Notas Fiscais anexadas na baixa das parcelas (Controle Financeiro).
