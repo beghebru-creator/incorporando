@@ -29,6 +29,12 @@ async function entregar(appTabId, payload) {
   }
 }
 
+/* Texto da página sem os campos (para saber se o número está no resultado). */
+async function lerTextoSemCampos(tabId) {
+  const res = await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, func: () => (document.body ? document.body.innerText : '') });
+  return res.map(r => r.result || '').join('\n');
+}
+
 async function lerAba(tabId) {
   const res = await chrome.scripting.executeScript({
     target: { tabId, allFrames: true },
@@ -64,7 +70,7 @@ chrome.runtime.onMessage.addListener((msg, sender, responder) => {
       if (!/^https?:$/.test(url.protocol)) return responder({ ok: false });
       const nova = await chrome.tabs.create({ url: url.href, openerTabId: tab.id });
       const c = await consultas();
-      c[nova.id] = { protoId: msg.protoId, numero: msg.numero, senha: String(msg.senha || ''), obs: String(msg.obs || ''), appTabId: tab.id, enviado: false, em: Date.now() };
+      c[nova.id] = { protoId: msg.protoId, numero: msg.numero, senha: String(msg.senha || ''), obs: String(msg.obs || ''), moldes: Array.isArray(msg.moldes) ? msg.moldes.slice(0, 20) : [], appTabId: tab.id, enviado: false, preenchido: false, em: Date.now() };
       await salvarConsultas(c);
       return responder({ ok: true });
     }
@@ -84,11 +90,25 @@ chrome.runtime.onMessage.addListener((msg, sender, responder) => {
     const cons = c[tab.id];
     if (!cons) return responder(null);
 
-    if (msg.tipo === 'minha-consulta') return responder({ numero: cons.numero, senha: cons.senha || '', obs: cons.obs || '', enviado: cons.enviado });
+    if (msg.tipo === 'minha-consulta') return responder({ numero: cons.numero, senha: cons.senha || '', obs: cons.obs || '', moldes: cons.moldes || [], enviado: cons.enviado, preenchido: !!cons.preenchido });
+
+    const irmas = (fn) => { for (const k of Object.keys(c)) if (c[k].protoId === cons.protoId && c[k].appTabId === cons.appTabId) fn(c[k]); };
+
+    if (msg.tipo === 'marcar-preenchido') { irmas(x => { x.preenchido = true; }); await salvarConsultas(c); return responder({ ok: true }); }
+
+    if (msg.tipo === 'molde-salvar') {
+      const m = msg.molde || {};
+      if (!m.host || !Array.isArray(m.campos)) return responder({ ok: false });
+      irmas(x => { x.moldes = (x.moldes || []).filter(y => !(y.host === m.host && y.path === m.path)).concat([m]); });
+      await salvarConsultas(c);
+      await entregar(cons.appTabId, { tipo: 'molde', molde: m });
+      return responder({ ok: true });
+    }
 
     if (msg.tipo === 'ler') {
       const texto = await lerAba(tab.id);
-      return responder({ achou: numeroNaPagina(texto, cons.numero), tamanho: texto.length, assinatura: texto.length + ':' + texto.slice(-200) });
+      const corpo = await lerTextoSemCampos(tab.id);
+      return responder({ achou: numeroNaPagina(texto, cons.numero), noTexto: numeroNaPagina(corpo, cons.numero), assinatura: corpo.length + ':' + corpo.slice(-300) });
     }
 
     if (msg.tipo === 'enviar') {

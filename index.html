@@ -2493,6 +2493,8 @@
   .proto-linhas i{font-size:12px;color:var(--text3);}
   .proto-consulta.compacto .btn-modal{padding:4px 10px;font-size:12px;}
   .proto-robo-msg{font-size:11.5px;color:var(--text3);}
+  .proto-molde{margin-top:6px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);background:color-mix(in srgb,var(--accent) 7%,transparent);display:flex;flex-direction:column;gap:4px;}
+  .proto-molde-x{margin-left:8px;border:0;background:transparent;color:var(--red,#dc2626);font-size:11.5px;cursor:pointer;text-decoration:underline;}
   .proto-grupo{border:1px solid var(--border);border-radius:6px;margin-bottom:12px;background:var(--surface);color:var(--text);overflow:hidden;}
   .proto-grupo-h{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
   .proto-grupo-h:hover{background:color-mix(in srgb,var(--accent) 6%,var(--surface2));}
@@ -15701,10 +15703,22 @@ function protoNovoId(){ return 'p'+Date.now().toString(36)+Math.random().toStrin
 const PROTO_DIAS_ALERTA=15; /* "não consultado há X dias" a partir daqui */
 
 let PROTOS_CACHE=[]; const PROTOS_OUVINTES=new Set(); let PROTOS_UNSUB=null;
+/* Moldes de preenchimento ensinados na extensão (um por site/página), para
+   toda a equipe: fluxoapp_meta/protomoldes {moldes:{<chave>:{host,path,campos:[{sel,valor,fixo}],botao,em,por}}}. */
+const PROTO_MOLDES_DOC=()=>db.collection('fluxoapp_meta').doc('protomoldes');
+let PROTO_MOLDES={}; let PROTO_MOLDES_UNSUB=null;
+function protoMoldesIniciar(){
+  if(PROTO_MOLDES_UNSUB||DEMO_MODE) return;
+  PROTO_MOLDES_UNSUB=PROTO_MOLDES_DOC().onSnapshot(d=>{ PROTO_MOLDES=(d.exists&&d.data().moldes)||{}; if(typeof protoExtAvisar==='function') protoExtAvisar(); },err=>console.error('Erro ao ler os moldes de preenchimento:',err));
+}
+function protoHost(url){ try{ return new URL(/^https?:\/\//i.test(url)?url:'https://'+url).host; }catch(e){ return ''; } }
+function protoChaveMolde(m){ return String((m.host||'')+(m.path||'')).toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,140); }
+function protoMoldesDoHost(host){ return host?Object.entries(PROTO_MOLDES).filter(([,m])=>m&&m.host===host).map(([k,m])=>({...m,_chave:k})):[]; }
 function useProtocolos(){
   const[lista,setLista]=useState(PROTOS_CACHE);
   useEffect(()=>{
     PROTOS_OUVINTES.add(setLista); setLista(PROTOS_CACHE);
+    protoMoldesIniciar();
     if(!PROTOS_UNSUB&&!DEMO_MODE){
       PROTOS_UNSUB=db.collection('fluxoapp_meta').where('tipo','==','protocolo').onSnapshot(snap=>{
         PROTOS_CACHE=snap.docs.map(d=>({...d.data(),_docId:d.id})).filter(p=>!p.removido);
@@ -15778,6 +15792,13 @@ if(typeof window!=='undefined'){
     if(d.tipo==='pronta'){ if(!PROTO_EXT){ PROTO_EXT=true; protoExtAvisar(); } }
     else if(d.tipo==='resultado'){ protoProcessarLeitura(d).catch(e=>{ console.error('Erro ao gravar a leitura do protocolo:',e); protoToast('Não consegui gravar a leitura: '+(e.message||e),'aviso'); }); }
     else if(d.tipo==='cancelada'){ delete PROTO_LENDO[d.protoId]; protoExtAvisar(); }
+    else if(d.tipo==='molde'&&d.molde&&d.molde.host&&Array.isArray(d.molde.campos)&&!DEMO_MODE){
+      const m={host:String(d.molde.host),path:String(d.molde.path||''),botao:String(d.molde.botao||''),
+        campos:d.molde.campos.slice(0,15).map(c=>({sel:String(c.sel||''),valor:String(c.valor||''),fixo:String(c.fixo||'')})),em:Date.now(),por:EU.nome||EU.email||''};
+      PROTO_MOLDES_DOC().set({moldes:{[protoChaveMolde(m)]:m}},{merge:true})
+        .then(()=>protoToast('Preenchimento automático salvo para '+m.host+'.','ok'))
+        .catch(e=>protoToast('Não consegui salvar o preenchimento: '+(e.message||e),'aviso'));
+    }
   });
   try{ window.postMessage({origem:'incorporando-app',tipo:'ping'},'*'); }catch(e){}
 }
@@ -15865,7 +15886,7 @@ function protoConsultar(p){
   if(!url){ alert('Este protocolo ainda não tem o link de consulta. Abra o protocolo e cole o endereço da página de consulta do órgão.'); return; }
   if(PROTO_EXT){
     PROTO_LENDO[p.id]=true; protoExtAvisar();
-    window.postMessage({origem:'incorporando-app',tipo:'consultar',protoId:p.id,numero:String(p.numero||''),senha:String(p.senha||''),obs:String(p.obsConsulta||''),url},'*');
+    window.postMessage({origem:'incorporando-app',tipo:'consultar',protoId:p.id,numero:String(p.numero||''),senha:String(p.senha||''),obs:String(p.obsConsulta||''),moldes:protoMoldesDoHost(protoHost(url)).map(({_chave,...m})=>m),url},'*');
   }else{
     window.open(url,'_blank','noopener');
   }
@@ -15930,6 +15951,22 @@ function ProtoConsultaBox({p,compacto}){
   );
 }
 
+/* Preenchimento automático ensinado para o site do link. */
+const PROTO_VALOR_ROT={numero:'número',seq:'número sem o ano',ano:'ano',senha:'senha',obs:'observações',fixo:'texto fixo'};
+function ProtoMoldeStatus({link,pode}){
+  useProtoExt(); /* atualiza quando os moldes mudam */
+  const host=protoHost(link); if(!host) return null;
+  const ms=protoMoldesDoHost(host);
+  const esquecer=(k)=>{ if(!window.confirm('Esquecer o preenchimento automático deste site? Será preciso ensinar de novo.')) return;
+    PROTO_MOLDES_DOC().update({['moldes.'+k]:firebase.firestore.FieldValue.delete()}).catch(e=>alert('Não consegui apagar: '+(e.message||e))); };
+  if(!ms.length) return <div className="proto-dica" style={{marginTop:4}}><i className="ti ti-wand"/> Preenchimento automático: ainda não ensinado para <b>{host}</b>. Na consulta, use <b>Ensinar preenchimento</b> na barrinha do site.</div>;
+  return <div className="proto-molde">{ms.map(m=>(
+    <div key={m._chave}><i className="ti ti-wand"/> <b>Preenchimento automático</b> em {host}{m.path&&m.path!=='/'?<span className="proto-td-sub"> {m.path}</span>:null}: {(m.campos||[]).map(c=>PROTO_VALOR_ROT[c.valor]+(c.valor==='fixo'&&c.fixo?' “'+c.fixo+'”':'')).join(', ')}{m.botao?' e clica em pesquisar':''}.
+      <span className="proto-td-sub"> Ensinado{m.por?' por '+m.por:''} em {protoDataCurta(m.em)}.</span>
+      {pode&&<button type="button" className="proto-molde-x" onClick={()=>esquecer(m._chave)}>Esquecer</button>}
+    </div>))}</div>;
+}
+
 /* Janela do protocolo: cadastro, consulta e histórico. */
 function ProtocoloModal({inicial,projects,onClose,onAbrirTarefa}){
   const todos=useProtocolos();
@@ -15992,7 +16029,8 @@ function ProtocoloModal({inicial,projects,onClose,onAbrirTarefa}){
                 ?<><i className="ti ti-circle-check" style={{color:'var(--green,#16a34a)'}}/> O site abre já com o número preenchido.</>
                 :<><i className="ti ti-info-circle"/> O número não está no endereço: o app abre o site e copia o número para colar. Se souber onde o número entra no link, escreva <b>{'{numero}'}</b> nesse lugar.</>}
             {urlTeste&&<> <a href={urlTeste} target="_blank" rel="noopener">Testar link</a></>}
-          </div></div>
+          </div>
+          <ProtoMoldeStatus link={urlTeste} pode={pode}/></div>
         <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
           <div style={{flex:1,minWidth:170}}><label className="modal-field-label"><i className="ti ti-key"/> Senha / código de acesso</label>
             <div style={{display:'flex',gap:6}}>

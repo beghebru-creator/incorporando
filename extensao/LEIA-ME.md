@@ -20,6 +20,14 @@ abriu pelo botão Consultar.
 4. Volte ao app: o histórico do protocolo mostra "Sem movimentação", "Teve
    movimentação" (com as linhas novas) ou "Primeira leitura".
 
+## Preencher o site sozinho (ensinar uma vez por site)
+1. Clique em Consultar num protocolo desse órgão. No site, clique em **Ensinar preenchimento** na barrinha.
+2. Clique em cada campo do site e escolha o que vai nele: número completo, número sem o ano, só o ano, senha, observações ou um texto fixo (ex.: tipo de processo).
+3. Clique em **Marcar botão de pesquisar** e depois no botão de pesquisar do site (ele não é enviado nessa hora).
+4. Clique em **Salvar**. O molde fica guardado no Incorporando e vale para toda a equipe e para todos os protocolos desse site.
+5. Nas próximas consultas, a extensão preenche e pesquisa sozinha. Se o site tiver captcha, ela só preenche: resolva o captcha e clique em pesquisar.
+Se o site mudar, clique em **Ensinar de novo**. Para apagar, use "Esquecer" na janela do protocolo.
+
 ## Endereços do app aceitos
 Os endereços do Incorporando ficam em `manifest.json` (content_scripts.matches) e
 em `background.js` (APPS). Se o app ganhar outro endereço, acrescente nos dois e
