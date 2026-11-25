@@ -2507,6 +2507,8 @@
   .proto-tabela th{text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;padding:7px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .proto-tabela td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
   .proto-tabela tbody tr{cursor:pointer;}
+  .proto-tabela.fixa{table-layout:fixed;}
+  .proto-tabela.fixa td{overflow-wrap:anywhere;}
   .proto-tabela tbody tr:hover{background:var(--surface2);}
   .proto-tabela tbody tr:last-child td{border-bottom:0;}
   .proto-tabela tr.nova td:first-child{box-shadow:inset 3px 0 0 #e8650c;}
@@ -15621,6 +15623,23 @@ function AtasView({onBack,projects,onOpenTask}){
     }).sort((x,y)=>String(y.data||'').localeCompare(String(x.data||''))||((y.criadoEm||0)-(x.criadoEm||0)));
   },[atas,busca,fProj,fStatus]);
   const nRevisar=atas.filter(a=>a.status==='revisar').length;
+  /* Lista organizada por empreendimento (igual a Protocolos). Uma ata ligada a
+     vários empreendimentos aparece em cada um; sem vínculo vai para o fim. */
+  const[fechados,setFechados]=useFiltroFixo('atas.fechados',[]);
+  const fech=Array.isArray(fechados)?fechados:[];
+  const grupos=React.useMemo(()=>{
+    const m={};
+    const por=(chave,nome,projId,a)=>{ (m[chave]=m[chave]||{chave,nome,projId,itens:[]}); if(!m[chave].itens.includes(a)) m[chave].itens.push(a); };
+    filtradas.forEach(a=>{
+      const vs=(a.vinculos||[]).filter(v=>v&&(v.projId||v.projNome));
+      if(fProj){ por(String(fProj),(ativos.find(x=>String(x.id)===String(fProj))||{}).name||'Empreendimento',fProj,a); return; }
+      if(!vs.length){ por('_sem','Sem empreendimento','',a); return; }
+      vs.forEach(v=>{ const proj=ativos.find(x=>String(x.id)===String(v.projId)); por(proj?String(proj.id):(v.projId?String(v.projId):'n_'+v.projNome),proj?proj.name:(v.projNome||'Empreendimento'),proj?proj.id:(v.projId||''),a); });
+    });
+    return Object.values(m).sort((x,y)=>(x.chave==='_sem')-(y.chave==='_sem')||x.nome.localeCompare(y.nome,'pt'));
+  },[filtradas,ativos,fProj]);
+  const alternar=(k)=>setFechados(fech.includes(k)?fech.filter(x=>x!==k):[...fech,k]);
+  const todosFechados=grupos.length>0&&grupos.every(g=>fech.includes(g.chave));
   return (
     <div className="pdi-wrap">
       <div style={{marginBottom:16}}><button className="pdi-btn ghost" onClick={onBack}><i className="ti ti-arrow-left"/> Voltar</button></div>
@@ -15628,6 +15647,7 @@ function AtasView({onBack,projects,onOpenTask}){
         <div className="venc-search"><i className="ti ti-search"/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar em título, órgão, resumo, decisões…"/></div>
         <select className="pdi-select" style={{maxWidth:220}} value={fProj} onChange={e=>setFProj(e.target.value)}><option value="">Todos os empreendimentos</option>{ativos.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
         <select className="pdi-select" style={{maxWidth:180}} value={fStatus} onChange={e=>setFStatus(e.target.value)}><option value="">Todas</option><option value="revisar">Para revisar{nRevisar?` (${nRevisar})`:''}</option><option value="ok">Revisadas</option></select>
+        {grupos.length>1&&<button className="pdi-btn ghost" onClick={()=>setFechados(todosFechados?[]:grupos.map(g=>g.chave))}><i className={'ti '+(todosFechados?'ti-chevrons-down':'ti-chevrons-up')}/> {todosFechados?'Abrir todos':'Recolher todos'}</button>}
         <div style={{marginLeft:'auto',display:'flex',gap:8,flexWrap:'wrap'}}>
           <button className="pdi-btn ghost" onClick={()=>setInteg(true)}><i className="ti ti-folder"/> Pasta de atas</button>
           {minhas.length>0&&<button className="pdi-btn ghost" disabled={sincronizando} onClick={()=>sincronizar(false)}><i className={'ti ti-refresh'+(sincronizando?' ata-gira':'')}/> Sincronizar</button>}
@@ -15636,22 +15656,35 @@ function AtasView({onBack,projects,onOpenTask}){
       </div>
       {sync&&<div className="ata-aviso" style={{marginBottom:12}}>{sync}</div>}
       {filtradas.length===0&&<div className="pdi-empty">{atas.length?'Nenhuma ata encontrada com esses filtros.':'Nenhuma ata registrada ainda. Clique em “Nova ata” ou conecte a pasta de atas.'}</div>}
-      <div className="ata-lista">
-        {filtradas.map(a=>(
-          <div key={a.id} className={'ata-card'+(a.status==='revisar'?' revisar':'')} onClick={()=>setAberta(a)}>
-            <div className="ata-card-h">
-              <span className="ata-data">{fmtISOBR(a.data)}</span>
-              <span className="ata-badge">{ataTipoNome(a.tipoReuniao)}</span>
-              <AtaOrigemBadge a={a} curto/>
-              {a.status==='revisar'&&<span className="ata-badge revisar">Para revisar</span>}
+      {grupos.map(g=>{
+        const fechado=fech.includes(g.chave); const nRev=g.itens.filter(a=>a.status==='revisar').length;
+        return (
+          <div key={g.chave} className="proto-grupo">
+            <div className="proto-grupo-h" onClick={()=>alternar(g.chave)}>
+              <i className={'ti '+(fechado?'ti-chevron-right':'ti-chevron-down')}/>
+              <span className="proto-grupo-nome">{g.nome}</span>
+              <span className="proto-grupo-n">{g.itens.length} ata{g.itens.length>1?'s':''}</span>
+              {nRev>0&&<span className="ata-badge revisar">{nRev} para revisar</span>}
+              {permEditarNotas()&&g.chave!=='_sem'&&<button className="proto-grupo-add" title="Nova ata neste empreendimento" onClick={e=>{e.stopPropagation(); setAberta({vinculos:[{projId:g.projId,projNome:g.nome,taskId:'',taskLabel:''}]});}}><i className="ti ti-plus"/></button>}
             </div>
-            <div className="ata-card-t">{a.titulo||'(sem título)'}</div>
-            {a.orgao&&<div className="ata-card-o"><i className="ti ti-building"/> {a.orgao}</div>}
-            {a.resumo&&<div className="ata-card-r">{a.resumo.length>240?a.resumo.slice(0,240)+'…':a.resumo}</div>}
-            {(a.vinculos||[]).length>0&&<div className="ata-chips">{a.vinculos.map((v,i)=><span key={i} className={'ata-chip'+(v.taskId?'':' so-emp')}><span className="ata-chip-t">{v.projNome}{v.taskLabel?' · '+v.taskLabel:''}</span></span>)}</div>}
-          </div>))}
-      </div>
-      {aberta&&<AtaModal inicial={aberta.id?aberta:null} projects={projects} onClose={()=>setAberta(null)} onAbrirTarefa={onOpenTask?(p,t)=>{setAberta(null);onOpenTask(p,t);}:null}/>}
+            {!fechado&&<div className="proto-tabela-wrap"><table className="proto-tabela fixa">
+              <colgroup><col style={{width:'9%'}}/><col style={{width:'25%'}}/><col style={{width:'9%'}}/><col style={{width:'17%'}}/><col style={{width:'26%'}}/><col style={{width:'14%'}}/></colgroup>
+              <thead><tr><th>Data</th><th>Reunião</th><th>Tipo</th><th>Tarefas</th><th>Resumo</th><th>Situação</th></tr></thead>
+              <tbody>{g.itens.map(a=>{
+                const vs=(a.vinculos||[]).filter(v=>g.chave==='_sem'?true:String(v.projId)===String(g.projId)).filter(v=>v.taskId||v.taskLabel);
+                return (
+                <tr key={a.id} className={a.status==='revisar'?'nova':''} onClick={()=>setAberta(a)}>
+                  <td className="proto-td-data">{fmtISOBR(a.data)}</td>
+                  <td><div className="proto-td-org">{a.titulo||'(sem título)'}</div>{a.orgao&&<div className="proto-td-sub"><i className="ti ti-building"/> {a.orgao}</div>}</td>
+                  <td><span className="ata-badge">{ataTipoNome(a.tipoReuniao)}</span></td>
+                  <td>{vs.length?vs.map((v,i)=><div key={i}><span className="proto-link-tarefa" title="Abrir a tarefa" onClick={e=>{ if(v.taskId&&onOpenTask){ e.stopPropagation(); onOpenTask(v.projId,v.taskId); } }}>{v.taskLabel||'tarefa'}</span></div>):<span className="proto-td-sub">—</span>}</td>
+                  <td>{a.resumo?<div className="proto-td-sub proto-td-mov" style={{maxWidth:360}} title={a.resumo}>{a.resumo}</div>:<span className="proto-td-sub">—</span>}</td>
+                  <td><div style={{display:'flex',gap:4,flexWrap:'wrap'}}><AtaOrigemBadge a={a} curto/>{a.status==='revisar'&&<span className="ata-badge revisar">Para revisar</span>}</div></td>
+                </tr>); })}</tbody>
+            </table></div>}
+          </div>);
+      })}
+      {aberta&&<AtaModal inicial={aberta.id?aberta:(aberta.vinculos?aberta:null)} projects={projects} onClose={()=>setAberta(null)} onAbrirTarefa={onOpenTask?(p,t)=>{setAberta(null);onOpenTask(p,t);}:null}/>}
       {integ&&<AtasIntegracaoModal fontes={cfg.fontes} salvarFontes={salvarFontes} onClose={()=>setInteg(false)}/>}
     </div>
   );
@@ -16164,7 +16197,8 @@ function ProtocolosView({onBack,projects,onOpenTask}){
               {novas>0&&<span className="proto-badge mov"><i className="ti ti-bell-ringing"/> {novas} com movimentação nova</span>}
               {permEditarNotas()&&g.chave!=='_sem'&&<button className="proto-grupo-add" title="Novo protocolo neste empreendimento" onClick={e=>{e.stopPropagation(); setAberto({projId:g.projId});}}><i className="ti ti-plus"/></button>}
             </div>
-            {!fechado&&<div className="proto-tabela-wrap"><table className="proto-tabela">
+            {!fechado&&<div className="proto-tabela-wrap"><table className="proto-tabela fixa">
+              <colgroup><col style={{width:'12%'}}/><col style={{width:'18%'}}/><col style={{width:'15%'}}/><col style={{width:'14%'}}/><col style={{width:'20%'}}/><col style={{width:'11%'}}/><col style={{width:'10%'}}/></colgroup>
               <thead><tr><th>Protocolo</th><th>Órgão / assunto</th><th>Tarefa</th><th>Situação</th><th>Última movimentação</th><th>Última consulta</th><th></th></tr></thead>
               <tbody>{g.itens.map(p=>(
                 <tr key={p.id} className={p.novaMov&&p.situacao!=='encerrado'?'nova':''} onClick={()=>setAberto(p)}>
@@ -16284,7 +16318,7 @@ function PortalHomeAbas({abas,setView}){
   const itens=(abas||[]).map(k=>PORTAL_ABAS.find(a=>a.key===k)).filter(Boolean);
   return (
     <div className="pdi-wrap">
-      {itens.length===0 && <div className="pdi-empty" style={{maxWidth:640}}>Este portal ainda não tem abas. Um administrador adiciona em <b>Configurações → Portais</b>.</div>}
+      {itens.length===0 && <div className="pdi-empty" style={{maxWidth:640}}>Este portal ainda não tem módulos. Um administrador adiciona em <b>Configurações → Portais</b>.</div>}
       <div className="pdi-tools">
         {itens.map(a=>(
           <div key={a.key} className="pdi-tool" onClick={()=>setView(a.key)}>
@@ -16376,7 +16410,7 @@ function PortaisCard({portais,setPortais,setoresCfg}){
         <span className="gm-ic"><i className="ti ti-layout-grid-add"/></span>
         <div className="gm-head-txt">
           <div className="gm-head-t">Portais <span className="gm-count">{n}</span></div>
-          <div className="gm-head-s">Monte os portais do menu: nome, ícone, quais setores veem e quais abas cada um tem.</div>
+          <div className="gm-head-s">Monte os portais do menu: nome, ícone, quais setores veem e quais módulos cada um tem.</div>
         </div>
         <i className={'ti ti-chevron-'+(aberto?'up':'down')+' gm-chev'}/>
       </div>
@@ -16405,13 +16439,13 @@ function PortaisConfig({portais,setPortais,setoresCfg}){
   const ativos=lista.filter(p=>!p.removido), removidos=lista.filter(p=>p.removido);
   return (<>
     <div className="gm-sub gm-sub-info">
-      <div className="settings-row-desc">Escolha os setores que veem cada portal e as abas dele. Administradores gerais, Diretoria e o master veem todos; Visualizadores, nenhum. Abas de <b>dados próprios</b> começam vazias em cada portal; as <b>compartilhadas</b> (robôs e geradores) mostram a mesma base em todos.</div>
+      <div className="settings-row-desc">Escolha os setores que veem cada portal e os módulos dele. Administradores gerais, Diretoria e o master veem todos; Visualizadores, nenhum. Módulos de <b>dados próprios</b> começam vazias em cada portal; as <b>compartilhadas</b> (robôs e geradores) mostram a mesma base em todos.</div>
     </div>
     {ativos.map(p=>{ const aberto=!!abertos[p.id]; const fora=PORTAL_ABAS.filter(a=>!(p.abas||[]).includes(a.key));
       return (
       <div key={p.id} className="gm-sub">
         <button type="button" className="cfg-collapse-head" onClick={()=>setAbertos(a=>({...a,[p.id]:!aberto}))} aria-expanded={aberto}>
-          <span className="sidebar-title" style={{margin:0}}><i className={'ti '+(p.icone||'ti-layout-grid')}/> {portalNome(p)} {p.fixo&&<span className="cfg-collapse-count" title="Portal padrão: pode ser editado, mas não removido">padrão</span>} <span className="cfg-collapse-count">{(p.abas||[]).length} aba{(p.abas||[]).length===1?'':'s'}</span></span>
+          <span className="sidebar-title" style={{margin:0}}><i className={'ti '+(p.icone||'ti-layout-grid')}/> {portalNome(p)} {p.fixo&&<span className="cfg-collapse-count" title="Portal padrão: pode ser editado, mas não removido">padrão</span>} <span className="cfg-collapse-count">{(p.abas||[]).length} módulo{(p.abas||[]).length===1?'':'s'}</span></span>
           <span className="cfg-collapse-hint">{aberto?'Fechar':'Abrir para editar'} <i className={'ti ti-chevron-'+(aberto?'up':'down')}/></span>
         </button>
         {aberto&&(<div style={{marginTop:12}}>
@@ -16433,8 +16467,8 @@ function PortaisConfig({portais,setPortais,setoresCfg}){
             </div>
           </div>
           <div style={{marginTop:14}}>
-            <div className="pdi-label">Abas do portal (na ordem em que aparecem)</div>
-            {(p.abas||[]).length===0&&<div className="pdi-empty" style={{margin:'4px 0 8px'}}>Nenhuma aba ainda — adicione abaixo.</div>}
+            <div className="pdi-label">Módulos do portal (na ordem em que aparecem)</div>
+            {(p.abas||[]).length===0&&<div className="pdi-empty" style={{margin:'4px 0 8px'}}>Nenhum módulo ainda — adicione abaixo.</div>}
             {(p.abas||[]).map((k,i)=>{ const a=PORTAL_ABAS.find(x=>x.key===k); if(!a) return null;
               return (
               <div key={k} className="pdi-list-item">
@@ -16444,7 +16478,7 @@ function PortaisConfig({portais,setPortais,setoresCfg}){
                 <button className="pdi-icon-btn" title="Tirar do portal (os dados continuam guardados)" onClick={()=>tirarAba(p,k)}><i className="ti ti-x"/></button>
               </div>); })}
             {fora.length>0&&(<>
-              <div className="pdi-label" style={{marginTop:10}}>Adicionar aba</div>
+              <div className="pdi-label" style={{marginTop:10}}>Adicionar módulo</div>
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                 {fora.map(a=><button key={a.key} type="button" className="cfg-pill" onClick={()=>addAba(p,a.key)} title={a.desc}><i className={'ti '+a.ic}/> {a.nome}</button>)}
               </div>
@@ -21475,11 +21509,11 @@ function App({currentUser}){
   const navMeusPortais=navPortaisVis.filter(p=>(p.setores||[]).some(c=>navMeusSetores.includes(c)));
   /* Só "absorve" o portal no topo quando a pessoa tem UM portal de setor. */
   const navPortalProprio=navMeusPortais.length===1?navMeusPortais[0]:null;
-  /* Título do topo: "Portal X · Grupo" */
-  const tituloPortal=(pid)=>{ const p=portais.find(x=>x.id===pid); const g=portalGrupoDaAba(portalViewDe(pid)); return portalNome(p)+(g&&PORTAL_GRUPOS[g]?' · '+PORTAL_GRUPOS[g].nome:''); };
+  /* Título do topo: só o nome do portal (o módulo aparece no subtítulo). */
+  const tituloPortal=(pid)=>{ const p=portais.find(x=>x.id===pid); return portalNome(p); };
   /* Subtítulo de cada aba (embaixo do título, no topo da página). */
   const topSub=(()=>{
-    if(screen==='portaldi'||screen==='portalprj'||screen==='portal'){ const pid=screen==='portal'?portalId:screen; const v=portalViewDe(pid); const a=PORTAL_ABAS.find(x=>x.key===v); return a?a.nome:'Escolha uma opção no menu ao lado.'; }
+    if(screen==='portaldi'||screen==='portalprj'||screen==='portal'){ const pid=screen==='portal'?portalId:screen; const v=portalViewDe(pid); const a=PORTAL_ABAS.find(x=>x.key===v); return a?a.nome:'Escolha um módulo no menu ao lado.'; }
     return ({})[screen]||'';
   })();
   /* liveProjects = tudo que NÃO foi excluído (soft delete). Todas as telas
@@ -22121,7 +22155,7 @@ function App({currentUser}){
           {EH_SITE_TESTE&&(
             <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',padding:'10px 14px',marginBottom:14,border:'1px dashed var(--amber)',borderRadius:10,fontSize:12.5,color:'var(--text2)'}}>
               <i className="ti ti-flask" style={{color:'var(--amber)',fontSize:16}}/>
-              <span style={{flex:1,minWidth:200}}><b style={{color:'var(--text)'}}>Site de teste:</b> gerar metas de exemplo (2 empreendimentos "TESTE · …") para testar esta aba.</span>
+              <span style={{flex:1,minWidth:200}}><b style={{color:'var(--text)'}}>Site de teste:</b> gerar metas de exemplo (2 empreendimentos "TESTE · …") para testar este módulo.</span>
               <button className="btn-modal" onClick={()=>{ if(projects.some(p=>p.testeMetas&&!p.deleted)){ window.alert('Os dados de teste já existem. Apague antes de gerar de novo.'); return; } setProjects(ps=>ps.concat(gerarProjetosMetasTeste())); }}><i className="ti ti-plus"/> Gerar metas de teste</button>
               <button className="btn-modal ghost" onClick={()=>{ if(!window.confirm('Apagar os empreendimentos "TESTE · …" criados para teste?')) return; setProjects(ps=>ps.map(p=>p.testeMetas?{...p,deleted:true}:p)); }}><i className="ti ti-trash"/> Apagar dados de teste</button>
             </div>
@@ -22251,7 +22285,7 @@ function App({currentUser}){
             <CfgSecao titulo="Setores" icone="ti-building" desc="Siglas, nomes e cores dos setores.">
               <SetoresConfig setoresCfg={setoresCfg} setSetoresCfg={setSetoresCfg} usuarios={usuarios} portais={portais} onAbrirPortais={abrirPortaisGerenciar}/>
             </CfgSecao>
-            <CfgSecao evt={ABRIR_PORTAIS_EVT} titulo="Portais" icone="ti-layout-dashboard" desc="Quais setores veem cada portal e as abas de cada um.">
+            <CfgSecao evt={ABRIR_PORTAIS_EVT} titulo="Portais" icone="ti-layout-dashboard" desc="Quais setores veem cada portal e os módulos de cada um.">
               <PortaisCard portais={portais} setPortais={setPortaisCfgRaw} setoresCfg={setoresCfg}/>
             </CfgSecao>
           </>)}
