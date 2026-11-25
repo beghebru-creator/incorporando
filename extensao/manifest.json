@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Incorporando — Leitor de protocolos",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Quando você clica em Consultar num protocolo do Incorporando, abre o site do órgão e lê a página que abriu para o app saber se teve movimentação. Não consulta nada sozinho.",
   "permissions": ["tabs", "scripting", "storage"],
   "host_permissions": ["<all_urls>"],

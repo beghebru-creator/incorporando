@@ -15779,8 +15779,13 @@ function protoNumeroNaPagina(texto,numero){
 /* Linha com a data mais recente da página (costuma ser o último andamento). */
 function protoUltimaDataDaPagina(linhas){
   let melhor=null;
-  linhas.forEach(l=>{ const re=/\b(\d{2})\/(\d{2})\/(\d{4})\b/g; let m;
-    while((m=re.exec(l))){ const t=new Date(+m[3],+m[2]-1,+m[1]).getTime(); if(!isNaN(t)&&t<=Date.now()+86400000&&(!melhor||t>melhor.t)) melhor={t,linha:l}; } });
+  /* Aceita 20/11/2026, 20/11/26, 20-11-2026, 20.11.2026 e 2026-11-20. */
+  const ver=(t,l)=>{ if(!isNaN(t)&&t>946684800000&&t<=Date.now()+86400000&&(!melhor||t>melhor.t)) melhor={t,linha:l}; };
+  linhas.forEach(l=>{ let m;
+    const re=/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4}|\d{2})\b/g;
+    while((m=re.exec(l))){ let a=+m[3]; if(a<100) a+=2000; if(+m[2]>=1&&+m[2]<=12&&+m[1]>=1&&+m[1]<=31) ver(new Date(a,+m[2]-1,+m[1]).getTime(),l); }
+    const iso=/\b(\d{4})-(\d{2})-(\d{2})\b/g;
+    while((m=iso.exec(l))){ ver(new Date(+m[1],+m[2]-1,+m[3]).getTime(),l); } });
   return melhor;
 }
 async function protoHash(txt){
@@ -15796,7 +15801,9 @@ async function protoProcessarLeitura(d){
   const linhas=protoNormalizar(d.texto);
   const ult=protoUltimaDataDaPagina(linhas);
   let resultado, texto='', extra={};
-  if(!protoNumeroNaPagina(d.texto,p.numero)){
+  /* Leitura automática só acontece quando o número aparece; no botão "Ler esta
+     página" (manual) a pessoa já confirmou que é o resultado certo. */
+  if(!d.manual&&!protoNumeroNaPagina(d.texto,p.numero)){
     resultado='nao_leu'; texto='O número do protocolo não apareceu na página lida. Confira a página e registre manualmente, se preciso.';
   }else{
     const hash=await protoHash(linhas.join('\n'));

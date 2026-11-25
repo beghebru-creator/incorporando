@@ -32,7 +32,15 @@ async function entregar(appTabId, payload) {
 async function lerAba(tabId) {
   const res = await chrome.scripting.executeScript({
     target: { tabId, allFrames: true },
-    func: () => (document.body ? document.body.innerText : '')
+    /* Texto da página + o que está escrito nos campos (muitos sites deixam o
+       número só dentro da caixa de busca, sem repetir no resultado). */
+    func: () => {
+      const t = document.body ? document.body.innerText : '';
+      const campos = Array.from(document.querySelectorAll('input:not([type=hidden]):not([type=password]),textarea,select'))
+        .map(el => el.tagName === 'SELECT' ? (el.selectedOptions[0] ? el.selectedOptions[0].text : '') : el.value)
+        .filter(v => v && String(v).trim()).join('\n');
+      return t + (campos ? '\n' + campos : '');
+    }
   });
   return res.map(r => r.result || '').join('\n');
 }
@@ -86,7 +94,8 @@ chrome.runtime.onMessage.addListener((msg, sender, responder) => {
     if (msg.tipo === 'enviar') {
       const texto = await lerAba(tab.id);
       await entregar(cons.appTabId, { tipo: 'resultado', protoId: cons.protoId, numero: cons.numero, texto, url: tab.url, em: Date.now(), manual: !!msg.manual });
-      cons.enviado = true; c[tab.id] = cons; await salvarConsultas(c);
+      for (const k of Object.keys(c)) if (c[k].protoId === cons.protoId && c[k].appTabId === cons.appTabId) c[k].enviado = true;
+      await salvarConsultas(c);
       return responder({ ok: true });
     }
     responder(null);
@@ -102,11 +111,22 @@ chrome.tabs.onUpdated.addListener(async (tabId, info) => {
   try { await chrome.scripting.executeScript({ target: { tabId }, files: ['barra.js'] }); } catch (e) { /* página que não aceita (ex.: PDF) */ }
 });
 
+/* O site abriu o resultado numa aba/janela nova: ela também fica marcada. */
+chrome.tabs.onCreated.addListener(async (tab) => {
+  if (!tab.openerTabId) return;
+  const c = await consultas();
+  const mae = c[tab.openerTabId];
+  if (!mae) return;
+  c[tab.id] = Object.assign({}, mae, { em: Date.now() });
+  await salvarConsultas(c);
+});
+
 /* Fechou a aba sem ler: avisa o app para parar de esperar. */
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   const c = await consultas();
   const cons = c[tabId];
   if (!cons) return;
   delete c[tabId]; await salvarConsultas(c);
-  if (!cons.enviado) { try { await chrome.tabs.sendMessage(cons.appTabId, { tipo: 'cancelada', protoId: cons.protoId }); } catch (e) {} }
+  const outra = Object.values(c).some(x => x.protoId === cons.protoId && x.appTabId === cons.appTabId);
+  if (!cons.enviado && !outra) { try { await chrome.tabs.sendMessage(cons.appTabId, { tipo: 'cancelada', protoId: cons.protoId }); } catch (e) {} }
 });
