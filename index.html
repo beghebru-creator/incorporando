@@ -1068,6 +1068,12 @@
   .pdi-textarea{resize:vertical;min-height:120px;line-height:1.55;}
   .pdi-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .pdi-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  /* 25/11: Gerador de Ofícios em duas metades — campos à esquerda, texto à direita */
+  .oficio-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:stretch;}
+  .oficio-col{min-width:0;display:flex;flex-direction:column;}
+  .oficio-col-texto > .pdi-field{flex:1;display:flex;flex-direction:column;margin-bottom:0;}
+  .oficio-col-texto .pdi-textarea{flex:1;min-height:380px !important;resize:vertical;}
+  @media(max-width:1000px){ .oficio-split{grid-template-columns:1fr;} }
   .pdi-btn{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
   .pdi-btn:hover{background:var(--accent2);}
   .pdi-btn.ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border2);}
@@ -17227,13 +17233,14 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
   /* ─── Ferramenta: Gerador de Ofícios ─── */
   return (
     <div className="pdi-wrap">
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',maxWidth:760,marginBottom:16,gap:12,flexWrap:'wrap'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,gap:12,flexWrap:'wrap'}}>
         <button className="pdi-btn ghost" onClick={()=>setView('home')}><i className="ti ti-arrow-left"/> Voltar</button>
         <button className="pdi-btn ghost" onClick={()=>setShowConfig(true)}><i className="ti ti-settings"/> Configurar cadastros</button>
       </div>
-      <div className="pdi-card" style={{maxWidth:760}}>
+      <div className="pdi-card">
         <div className="pdi-card-title"><i className="ti ti-file-text"/> Gerador de Ofícios</div>
         <div className="pdi-card-desc">Escolha o empreendimento, o representante que assina e o assunto (nenhum é obrigatório) — o texto é montado automaticamente e pode ser ajustado. Cadastre os textos padrão em "Configurar cadastros".</div>
+        <div className="oficio-split"><div className="oficio-col">
 
         <div className="pdi-row3">
           <div className="pdi-field">
@@ -17281,27 +17288,11 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
           </div>
         )}
 
-        <div className="pdi-row3" style={{gridTemplateColumns:'0.5fr 1.3fr 1.2fr 1fr'}}>
+        <div className="pdi-row3" style={{gridTemplateColumns:'0.6fr 1.4fr'}}>
           <div className="pdi-field"><label className="pdi-label">Tratamento</label><input className="pdi-input" value={destPrefixo} onChange={e=>setDestPrefixo(e.target.value)} placeholder="Ex.: À, Ao, Aos"/></div>
           <div className="pdi-field"><label className="pdi-label">Destinatário</label><input className="pdi-input" value={destNome} onChange={e=>setDestNome(e.target.value)} placeholder="Ex.: Ilmo. Sr. Secretário"/></div>
           <div className="pdi-field"><label className="pdi-label">Órgão / empresa</label><input className="pdi-input" value={destOrgao} onChange={e=>setDestOrgao(e.target.value)} placeholder="Ex.: Prefeitura de Curitiba"/></div>
           <div className="pdi-field"><label className="pdi-label">Data</label><input type="date" className="pdi-input" value={dataStr} onChange={e=>setDataStr(e.target.value)}/></div>
-        </div>
-
-        <div className="pdi-field">
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <label className="pdi-label">Texto do ofício</label>
-            <button className="pdi-icon-btn" style={{color:'var(--accent)',fontSize:12,width:'auto'}} onClick={remontar} title="Remontar o texto a partir dos cadastros"><i className="ti ti-refresh"/> Remontar</button>
-          </div>
-          <textarea ref={corpoRef} className="pdi-textarea" style={{minHeight:200}} value={corpo} onChange={e=>{setCorpo(e.target.value);setCorpoEdit(true);}} placeholder="Selecione empreendimento, representante e assunto — o texto é montado aqui e pode ser editado."/>
-          <div className="oficio-vars">
-            <span className="oficio-vars-lbl">Clique numa variável para inserir no texto. ✓ = já tem dado cadastrado neste empreendimento (o clique insere o dado; sem ✓, insere a variável):</span>
-            <div className="oficio-vars-list">
-              {chipVars.map(([v,val])=>(
-                <button type="button" key={v} className={'oficio-var'+(val?' has':'')} title={val?('Inserir: '+String(val)):('Sem dado cadastrado — insere a variável {'+v+'}')} onClick={()=>inserirNoCorpo(val?String(val):('{'+v+'}'))}>{'{'+v+'}'}{val?' ✓':''}</button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
@@ -17333,6 +17324,25 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
                 ))}
           </div>
         )}
+        </div>
+        <div className="oficio-col oficio-col-texto">
+        <div className="pdi-field">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <label className="pdi-label">Texto do ofício</label>
+            <button className="pdi-icon-btn" style={{color:'var(--accent)',fontSize:12,width:'auto'}} onClick={remontar} title="Remontar o texto a partir dos cadastros"><i className="ti ti-refresh"/> Remontar</button>
+          </div>
+          <textarea ref={corpoRef} className="pdi-textarea" style={{minHeight:200}} value={corpo} onChange={e=>{setCorpo(e.target.value);setCorpoEdit(true);}} placeholder="Selecione empreendimento, representante e assunto — o texto é montado aqui e pode ser editado."/>
+          <div className="oficio-vars">
+            <span className="oficio-vars-lbl">Clique numa variável para inserir no texto. ✓ = já tem dado cadastrado neste empreendimento (o clique insere o dado; sem ✓, insere a variável):</span>
+            <div className="oficio-vars-list">
+              {chipVars.map(([v,val])=>(
+                <button type="button" key={v} className={'oficio-var'+(val?' has':'')} title={val?('Inserir: '+String(val)):('Sem dado cadastrado — insere a variável {'+v+'}')} onClick={()=>inserirNoCorpo(val?String(val):('{'+v+'}'))}>{'{'+v+'}'}{val?' ✓':''}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        </div></div>
       </div>
 
       {showOficio && <OficioModal onClose={()=>setShowOficio(false)} docProps={docProps}/>}
