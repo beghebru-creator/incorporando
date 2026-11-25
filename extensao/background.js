@@ -64,7 +64,7 @@ chrome.runtime.onMessage.addListener((msg, sender, responder) => {
       if (!/^https?:$/.test(url.protocol)) return responder({ ok: false });
       const nova = await chrome.tabs.create({ url: url.href, openerTabId: tab.id });
       const c = await consultas();
-      c[nova.id] = { protoId: msg.protoId, numero: msg.numero, appTabId: tab.id, enviado: false, em: Date.now() };
+      c[nova.id] = { protoId: msg.protoId, numero: msg.numero, senha: String(msg.senha || ''), obs: String(msg.obs || ''), appTabId: tab.id, enviado: false, em: Date.now() };
       await salvarConsultas(c);
       return responder({ ok: true });
     }
@@ -84,7 +84,7 @@ chrome.runtime.onMessage.addListener((msg, sender, responder) => {
     const cons = c[tab.id];
     if (!cons) return responder(null);
 
-    if (msg.tipo === 'minha-consulta') return responder({ numero: cons.numero, enviado: cons.enviado });
+    if (msg.tipo === 'minha-consulta') return responder({ numero: cons.numero, senha: cons.senha || '', obs: cons.obs || '', enviado: cons.enviado });
 
     if (msg.tipo === 'ler') {
       const texto = await lerAba(tab.id);

@@ -9,7 +9,7 @@
     if (!d || d.origem !== 'incorporando-app') return;
     if (d.tipo === 'ping') anunciar();
     if (d.tipo === 'consultar') {
-      chrome.runtime.sendMessage({ tipo: 'consultar', protoId: String(d.protoId || ''), numero: String(d.numero || ''), url: String(d.url || '') });
+      chrome.runtime.sendMessage({ tipo: 'consultar', protoId: String(d.protoId || ''), numero: String(d.numero || ''), senha: String(d.senha || ''), obs: String(d.obs || ''), url: String(d.url || '') });
     }
   });
   chrome.runtime.onMessage.addListener(function (m) {
