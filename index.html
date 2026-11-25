@@ -2493,6 +2493,9 @@
   .proto-linhas i{font-size:12px;color:var(--text3);}
   .proto-consulta.compacto .btn-modal{padding:4px 10px;font-size:12px;}
   .proto-robo-msg{font-size:11.5px;color:var(--text3);}
+  .proto-robo-msg.lendo{color:var(--accent);}
+  .proto-robo-msg.lendo i{display:inline-block;animation:protoGira 1s linear infinite;}
+  @keyframes protoGira{to{transform:rotate(360deg)}}
   .proto-registro{margin-top:8px;padding:10px;border:1px dashed var(--border2);border-radius:9px;background:var(--surface2);}
   .proto-registro-t{font-size:12.5px;font-weight:600;margin-bottom:7px;}
   .proto-registro-t span{font-weight:400;color:var(--text2);}
@@ -15652,16 +15655,17 @@ function AtasDaTarefa({projId,taskId,taskLabel,projects}){
 
 /* ═══════════ PROTOCOLOS ═══════════
    Protocolos dos órgãos (prefeitura, IAT, INIS, cartório…) vinculados às
-   tarefas. Consulta MANUAL: o botão "Consultar" abre o site de consulta do
-   órgão já com o número (quando o site aceita o número no endereço) e copia
-   o número para colar, se precisar. Depois:
-     • a pessoa registra o que viu (sem movimentação / teve movimentação), e/ou
-     • o robô (GitHub Actions, robo/protocolos.js) abre a mesma página,
-       compara com a leitura anterior e grava se houve ou não movimentação.
-   O robô só lê os protocolos em que alguém clicou em Consultar (robo.pedidoEm).
+   tarefas. Nada é automático nem agendado: a consulta só acontece quando a
+   pessoa clica em "Consultar".
+     • Com a extensão "Incorporando — Leitor de protocolos" (pasta extensao/
+       do repositório) instalada no Chrome: o app pede à extensão para abrir
+       o site do órgão (já com o número); quando a página mostra o número, a
+       extensão lê o texto daquela página que a pessoa abriu e devolve ao app,
+       que compara com a leitura anterior e grava se teve ou não movimentação.
+     • Sem a extensão: o app abre o site e a pessoa registra o que viu.
    Cada protocolo é um documento fluxoapp_meta/proto_<id> {tipo:'protocolo'}.
-   O texto da última leitura do robô fica em fluxoapp_meta/protobase_<id>
-   (só o robô usa; o app não baixa). */
+   O texto da última leitura fica em fluxoapp_meta/protobase_<id> (o app só
+   lê esse documento na hora de comparar). */
 const PROTO_DOC=(id)=>db.collection('fluxoapp_meta').doc('proto_'+id);
 function protoNovoId(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 const PROTO_DIAS_ALERTA=15; /* "não consultado há X dias" a partir daqui */
@@ -15713,18 +15717,16 @@ function protoQuando(ms){ if(!ms) return '—'; const d=new Date(Number(ms)); re
 function protoDataCurta(ms){ return ms?new Date(Number(ms)).toLocaleDateString('pt-BR'):'—'; }
 function protoHistorico(p){ return (Array.isArray(p&&p.historico)?p.historico:[]).slice().sort((a,b)=>(Number(b.em)||0)-(Number(a.em)||0)); }
 const PROTO_RES={
-  sem:    {txt:'Sem movimentação',      cls:'sem', ic:'ti-minus'},
-  mov:    {txt:'Teve movimentação',     cls:'mov', ic:'ti-bell-ringing'},
-  base:   {txt:'Primeira leitura',      cls:'sem', ic:'ti-file-search'},
-  nao_leu:{txt:'Robô não leu a página', cls:'aviso', ic:'ti-alert-triangle'},
-  erro:   {txt:'Erro na leitura',       cls:'aviso', ic:'ti-alert-triangle'},
+  sem:    {txt:'Sem movimentação',       cls:'sem', ic:'ti-minus'},
+  mov:    {txt:'Teve movimentação',      cls:'mov', ic:'ti-bell-ringing'},
+  base:   {txt:'Primeira leitura',       cls:'sem', ic:'ti-file-search'},
+  nao_leu:{txt:'Número não encontrado na página', cls:'aviso', ic:'ti-alert-triangle'},
+  erro:   {txt:'Erro na leitura',        cls:'aviso', ic:'ti-alert-triangle'},
 };
 /* Situação resumida para a lista e para o card da tarefa. */
 function protoSituacao(p){
   if(p.situacao==='encerrado') return {txt:'Encerrado',cls:'enc',ic:'ti-archive'};
   if(p.novaMov) return {txt:'Movimentação nova',cls:'mov',ic:'ti-bell-ringing'};
-  const r=p.robo||{};
-  if(r.status==='aguardando'&&(Number(r.pedidoEm)||0)>(Number(r.lidoEm)||0)) return {txt:'Robô vai conferir',cls:'aguarda',ic:'ti-robot'};
   const d=protoDias(p.ultimaConsultaEm);
   if(d==null) return {txt:'Nunca consultado',cls:'aviso',ic:'ti-clock'};
   if(d>=PROTO_DIAS_ALERTA) return {txt:'Não consultado há '+d+'d',cls:'aviso',ic:'ti-clock'};
@@ -15733,17 +15735,103 @@ function protoSituacao(p){
 }
 function ProtoBadge({p}){ const s=protoSituacao(p); return <span className={'proto-badge '+s.cls}><i className={'ti '+s.ic}/> {s.txt}</span>; }
 
-/* Abre o site de consulta (síncrono, dentro do clique — senão o navegador
-   bloqueia a janela), copia o número e pede a leitura ao robô. */
+/* ── Ponte com a extensão do Chrome (window.postMessage) ──
+   App → extensão: {origem:'incorporando-app', tipo:'ping'|'consultar', ...}
+   Extensão → app: {origem:'incorporando-ext', tipo:'pronta'|'resultado'|'cancelada', ...} */
+let PROTO_EXT=false; const PROTO_EXT_OUV=new Set();
+const PROTO_LENDO={}; /* protoId → true enquanto a página aberta não foi lida */
+function protoExtAvisar(){ PROTO_EXT_OUV.forEach(f=>f(x=>x+1)); }
+function useProtoExt(){ const[,setN]=useState(0); useEffect(()=>{ PROTO_EXT_OUV.add(setN); return ()=>{ PROTO_EXT_OUV.delete(setN); }; },[]); return {instalada:PROTO_EXT,lendo:PROTO_LENDO}; }
+if(typeof window!=='undefined'){
+  window.addEventListener('message',ev=>{
+    if(ev.source!==window) return; const d=ev.data; if(!d||d.origem!=='incorporando-ext') return;
+    if(d.tipo==='pronta'){ if(!PROTO_EXT){ PROTO_EXT=true; protoExtAvisar(); } }
+    else if(d.tipo==='resultado'){ protoProcessarLeitura(d).catch(e=>{ console.error('Erro ao gravar a leitura do protocolo:',e); protoToast('Não consegui gravar a leitura: '+(e.message||e),'aviso'); }); }
+    else if(d.tipo==='cancelada'){ delete PROTO_LENDO[d.protoId]; protoExtAvisar(); }
+  });
+  try{ window.postMessage({origem:'incorporando-app',tipo:'ping'},'*'); }catch(e){}
+}
+function protoToast(txt,tipo){
+  try{ const el=document.createElement('div'); el.className='dd-toast '+(tipo||'ok');
+    el.innerHTML='<i class="ti '+(tipo==='aviso'?'ti-alert-triangle':'ti-check')+'"></i> '; el.appendChild(document.createTextNode(txt));
+    document.body.appendChild(el); setTimeout(()=>el.remove(),6000); }catch(e){}
+}
+
+/* Leitura do texto da página: linhas limpas (sem carimbos da hora da consulta,
+   que mudam toda vez sem ser movimentação). */
+const PROTO_CARIMBO=/(consultad[oa]\s+em|data\s+da\s+consulta|gerad[oa]\s+em|emitid[oa]\s+em|impress[oa]\s+em|data\/hora|hor[áa]rio\s+atual|última\s+atualização\s+da\s+página)/i;
+function protoNormalizar(texto){
+  const vistos=new Set();
+  return String(texto||'').split(/\n+/).map(l=>l.replace(/\s+/g,' ').trim())
+    .filter(l=>l&&!PROTO_CARIMBO.test(l)&&!/^\d{1,2}:\d{2}(:\d{2})?$/.test(l))
+    .filter(l=>{ if(l.length<=3&&vistos.has(l)) return false; vistos.add(l); return true; });
+}
+/* O número está na página? Compara o maior grupo de dígitos (ex.: 123456 em 01-123456/2026). */
+function protoNumeroNaPagina(texto,numero){
+  const grupos=(String(numero||'').match(/\d+/g)||[]).sort((a,b)=>b.length-a.length);
+  const chave=grupos[0]; if(!chave) return true;
+  const semZeros=chave.replace(/^0+/,'')||chave;
+  const dig=String(texto||'').replace(/[.\-\/\s]/g,'');
+  return dig.includes(chave)||dig.includes(semZeros);
+}
+/* Linha com a data mais recente da página (costuma ser o último andamento). */
+function protoUltimaDataDaPagina(linhas){
+  let melhor=null;
+  linhas.forEach(l=>{ const re=/\b(\d{2})\/(\d{2})\/(\d{4})\b/g; let m;
+    while((m=re.exec(l))){ const t=new Date(+m[3],+m[2]-1,+m[1]).getTime(); if(!isNaN(t)&&t<=Date.now()+86400000&&(!melhor||t>melhor.t)) melhor={t,linha:l}; } });
+  return melhor;
+}
+async function protoHash(txt){
+  try{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(txt)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+  catch(e){ let h=0; for(let i=0;i<txt.length;i++){ h=(h*31+txt.charCodeAt(i))|0; } return 'h'+h+'_'+txt.length; }
+}
+/* A extensão devolveu o texto da página que a pessoa abriu: compara e grava. */
+async function protoProcessarLeitura(d){
+  const p=(PROTOS_CACHE||[]).find(x=>x.id===d.protoId);
+  delete PROTO_LENDO[d.protoId]; protoExtAvisar();
+  if(!p||DEMO_MODE) return;
+  const FV=firebase.firestore.FieldValue; const agora=Date.now();
+  const linhas=protoNormalizar(d.texto);
+  const ult=protoUltimaDataDaPagina(linhas);
+  let resultado, texto='', extra={};
+  if(!protoNumeroNaPagina(d.texto,p.numero)){
+    resultado='nao_leu'; texto='O número do protocolo não apareceu na página lida. Confira a página e registre manualmente, se preciso.';
+  }else{
+    const hash=await protoHash(linhas.join('\n'));
+    const baseRef=db.collection('fluxoapp_meta').doc('protobase_'+p.id);
+    const base=await baseRef.get(); const b=base.exists?base.data():null;
+    if(!b||!b.hash){
+      resultado='base';
+      texto=ult?'Último andamento na página: '+ult.linha:'Leitura guardada; nas próximas consultas o app compara com esta.';
+      if(ult) extra={ultimaMovEm:ult.t,ultimaMovTexto:ult.linha.slice(0,600),ultimaMovOrigem:'leitura'};
+    }else if(b.hash===hash){
+      resultado='sem';
+    }else{
+      resultado='mov';
+      const antes=new Set(String(b.texto||'').split('\n'));
+      const novas=linhas.filter(l=>!antes.has(l));
+      texto=(novas.length?novas.slice(0,15).join('\n'):'A página mudou desde a última consulta.').slice(0,1500);
+      extra={novaMov:true,ultimaMovEm:ult&&ult.t>(Number(p.ultimaMovEm)||0)?ult.t:agora,ultimaMovTexto:(ult&&novas.includes(ult.linha)?ult.linha:texto).slice(0,600),ultimaMovOrigem:'leitura'};
+    }
+    await baseRef.set({tipo:'protoBase',protoId:p.id,hash,texto:linhas.join('\n').slice(0,300000),lidoEm:agora,url:String(d.url||'')});
+  }
+  const h={id:'l'+agora.toString(36)+Math.random().toString(36).slice(2,5),em:agora,por:EU.nome||EU.email||'',origem:'leitura',resultado,texto,url:String(d.url||'').slice(0,500)};
+  await PROTO_DOC(p.id).set({...extra,historico:FV.arrayUnion(h),ultimaConsultaEm:agora,ultimaConsultaPor:h.por,leitura:{em:agora,status:resultado}},{merge:true});
+  protoToast('Protocolo '+p.numero+': '+(PROTO_RES[resultado]||{txt:resultado}).txt,resultado==='nao_leu'?'aviso':'ok');
+}
+
+/* Consultar: com a extensão, ela abre o site e lê a página; sem a extensão,
+   o app abre o site (síncrono, dentro do clique) e copia o número. */
 function protoConsultar(p){
   const url=protoMontarLink(p.link,p.numero);
   try{ if(navigator.clipboard) navigator.clipboard.writeText(String(p.numero||'')); }catch(e){}
-  if(url) window.open(url,'_blank','noopener');
-  else alert('Este protocolo ainda não tem o link de consulta. Abra o protocolo e cole o endereço da página de consulta do órgão.');
-  if(DEMO_MODE) return Promise.resolve();
-  const agora=Date.now();
-  return PROTO_DOC(p.id).set({ultimaConsultaEm:agora,ultimaConsultaPor:EU.nome||EU.email||'',
-    robo:{...(p.robo||{}),pedidoEm:agora,status:'aguardando',msg:''}},{merge:true}).catch(e=>console.error('Erro ao registrar a consulta:',e));
+  if(!url){ alert('Este protocolo ainda não tem o link de consulta. Abra o protocolo e cole o endereço da página de consulta do órgão.'); return; }
+  if(PROTO_EXT){
+    PROTO_LENDO[p.id]=true; protoExtAvisar();
+    window.postMessage({origem:'incorporando-app',tipo:'consultar',protoId:p.id,numero:String(p.numero||''),url},'*');
+  }else{
+    window.open(url,'_blank','noopener');
+  }
 }
 /* Registro feito pela pessoa (o que ela viu na página do órgão). */
 async function protoRegistrar(p,resultado,texto){
@@ -15758,25 +15846,28 @@ async function protoRegistrar(p,resultado,texto){
 /* Caixa "Consultar" + registro do resultado (janela do protocolo e tarefa). */
 function ProtoConsultaBox({p,compacto}){
   const pode=permEditarNotas();
+  const ext=useProtoExt(); const lendo=!!ext.lendo[p.id];
   const[aberto,setAberto]=useState(false);
   const[modo,setModo]=useState(''); const[texto,setTexto]=useState(''); const[salvando,setSalvando]=useState(false);
-  const r=p.robo||{}; const aguardando=r.status==='aguardando'&&(Number(r.pedidoEm)||0)>(Number(r.lidoEm)||0);
   const registrar=async(res)=>{ setSalvando(true); try{ await protoRegistrar(p,res,texto); setAberto(false); setModo(''); setTexto(''); }catch(e){ alert('Não consegui registrar: '+(e.message||e)); } setSalvando(false); };
+  const ult=protoHistorico(p)[0];
   return (
     <div className={'proto-consulta'+(compacto?' compacto':'')}>
       <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-        <button type="button" className="btn-modal" onClick={e=>{ e.stopPropagation(); protoConsultar(p); if(pode) setAberto(true); }} title={protoLinkPreenche(p.link,p.numero)?'Abre o site do órgão já com o número':'Abre o site do órgão e copia o número para você colar'}>
+        <button type="button" className="btn-modal" onClick={e=>{ e.stopPropagation(); protoConsultar(p); if(pode&&!PROTO_EXT) setAberto(true); }}
+          title={ext.instalada?'Abre o site do órgão e o app lê a página quando o número aparecer':(protoLinkPreenche(p.link,p.numero)?'Abre o site do órgão já com o número':'Abre o site do órgão e copia o número para você colar')}>
           <i className="ti ti-external-link"/> Consultar</button>
-        {pode&&!aberto&&<button type="button" className="btn-modal ghost" onClick={e=>{e.stopPropagation(); setAberto(true);}}><i className="ti ti-pencil"/> Registrar resultado</button>}
-        {aguardando&&<span className="proto-robo-msg"><i className="ti ti-robot"/> O robô vai conferir a página na próxima rodada.</span>}
-        {!aguardando&&r.lidoEm&&r.status&&PROTO_RES[r.status]&&<span className="proto-robo-msg"><i className="ti ti-robot"/> Robô em {protoQuando(r.lidoEm)}: {PROTO_RES[r.status].txt}{r.msg?' — '+r.msg:''}</span>}
+        {pode&&!aberto&&<button type="button" className="btn-modal ghost" onClick={e=>{e.stopPropagation(); setAberto(true);}}><i className="ti ti-pencil"/> Registrar à mão</button>}
+        {lendo&&<span className="proto-robo-msg lendo"><i className="ti ti-loader-2"/> Aguardando a página do órgão… Se pedir captcha ou formulário, preencha: o app lê assim que o número aparecer.</span>}
+        {!lendo&&ult&&ult.origem==='leitura'&&<span className="proto-robo-msg"><i className="ti ti-file-search"/> Lido da página em {protoQuando(ult.em)}: {(PROTO_RES[ult.resultado]||{txt:ult.resultado}).txt}</span>}
       </div>
+      {!ext.instalada&&!compacto&&<div className="proto-dica" style={{marginTop:6}}><i className="ti ti-puzzle"/> Para o app ler a página sozinho, instale a extensão <b>Incorporando — Leitor de protocolos</b> no Chrome. Sem ela, registre à mão o que apareceu.</div>}
       {aberto&&<div className="proto-registro" onClick={e=>e.stopPropagation()}>
         <div className="proto-registro-t">O que apareceu na consulta?{!protoLinkPreenche(p.link,p.numero)&&<span> O número foi copiado: é só colar no site.</span>}</div>
         {modo!=='mov'?<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
           <button type="button" className="btn-modal ghost" disabled={salvando} onClick={()=>registrar('sem')}><i className="ti ti-minus"/> Sem movimentação</button>
           <button type="button" className="btn-modal ghost" onClick={()=>setModo('mov')}><i className="ti ti-bell-ringing"/> Teve movimentação</button>
-          <button type="button" className="btn-modal ghost" onClick={()=>{setAberto(false);setModo('');}}>Deixar para o robô</button>
+          <button type="button" className="btn-modal ghost" onClick={()=>{setAberto(false);setModo('');}}>Cancelar</button>
         </div>:<>
           <textarea className="form-input" rows={3} autoFocus value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Cole ou escreva a última movimentação (ex.: 20/11 — Devolvido com exigência: ajustar recuo frontal)"/>
           <div style={{display:'flex',gap:8,marginTop:6}}>
@@ -15874,7 +15965,7 @@ function ProtocoloModal({inicial,projects,onClose,onAbrirTarefa}){
           <div className="proto-hist">
             {hist.map(h=>{ const r=PROTO_RES[h.resultado]||{txt:h.resultado,cls:'sem',ic:'ti-point'}; return (
               <div key={h.id||h.em} className={'proto-hist-it '+r.cls}>
-                <div className="proto-hist-h"><i className={'ti '+r.ic}/> <b>{r.txt}</b><span>{protoQuando(h.em)} · {h.origem==='robo'?<><i className="ti ti-robot"/> robô</>:(h.por||'—')}</span></div>
+                <div className="proto-hist-h"><i className={'ti '+r.ic}/> <b>{r.txt}</b><span>{protoQuando(h.em)} · {h.origem==='leitura'?<><i className="ti ti-file-search"/> lido da página · {h.por||'—'}</>:h.origem==='robo'?'robô':(h.por||'—')}</span></div>
                 {h.texto&&<div className="proto-hist-t">{h.texto}</div>}
               </div>); })}
           </div>
@@ -15926,7 +16017,7 @@ function ProtocolosView({onBack,projects,onOpenTask}){
         </select>
         <div style={{marginLeft:'auto'}}>{permEditarNotas()&&<button className="venc-add-btn" onClick={()=>setAberto({})}><i className="ti ti-plus"/> Novo protocolo</button>}</div>
       </div>
-      <div className="ata-aviso" style={{marginBottom:12}}><i className="ti ti-info-circle"/> Clique em <b>Consultar</b> para abrir o site do órgão (já com o número, quando o site permite). Depois registre o que apareceu, ou deixe o robô conferir: ele lê a mesma página e marca se houve movimentação.</div>
+      <div className="ata-aviso" style={{marginBottom:12}}><i className="ti ti-info-circle"/> Clique em <b>Consultar</b> para abrir o site do órgão (já com o número, quando o site permite). Com a extensão do Incorporando no Chrome, o app lê a página que abriu e marca se teve ou não movimentação; sem ela, registre à mão o que apareceu. Nada é consultado sozinho.</div>
       {filtrados.length===0&&<div className="pdi-empty">{protos.length?'Nenhum protocolo com esses filtros.':'Nenhum protocolo cadastrado ainda. Clique em “Novo protocolo” ou cadastre pela janela da tarefa.'}</div>}
       <div className="ata-lista">
         {filtrados.map(p=>(
@@ -16001,7 +16092,7 @@ const PORTAL_ABAS=[
   {key:'registros',    nome:'Registros de Unidades',   ic:'ti-home-check',       grupo:'unidades', dados:'compartilhado', desc:'Unidades vendidas por empreendimento (cliente, quadra, lote), controle de registro e transferência na prefeitura, e — via robô — IPTU das não transferidas.'},
   {key:'iptu',         nome:'IPTU',                    ic:'ti-receipt-2',        grupo:'unidades', dados:'compartilhado', desc:'Processos na prefeitura (redução, impugnação, isenção), guias e pagamentos por empreendimento, decisão à vista × parcelado e visão geral das unidades.'},
   {key:'atas',         nome:'Atas de Reunião',         ic:'ti-notes',            grupo:'acomp', dados:'compartilhado', desc:'Registro das reuniões (prefeitura, órgãos, parceiros) vinculado às tarefas: resumo, decisões, próximos passos e a ata completa — inclusive importada automaticamente do Google Meet (Gemini).'},
-  {key:'protocolos',   nome:'Protocolos',              ic:'ti-file-search',      grupo:'acomp', dados:'compartilhado', desc:'Protocolos dos órgãos vinculados às tarefas: botão Consultar que abre o site já com o número, histórico de consultas e robô que confere se houve movimentação.'},
+  {key:'protocolos',   nome:'Protocolos',              ic:'ti-file-search',      grupo:'acomp', dados:'compartilhado', desc:'Protocolos dos órgãos vinculados às tarefas: botão Consultar que abre o site já com o número, lê a página aberta e guarda o histórico de movimentações.'},
   {key:'parceiros',    nome:'Relatório dos Parceiros', ic:'ti-users-group',      grupo:'acomp', dados:'compartilhado', desc:'Relatório mensal para os parceiros por empreendimento: macrofluxo, andamento do mês, linha do tempo, desenvolvimento de projetos, fotos e andamento da obra — com PDF.'},
   {key:'oficio',       nome:'Gerador de Ofícios',      ic:'ti-file-text',        grupo:'documentos', dados:'compartilhado', desc:'Crie ofícios em papel timbrado a partir do empreendimento, representante e assunto — em PDF ou Word.'},
   {key:'contratos',    nome:'Gerador de Contratos',    ic:'ti-file-certificate', grupo:'documentos', dados:'compartilhado', desc:'Importe um modelo, marque as variáveis com {CHAVE}, preencha o formulário e exporte o contrato em PDF.'},
@@ -17129,7 +17220,7 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
           <div className="pdi-tool" onClick={()=>setView('protocolos')}>
             <i className="ti ti-file-search"/>
             <div className="tt">Protocolos</div>
-            <div className="dd">Protocolos dos órgãos vinculados às tarefas: consulta com um clique no site do órgão, histórico e robô que confere se houve movimentação.</div>
+            <div className="dd">Protocolos dos órgãos vinculados às tarefas: consulta com um clique no site do órgão, leitura da página aberta e histórico de movimentações.</div>
           </div>
           <div className="pdi-tool" onClick={()=>setView('financeiro')}>
             <i className="ti ti-cash-banknote"/>

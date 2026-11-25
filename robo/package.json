@@ -1,9 +1,0 @@
-{
-  "name": "incorporando-robo-protocolos",
-  "private": true,
-  "description": "Robô que confere os protocolos consultados no Incorporando (roda no GitHub Actions).",
-  "dependencies": {
-    "firebase-admin": "^12.7.0",
-    "playwright": "^1.48.0"
-  }
-}

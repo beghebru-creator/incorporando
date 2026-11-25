@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Incorporando — Leitor de protocolos",
+  "version": "1.0.0",
+  "description": "Quando você clica em Consultar num protocolo do Incorporando, abre o site do órgão e lê a página que abriu para o app saber se teve movimentação. Não consulta nada sozinho.",
+  "permissions": ["tabs", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://teste-incorp.web.app/*",
+        "https://teste-incorp.firebaseapp.com/*",
+        "https://teste-incorp--teste-rymcc64a.web.app/*",
+        "https://incorporando.com.br/*",
+        "https://www.incorporando.com.br/*",
+        "https://app.incorporando.com.br/*"
+      ],
+      "js": ["app.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
