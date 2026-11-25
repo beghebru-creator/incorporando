@@ -2493,6 +2493,7 @@
   .proto-linhas i{font-size:12px;color:var(--text3);}
   .proto-consulta.compacto .btn-modal{padding:4px 10px;font-size:12px;}
   .proto-robo-msg{font-size:11.5px;color:var(--text3);}
+  .proto-mini-link{border:0;background:transparent;color:var(--accent);font-size:11.5px;padding:3px 0 0;cursor:pointer;text-decoration:underline;}
   .proto-molde{margin-top:6px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);background:color-mix(in srgb,var(--accent) 7%,transparent);display:flex;flex-direction:column;gap:4px;}
   .proto-molde-x{margin-left:8px;border:0;background:transparent;color:var(--red,#dc2626);font-size:11.5px;cursor:pointer;text-decoration:underline;}
   .proto-grupo{border:1px solid var(--border);border-radius:6px;margin-bottom:12px;background:var(--surface);color:var(--text);overflow:hidden;}
@@ -15919,7 +15920,7 @@ function protoConsultar(p){
   if(!url){ alert('Este protocolo ainda não tem o link de consulta. Abra o protocolo e cole o endereço da página de consulta do órgão.'); return; }
   if(PROTO_EXT){
     PROTO_LENDO[p.id]=true; protoExtAvisar();
-    window.postMessage({origem:'incorporando-app',tipo:'consultar',protoId:p.id,numero:String(p.numero||''),senha:String(p.senha||''),obs:String(p.obsConsulta||''),moldes:protoMoldesDoHost(protoHost(url)).map(({_chave,...m})=>m),url},'*');
+    window.postMessage({origem:'incorporando-app',tipo:'consultar',protoId:p.id,numero:String(p.numero||''),senha:String(p.senha||''),obs:String(p.obsConsulta||''),doc:String(p.cpfCnpj||''),moldes:protoMoldesDoHost(protoHost(url)).map(({_chave,...m})=>m),url},'*');
   }else{
     window.open(url,'_blank','noopener');
   }
@@ -15941,6 +15942,7 @@ function ProtoInfoConsulta({p}){
   return (
     <div className="proto-info-consulta" onClick={e=>e.stopPropagation()}>
       <span><b>Nº</b> {p.numero} <button type="button" title="Copiar número" onClick={()=>protoCopiar(p.numero,'Número')}><i className="ti ti-copy"/></button></span>
+      {p.cpfCnpj&&<span><b>CPF/CNPJ</b> {p.cpfCnpj} <button type="button" title="Copiar CPF/CNPJ" onClick={()=>protoCopiar(p.cpfCnpj,'CPF/CNPJ')}><i className="ti ti-copy"/></button></span>}
       {p.senha&&<span><b>Senha</b> {ver?p.senha:'••••••'} <button type="button" title={ver?'Esconder':'Mostrar'} onClick={()=>setVer(v=>!v)}><i className={'ti '+(ver?'ti-eye-off':'ti-eye')}/></button><button type="button" title="Copiar senha" onClick={()=>protoCopiar(p.senha,'Senha')}><i className="ti ti-copy"/></button></span>}
       {p.obsConsulta&&<span className="obs"><b>Obs.</b> {p.obsConsulta}</span>}
     </div>);
@@ -15964,7 +15966,7 @@ function ProtoConsultaBox({p,compacto}){
         {lendo&&<span className="proto-robo-msg lendo"><i className="ti ti-loader-2"/> Aguardando a página do órgão… Se pedir captcha ou formulário, preencha: o app lê assim que o número aparecer.</span>}
         {!lendo&&ult&&ult.origem==='leitura'&&<span className="proto-robo-msg"><i className="ti ti-file-search"/> Lido da página em {protoQuando(ult.em)}: {(PROTO_RES[ult.resultado]||{txt:ult.resultado}).txt}</span>}
       </div>
-      {(p.senha||p.obsConsulta)&&!compacto&&<ProtoInfoConsulta p={p}/>}
+      {(p.senha||p.obsConsulta||p.cpfCnpj)&&!compacto&&<ProtoInfoConsulta p={p}/>}
       {!ext.instalada&&!compacto&&<div className="proto-dica" style={{marginTop:6}}><i className="ti ti-puzzle"/> Para o app ler a página sozinho, instale a extensão <b>Incorporando — Leitor de protocolos</b> no Chrome. Sem ela, registre à mão o que apareceu.</div>}
       {aberto&&<div className="proto-registro" onClick={e=>e.stopPropagation()}>
         <div className="proto-registro-t">O que apareceu na consulta?{!protoLinkPreenche(p.link,p.numero)&&<span> O número foi copiado: é só colar no site.</span>}</div>
@@ -15985,7 +15987,7 @@ function ProtoConsultaBox({p,compacto}){
 }
 
 /* Preenchimento automático ensinado para o site do link. */
-const PROTO_VALOR_ROT={numero:'número',seq:'número sem o ano',ano:'ano',senha:'senha',obs:'observações',fixo:'texto fixo'};
+const PROTO_VALOR_ROT={numero:'número',seq:'número sem o ano',ano:'ano',doc:'CPF/CNPJ',senha:'senha',obs:'observações',fixo:'texto fixo'};
 function ProtoMoldeStatus({link,pode}){
   useProtoExt(); /* atualiza quando os moldes mudam */
   const host=protoHost(link); if(!host) return null;
@@ -16005,7 +16007,7 @@ function ProtocoloModal({inicial,projects,onClose,onAbrirTarefa}){
   const todos=useProtocolos();
   const nova=!inicial||!inicial.id;
   const vivo=!nova?(todos.find(x=>x.id===inicial.id)||inicial):null; /* histórico atualiza sozinho */
-  const[p,setP]=useState(()=>({numero:'',orgao:'',assunto:'',link:'',senha:'',obsConsulta:'',projId:'',projNome:'',taskId:'',taskLabel:'',situacao:'ativo',...(inicial||{})}));
+  const[p,setP]=useState(()=>({numero:'',orgao:'',assunto:'',link:'',senha:'',obsConsulta:'',cpfCnpj:'',projId:'',projNome:'',taskId:'',taskLabel:'',situacao:'ativo',...(inicial||{})}));
   const[verSenha,setVerSenha]=useState(false);
   const[salvando,setSalvando]=useState(false);
   const pode=permEditarNotas();
@@ -16024,7 +16026,7 @@ function ProtocoloModal({inicial,projects,onClose,onAbrirTarefa}){
     setSalvando(true);
     try{
       const t=tarefas.find(x=>String(x.id)===String(p.taskId));
-      const dados={...p,id:p.id||protoNovoId(),numero:String(p.numero).trim(),orgao:String(p.orgao||'').trim(),assunto:String(p.assunto||'').trim(),link:String(p.link||'').trim(),senha:String(p.senha||''),obsConsulta:String(p.obsConsulta||'').trim(),
+      const dados={...p,id:p.id||protoNovoId(),numero:String(p.numero).trim(),orgao:String(p.orgao||'').trim(),assunto:String(p.assunto||'').trim(),link:String(p.link||'').trim(),senha:String(p.senha||''),obsConsulta:String(p.obsConsulta||'').trim(),cpfCnpj:String(p.cpfCnpj||'').trim(),
         projNome:projSel?projSel.name:'',taskLabel:t?t.label:'',taskId:t?t.id:'',tipo:'protocolo',atualizadoEm:Date.now(),atualizadoPor:EU.nome||EU.email||''};
       delete dados._docId; delete dados.historico; delete dados.robo; delete dados.novaMov;
       ['ultimaConsultaEm','ultimaConsultaPor','ultimaMovEm','ultimaMovTexto','ultimaMovOrigem'].forEach(k=>delete dados[k]);
@@ -16065,6 +16067,9 @@ function ProtocoloModal({inicial,projects,onClose,onAbrirTarefa}){
           </div>
           <ProtoMoldeStatus link={urlTeste} pode={pode}/></div>
         <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          <div style={{flex:1,minWidth:170}}><label className="modal-field-label"><i className="ti ti-id"/> CPF/CNPJ do requerente</label>
+            <input className="form-input" value={p.cpfCnpj||''} disabled={!pode} onChange={e=>up('cpfCnpj',e.target.value)} placeholder="Se o site pedir"/>
+            {pode&&!p.cpfCnpj&&projSel&&companyOf(projSel).cnpj&&<button type="button" className="proto-mini-link" onClick={()=>up('cpfCnpj',companyOf(projSel).cnpj)}>Usar o CNPJ da SPE ({companyOf(projSel).cnpj})</button>}</div>
           <div style={{flex:1,minWidth:170}}><label className="modal-field-label"><i className="ti ti-key"/> Senha / código de acesso</label>
             <div style={{display:'flex',gap:6}}>
               <input className="form-input" style={{flex:1}} type={verSenha?'text':'password'} autoComplete="new-password" value={p.senha||''} disabled={!pode} onChange={e=>up('senha',e.target.value)} placeholder="Se o site pedir (opcional)"/>
@@ -16073,7 +16078,7 @@ function ProtocoloModal({inicial,projects,onClose,onAbrirTarefa}){
           <div style={{flex:1.4,minWidth:200}}><label className="modal-field-label"><i className="ti ti-notes"/> Observações para a consulta</label>
             <textarea className="form-input" rows={2} value={p.obsConsulta||''} disabled={!pode} onChange={e=>up('obsConsulta',e.target.value)} placeholder="Outras informações pedidas no site (ex.: CPF/CNPJ do requerente, tipo de processo, ano)"/></div>
         </div>
-        {(p.senha||p.obsConsulta)&&<div className="proto-dica" style={{marginTop:-4,marginBottom:8}}><i className="ti ti-info-circle"/> A senha e as observações aparecem na hora de consultar (no app e na barrinha do site do órgão), com botão para copiar. Todos da equipe com acesso ao app conseguem ver.</div>}
+        {(p.senha||p.obsConsulta||p.cpfCnpj)&&<div className="proto-dica" style={{marginTop:-4,marginBottom:8}}><i className="ti ti-info-circle"/> CPF/CNPJ, senha e observações aparecem na hora de consultar (no app e na barrinha do site do órgão), com botão para copiar. Todos da equipe com acesso ao app conseguem ver.</div>}
         <div className="modal-field" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
           <div style={{flex:1,minWidth:170}}><label className="modal-field-label">Empreendimento</label>
             <select className="form-input" value={p.projId||''} disabled={!pode} onChange={e=>setP(x=>({...x,projId:e.target.value,taskId:''}))}>

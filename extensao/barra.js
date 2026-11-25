@@ -63,6 +63,7 @@
     s.appendChild(bt); info.appendChild(s);
   };
   item('Nº', cons.numero, cons.numero);
+  if (cons.doc) item('CPF/CNPJ', cons.doc, cons.doc);
   if (cons.senha) item('Senha', cons.senha, '••••••');
   if (cons.obs) { const o = document.createElement('span'); o.className = 'o'; const b = document.createElement('b'); b.textContent = 'Obs. '; o.appendChild(b); o.appendChild(document.createTextNode(cons.obs)); info.appendChild(o); }
 
@@ -71,12 +72,13 @@
     const n = String(cons.numero || '').trim(); const m = n.match(/^(.*?)[\/\-](\d{4})$/);
     return { numero: n, seq: m ? m[1] : n, ano: m ? m[2] : '' };
   };
-  const ROTULOS = { numero: 'Número completo', seq: 'Número sem o ano', ano: 'Só o ano', senha: 'Senha', obs: 'Observações', fixo: 'Texto fixo' };
+  const ROTULOS = { numero: 'Número completo', seq: 'Número sem o ano', ano: 'Só o ano', doc: 'CPF/CNPJ do requerente', senha: 'Senha', obs: 'Observações', fixo: 'Texto fixo' };
   const valorDe = (c) => {
     const p = partes();
     if (c.valor === 'numero') return p.numero;
     if (c.valor === 'seq') return p.seq;
     if (c.valor === 'ano') return p.ano;
+    if (c.valor === 'doc') return cons.doc || '';
     if (c.valor === 'senha') return cons.senha || '';
     if (c.valor === 'obs') return cons.obs || '';
     return c.fixo || '';
@@ -112,7 +114,12 @@
     el.dispatchEvent(new Event('change', { bubbles: true }));
     try { el.blur(); } catch (e) {}
   }
-  const temCaptcha = () => !!document.querySelector('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="turnstile"], .g-recaptcha, .h-captcha, [class*="captcha" i], [id*="captcha" i], img[src*="captcha" i]');
+  /* Só conta captcha que aparece na tela (o reCAPTCHA invisível/v3 e campos
+     escondidos não impedem o clique automático). */
+  const temCaptcha = () => Array.from(document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="turnstile"], .g-recaptcha, .h-captcha, [class*="captcha" i], [id*="captcha" i], img[src*="captcha" i]'))
+    .some(el => { if (el.closest('.grecaptcha-badge')) return false; if (/size=invisible/.test(el.getAttribute('src') || '')) return false;
+      const r = el.getBoundingClientRect(); const st = getComputedStyle(el);
+      return r.width > 40 && r.height > 20 && st.visibility !== 'hidden' && st.display !== 'none' && st.opacity !== '0'; });
   function moldeDaPagina() {
     const ms = cons.moldes.filter(m => m.host === location.host && Array.isArray(m.campos) && m.campos.length);
     const completo = (m) => m.campos.every(c => achar(c.sel));
@@ -157,7 +164,10 @@
     const n = ensinando.campos.length;
     status(ensinando.etapa === 'botao'
       ? 'Agora clique no botão de pesquisar/consultar do site (ele não será enviado agora).'
-      : 'Ensinando: clique em cada campo que precisa ser preenchido e escolha o que vai nele. ' + n + ' campo(s) marcado(s)' + (ensinando.botao ? ' e o botão de pesquisar.' : '.'));
+      : (n === 0
+        ? 'Passo 1: clique no primeiro campo do site (ex.: número do protocolo) e escolha o que vai nele.'
+        : 'Marcados: ' + ensinando.campos.map((c, i) => (i + 1) + ') ' + (c.valor === 'fixo' ? 'texto fixo "' + c.fixo + '"' : ROTULOS[c.valor])).join(' · ') +
+          (ensinando.botao ? ' · botão de pesquisar ✓' : '') + '. Clique no próximo campo, ou em "Marcar botão de pesquisar" e depois em Salvar.'));
     $('.ensinar').classList.add('hide'); $('.ler').classList.add('hide'); $('.preencher').classList.add('hide');
     let ctl = raiz.querySelector('.ctl');
     if (!ctl) {
@@ -186,8 +196,10 @@
       ensinando.campos = ensinando.campos.filter(x => x.sel !== c.sel).concat([c]);
       preencherCampo(el, valorDe(c)); marcar(el, '#2f9e6e'); fecharMenu(); renderEnsino();
     };
-    ['numero', 'seq', 'ano'].concat(cons.senha ? ['senha'] : []).concat(cons.obs ? ['obs'] : []).forEach(v => {
-      const b = document.createElement('button'); b.className = 'sec'; b.textContent = ROTULOS[v]; b.onclick = () => escolher(v); menu.appendChild(b);
+    ['numero', 'seq', 'ano', 'doc', 'senha', 'obs'].forEach(v => {
+      const b = document.createElement('button'); b.className = 'sec'; b.textContent = ROTULOS[v];
+      if ((v === 'doc' && !cons.doc) || (v === 'senha' && !cons.senha) || (v === 'obs' && !cons.obs)) b.title = 'Este protocolo ainda não tem esse dado no app — cadastre na janela do protocolo; o molde já fica pronto.';
+      b.onclick = () => escolher(v); menu.appendChild(b);
     });
     const bf = document.createElement('button'); bf.className = 'sec'; bf.textContent = 'Texto fixo…';
     bf.onclick = () => {

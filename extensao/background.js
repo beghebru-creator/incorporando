@@ -70,7 +70,7 @@ chrome.runtime.onMessage.addListener((msg, sender, responder) => {
       if (!/^https?:$/.test(url.protocol)) return responder({ ok: false });
       const nova = await chrome.tabs.create({ url: url.href, openerTabId: tab.id });
       const c = await consultas();
-      c[nova.id] = { protoId: msg.protoId, numero: msg.numero, senha: String(msg.senha || ''), obs: String(msg.obs || ''), moldes: Array.isArray(msg.moldes) ? msg.moldes.slice(0, 20) : [], appTabId: tab.id, enviado: false, preenchido: false, em: Date.now() };
+      c[nova.id] = { protoId: msg.protoId, numero: msg.numero, senha: String(msg.senha || ''), obs: String(msg.obs || ''), doc: String(msg.doc || ''), moldes: Array.isArray(msg.moldes) ? msg.moldes.slice(0, 20) : [], appTabId: tab.id, enviado: false, preenchido: false, em: Date.now() };
       await salvarConsultas(c);
       return responder({ ok: true });
     }
@@ -90,7 +90,7 @@ chrome.runtime.onMessage.addListener((msg, sender, responder) => {
     const cons = c[tab.id];
     if (!cons) return responder(null);
 
-    if (msg.tipo === 'minha-consulta') return responder({ numero: cons.numero, senha: cons.senha || '', obs: cons.obs || '', moldes: cons.moldes || [], enviado: cons.enviado, preenchido: !!cons.preenchido });
+    if (msg.tipo === 'minha-consulta') return responder({ numero: cons.numero, senha: cons.senha || '', obs: cons.obs || '', doc: cons.doc || '', moldes: cons.moldes || [], enviado: cons.enviado, preenchido: !!cons.preenchido });
 
     const irmas = (fn) => { for (const k of Object.keys(c)) if (c[k].protoId === cons.protoId && c[k].appTabId === cons.appTabId) fn(c[k]); };
 
