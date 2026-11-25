@@ -9083,6 +9083,52 @@ function TerrainMap({projects,focusIds}){
   return <div ref={divRef} style={{width:'100%',height:'100%'}}/>;
 }
 
+/* ── 25/11: filtros FIXOS por pessoa ──────────────────────────────────────
+   useFiltroFixo(chave, inicial) funciona como useState, mas guarda o último
+   valor escolhido (com ou sem filtro) — no navegador (localStorage, por e-mail)
+   e em fluxoapp_userprefs/<uid>.filtrosFixos, para valer em outro computador.
+   A busca por texto NÃO entra (continua zerando). */
+const FILTROS_REMOTOS={carregado:false,dados:{}};
+const filtroTimers={};
+function filtroLsKey(ch){ const u=(!DEMO_MODE&&auth.currentUser&&auth.currentUser.email)||'demo'; return 'inc_filtro_'+String(u).toLowerCase()+'_'+ch; }
+function carregarFiltrosRemotos(){
+  if(DEMO_MODE||FILTROS_REMOTOS.carregado) return;
+  const u=auth.currentUser; if(!u) return;
+  FILTROS_REMOTOS.carregado=true;
+  USERPREFS_COL.doc(u.uid).get().then(snap=>{
+    const d=snap.exists?snap.data().filtrosFixos:null;
+    if(d&&typeof d==='object'){ FILTROS_REMOTOS.dados={...d,...FILTROS_REMOTOS.dados}; window.dispatchEvent(new Event('inc-filtros-remotos')); }
+  }).catch(()=>{});
+}
+function salvarFiltroFixo(chave,val){
+  const limpo=(val===undefined)?null:JSON.parse(JSON.stringify(val));
+  try{ localStorage.setItem(filtroLsKey(chave),JSON.stringify(limpo)); }catch(e){}
+  FILTROS_REMOTOS.dados[chave]=limpo;
+  if(DEMO_MODE) return;
+  clearTimeout(filtroTimers[chave]);
+  filtroTimers[chave]=setTimeout(()=>{
+    const u=auth.currentUser; if(!u) return;
+    USERPREFS_COL.doc(u.uid).set({filtrosFixos:{[chave]:limpo}},{merge:true}).catch(()=>{});
+  },800);
+}
+function useFiltroFixo(chave,inicial){
+  const[v,setV]=useState(()=>{
+    try{ const r=localStorage.getItem(filtroLsKey(chave)); if(r!=null){ const x=JSON.parse(r); if(x!==null) return x; } }catch(e){}
+    if(FILTROS_REMOTOS.dados[chave]!=null) return FILTROS_REMOTOS.dados[chave];
+    return typeof inicial==='function'?inicial():inicial;
+  });
+  useEffect(()=>{
+    carregarFiltrosRemotos();
+    const on=()=>{ let tem=false; try{ tem=localStorage.getItem(filtroLsKey(chave))!=null; }catch(e){} if(!tem&&FILTROS_REMOTOS.dados[chave]!=null) setV(FILTROS_REMOTOS.dados[chave]); };
+    window.addEventListener('inc-filtros-remotos',on);
+    return ()=>window.removeEventListener('inc-filtros-remotos',on);
+  },[chave]);
+  const set=useCallback((nv)=>{
+    setV(prev=>{ const val=(typeof nv==='function')?nv(prev):nv; salvarFiltroFixo(chave,val); return val; });
+  },[chave]);
+  return [v,set];
+}
+
 /* ─── Login: só os e-mails de ALLOWED_EMAILS passam. A checagem do e-mail
    depois do login é o que impede qualquer outra conta Google de
    entrar (defesa em profundidade — as regras do Firestore também checam
@@ -9498,7 +9544,7 @@ function buildOficioBlocks({cidade,dateStr,dest,assunto,corpo,rep,empresa}){
   const representacao=assinaturaRepresentacao(rep);
   blocks.push(<div style={{textAlign:'center'}}>
     <div style={{width:260,borderTop:'1px solid #1b1e24',margin:'0 auto 4px'}}/>
-    <div style={{fontWeight:700}}>{empresa||(rep?rep.nome:'—')}</div>
+    {(empresa||(rep&&rep.nome))&&<div style={{fontWeight:700}}>{empresa||rep.nome}</div>}
     {representacao&&<div style={{fontSize:'10pt',color:'#5b6270'}}>{representacao}</div>}
   </div>);
   return blocks;
@@ -9636,8 +9682,8 @@ function vencISOToBr(s){ const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/
 
 function VencimentosView({onBack, vencimentos, setVencimentos, uid}){
   const[busca,setBusca]=useState('');
-  const[empFilter,setEmpFilter]=useState('');
-  const[sitFilter,setSitFilter]=useState('');
+  const[empFilter,setEmpFilter]=useFiltroFixo('venc.emp','');
+  const[sitFilter,setSitFilter]=useFiltroFixo('venc.sit','');
   const[editing,setEditing]=useState(null); /* null | {} (novo) | doc (editar) */
 
   const data = Array.isArray(vencimentos)&&vencimentos.length ? vencimentos : VENC_SEED;
@@ -10128,10 +10174,10 @@ function PainelSemanal({tarefas,setTarefas,projects,avulsos,onBack,uid,onOpenTas
      (sprintOnly). A aba Sprint mostra tudo que está marcado para o sprint. */
   const list=rawList;
   const[weekStart,setWeekStart]=useState(()=>pnWeekKey(new Date()));
-  const[fAnalista,setFAnalista]=useState('');
-  const[fProjeto,setFProjeto]=useState('');
-  const[fDisc,setFDisc]=useState('');
-  const[statusFilter,setStatusFilter]=useState('');
+  const[fAnalista,setFAnalista]=useFiltroFixo('pn.'+(escopo||'di')+'.analista','');
+  const[fProjeto,setFProjeto]=useFiltroFixo('pn.'+(escopo||'di')+'.projeto','');
+  const[fDisc,setFDisc]=useFiltroFixo('pn.'+(escopo||'di')+'.disc','');
+  const[statusFilter,setStatusFilter]=useFiltroFixo('pn.'+(escopo||'di')+'.status','');
   const[editing,setEditing]=useState(null);
   const toggleFilter=(f)=>setStatusFilter(cur=>cur===f?'':f);
   /* Impressão em PDF (janela de impressão do navegador) da aba atual. */
@@ -10562,8 +10608,8 @@ function RegistrosUnidades({registros,salvarUnidades:salvarUnidadesReal,salvarCe
   const certidoes=Array.isArray(registros&&registros.certidoes)?registros.certidoes:[];
   const iptu=(registros&&registros.iptu)||{};
   const[busca,setBusca]=useState('');
-  const[fEmp,setFEmp]=useState('');
-  const[fTransf,setFTransf]=useState('');
+  const[fEmp,setFEmp]=useFiltroFixo('reg.emp','');
+  const[fTransf,setFTransf]=useFiltroFixo('reg.transf','');
   const[importando,setImportando]=useState(false);
   const[erroImport,setErroImport]=useState('');
   const[novoCert,setNovoCert]=useState('');
@@ -10705,7 +10751,7 @@ function PrazosAprovacaoView({onBack,registros,setRegistros,projects}){
   const[empLivre,setEmpLivre]=useState('');
   const[grupoSel,setGrupoSel]=useState('');      /* grupo existente, '__novo__' ou '' */
   const[grupoLivre,setGrupoLivre]=useState('');
-  const[grupoFiltro,setGrupoFiltro]=useState('');
+  const[grupoFiltro,setGrupoFiltro]=useFiltroFixo('prazos.grupo','');
   const list=Array.isArray(registros)?registros:[];
   const grpOf=(r)=> (r.grupo||r.tipo||'').trim();   /* compat: registros antigos usam o tipo como grupo */
   const grupos=React.useMemo(()=>[...new Set(list.map(grpOf).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt')),[list]);
@@ -10900,7 +10946,7 @@ function contatoTelefones(c){
 }
 function ContatosView({onBack,contatos,setContatos,uid}){
   const[busca,setBusca]=useState('');
-  const[cidadeFiltro,setCidadeFiltro]=useState('');
+  const[cidadeFiltro,setCidadeFiltro]=useFiltroFixo('contatos.cidade','');
   const[editing,setEditing]=useState(null); /* null | {} (novo) | contato */
   const data=Array.isArray(contatos)?contatos:[];
   const cidades=React.useMemo(()=>[...new Set(data.map(c=>c.cidade).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt')),[data]);
@@ -12426,8 +12472,8 @@ function RegistradoresCreditos({regCreditos,setRegCreditos,projects,regTab}){
 
   const[editing,setEditing]=useState(null);      /* null | {type:'recarga'|'gasto', data:{...}} */
   const[showRecargas,setShowRecargas]=useState(false);
-  const[fEmpresa,setFEmpresa]=useState('');
-  const[fTipo,setFTipo]=useState('');
+  const[fEmpresa,setFEmpresa]=useFiltroFixo('regcred.empresa','');
+  const[fTipo,setFTipo]=useFiltroFixo('regcred.tipo','');
 
   const totalRec=recargas.reduce((s,r)=>s+finParseNum(r.valor),0);
   const totalGas=gastos.reduce((s,g)=>s+finParseNum(g.valor),0);
@@ -12802,20 +12848,20 @@ function FinanceiroFornecedores({onBack,projects,finContratos,setFinContratos,fo
   const[tab,setTab]=useState('lista'); /* 'lista' | 'dashboard' */
   const[regView,setRegView]=useState('registros'); /* sub-aba de Registradores: 'registros' | 'dashboard' */
   const[busca,setBusca]=useState('');
-  const[fEmp,setFEmp]=useState('');
-  const[fForn,setFForn]=useState('');
-  const[fAssunto,setFAssunto]=useState('');
-  const[fStatus,setFStatus]=useState(''); /* '' | 'ativo' | 'quitado' | 'atraso' */
-  const[fDisc,setFDisc]=useState(''); /* Portal PRJ: filtro por disciplina */
+  const[fEmp,setFEmp]=useFiltroFixo('fin.'+(filtroScope||'fin-contratos')+'.emp','');
+  const[fForn,setFForn]=useFiltroFixo('fin.'+(filtroScope||'fin-contratos')+'.forn','');
+  const[fAssunto,setFAssunto]=useFiltroFixo('fin.'+(filtroScope||'fin-contratos')+'.assunto','');
+  const[fStatus,setFStatus]=useFiltroFixo('fin.'+(filtroScope||'fin-contratos')+'.status',''); /* '' | 'ativo' | 'quitado' | 'atraso' */
+  const[fDisc,setFDisc]=useFiltroFixo('fin.'+(filtroScope||'fin-contratos')+'.disc',''); /* Portal PRJ: filtro por disciplina */
   const[showImport,setShowImport]=useState(false); /* Portal PRJ: importação ClickUp */
   const[editing,setEditing]=useState(null);   /* null | {} novo | contrato */
   const[openId,setOpenId]=useState(null);      /* contrato aberto no modal de parcelas */
   useEffect(()=>{ if(openReq&&openReq.id){ setTab('lista'); setOpenId(openReq.id); } },[openReq]);
   const[editingGasto,setEditingGasto]=useState(null); /* null | {} novo | gasto (aba Gastos) */
   const[gBusca,setGBusca]=useState('');
-  const[gEmp,setGEmp]=useState('');
-  const[gCobrador,setGCobrador]=useState('');
-  const[gResp,setGResp]=useState('');
+  const[gEmp,setGEmp]=useFiltroFixo('gastos.emp','');
+  const[gCobrador,setGCobrador]=useFiltroFixo('gastos.cobrador','');
+  const[gResp,setGResp]=useFiltroFixo('gastos.resp','');
   const[gView,setGView]=useState('lista'); /* sub-aba de Gastos: 'lista' | 'dashboard' */
 
   const enriched=React.useMemo(()=>contratos.map(c=>({c, k:finContratoKPIs(c)})),[contratos]);
@@ -13541,8 +13587,8 @@ function FinAditivosCard({filtered}){
    empreendimentos. Média = soma dos valores ÷ soma das quantidades. */
 function FinPrecoRefCard({filtered}){
   const linhas=filtered.filter(({c})=>finAreaM2(c)>0).map(({c,k})=>({c,k,qtd:finAreaM2(c),pu:k.total/finAreaM2(c),base:c.baseRef||'(base não definida)',un:finUnidSufixo(c),disc:finDisciplina(c)}));
-  const[fBase,setFBase]=useState('');
-  const[fDisc,setFDisc]=useState('');
+  const[fBase,setFBase]=useFiltroFixo('precoref.base','');
+  const[fDisc,setFDisc]=useFiltroFixo('precoref.disc','');
   const[grupoSel,setGrupoSel]=useState('');
   if(!linhas.length) return (
     <div className="fin-dash-card">
@@ -15506,7 +15552,7 @@ let ATAS_ULTIMA_AUTO=0;
 function AtasView({onBack,projects,onOpenTask}){
   const atas=useAtas();
   const[cfg,salvarFontes]=useAtasConfig();
-  const[busca,setBusca]=useState(''); const[fProj,setFProj]=useState(''); const[fStatus,setFStatus]=useState('');
+  const[busca,setBusca]=useState(''); const[fProj,setFProj]=useFiltroFixo('atas.proj',''); const[fStatus,setFStatus]=useFiltroFixo('atas.status','');
   const[aberta,setAberta]=useState(null); const[integ,setInteg]=useState(false);
   const[sync,setSync]=useState(''); const[sincronizando,setSincronizando]=useState(false);
   /* Conexões que ESTA pessoa lê: as dela e as da conta da empresa (compartilhada). */
@@ -15842,7 +15888,7 @@ function ProtocoloModal({inicial,projects,onClose,onAbrirTarefa}){
 /* Aba "Protocolos": todos os protocolos, com filtros e o botão Consultar. */
 function ProtocolosView({onBack,projects,onOpenTask}){
   const protos=useProtocolos();
-  const[busca,setBusca]=useState(''); const[fProj,setFProj]=useState(''); const[fSit,setFSit]=useState('ativos');
+  const[busca,setBusca]=useState(''); const[fProj,setFProj]=useFiltroFixo('protocolos.proj',''); const[fSit,setFSit]=useFiltroFixo('protocolos.sit','ativos');
   const[aberto,setAberto]=useState(null);
   const ativos=(projects||[]).filter(p=>p&&!p.deleted).sort((x,y)=>String(x.name||'').localeCompare(String(y.name||''),'pt'));
   const nNovas=protos.filter(p=>p.novaMov&&p.situacao!=='encerrado').length;
@@ -16662,7 +16708,7 @@ function IptuGeral({dados,cfg,unidades,exercicio,setTab,salvarConfig}){
 
 /* ── Aba: Processos ── */
 function IptuProcessos({dados,cfg,projNames,salvar}){
-  const[busca,setBusca]=useState(''); const[fProj,setFProj]=useState(''); const[fSt,setFSt]=useState(''); const[fTipo,setFTipo]=useState('');
+  const[busca,setBusca]=useState(''); const[fProj,setFProj]=useFiltroFixo('iptuproc.proj',''); const[fSt,setFSt]=useFiltroFixo('iptuproc.st',''); const[fTipo,setFTipo]=useFiltroFixo('iptuproc.tipo','');
   const[verEncerrados,setVerEncerrados]=useState(false); const[aberto,setAberto]=useState(null); const[modal,setModal]=useState(null);
   const lista=dados.processos;
   const abertos=lista.filter(p=>!IPTU_ENCERRADOS.includes(p.status));
@@ -17047,7 +17093,7 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
   };
 
   const remontar=()=>{ setCorpoEdit(false); setCorpo(composeCorpo(selProj, rep, assunto, dadosGerais)); };
-  const podeGerar=selProj && rep && corpo.trim();
+  const podeGerar=true; /* 25/11: nenhum campo obrigatório — a pessoa escolhe o que preencher */
   const empresa=empresaNomeLegal(selProj);
   /* Resolve variáveis ({matricula}, {endereco}, {empreendimento}…) no texto
      final, mesmo que a pessoa as tenha digitado à mão no corpo. */
@@ -17186,7 +17232,7 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
       </div>
       <div className="pdi-card" style={{maxWidth:760}}>
         <div className="pdi-card-title"><i className="ti ti-file-text"/> Gerador de Ofícios</div>
-        <div className="pdi-card-desc">Escolha o empreendimento, o representante que assina e o assunto — o texto é montado automaticamente e pode ser ajustado. Cadastre os textos padrão em "Configurar cadastros".</div>
+        <div className="pdi-card-desc">Escolha o empreendimento, o representante que assina e o assunto (nenhum é obrigatório) — o texto é montado automaticamente e pode ser ajustado. Cadastre os textos padrão em "Configurar cadastros".</div>
 
         <div className="pdi-row3">
           <div className="pdi-field">
@@ -18445,10 +18491,10 @@ function InicioView({projects,painelTarefas,setPainelTarefas,vencimentos,usuario
    na linha abre o projeto. Nada é gravado aqui. */
 function TarefasView({projects,onOpenProject,onBack}){
   const[busca,setBusca]=useState('');
-  const[fResp,setFResp]=useState('');
-  const[fSetor,setFSetor]=useState('');
-  const[fStatus,setFStatus]=useState('abertas');
-  const[fEmp,setFEmp]=useState('');
+  const[fResp,setFResp]=useFiltroFixo('tarefas.resp','');
+  const[fSetor,setFSetor]=useFiltroFixo('tarefas.setor','');
+  const[fStatus,setFStatus]=useFiltroFixo('tarefas.status','abertas');
+  const[fEmp,setFEmp]=useFiltroFixo('tarefas.emp','');
   const hoje=new Date(); hoje.setHours(0,0,0,0);
   const rows=React.useMemo(()=>{
     const out=[];
@@ -19825,9 +19871,9 @@ function App({currentUser}){
   const portais=React.useMemo(()=>normalizarPortais(portaisCfgRaw,setoresCfg),[portaisCfgRaw,setoresCfg]);
   /* Filtro por projeto e por setor do Dashboard (escopa os KPIs/gráficos,
      sem afetar a aba Projetos). */
-  const[dashProjectFilter,setDashProjectFilter]=useState('');
-  const[dashSectorFilter,setDashSectorFilter]=useState('');
-  const[atencaoResp,setAtencaoResp]=useState(''); /* filtro por responsável nos Pontos de Atenção */
+  const[dashProjectFilter,setDashProjectFilter]=useFiltroFixo('dash.projeto','');
+  const[dashSectorFilter,setDashSectorFilter]=useFiltroFixo('dash.setor','');
+  const[atencaoResp,setAtencaoResp]=useFiltroFixo('dash.atencaoResp',''); /* filtro por responsável nos Pontos de Atenção */
   /* Atividade Recente (Dashboard): feed dos eventos que já viraram dado de
      verdade — criação/arquivamento/exclusão de empreendimento e as mudanças
      de status/tarefas que entram em `projects` ao clicar "Salvar" no fluxo.
@@ -20293,9 +20339,9 @@ function App({currentUser}){
      "Ver Todos" = sem filtro); a busca é por nome da tarefa. Nenhum deles
      esconde tarefa alguma: quem não combina só fica esmaecido no canvas
      (ver FlowCanvas → nodesForRender). Tudo reseta ao trocar de projeto. */
-  const[viewFilterSectors,setViewFilterSectors]=useState([]);
-  const[viewFilterStatuses,setViewFilterStatuses]=useState([]);
-  const[viewFilterPhases,setViewFilterPhases]=useState([]);
+  const[viewFilterSectors,setViewFilterSectors]=useFiltroFixo('fluxo.setores',[]);
+  const[viewFilterStatuses,setViewFilterStatuses]=useFiltroFixo('fluxo.status',[]);
+  const[viewFilterPhases,setViewFilterPhases]=useFiltroFixo('fluxo.fases',[]);
   /* Aba Mapa: qual empreendimento está selecionado pra dar zoom no terreno
      dele especificamente — null mostra todos os terrenos enquadrados juntos. */
   /* Empreendimentos "em foco" no mapa (lista de ids). Vazio = mostra todos.
@@ -20305,8 +20351,8 @@ function App({currentUser}){
   const[flowSearch,setFlowSearch]=useState('');
   /* Filtro por estatística (cartões clicáveis em "Informações" → Estatísticas):
      'all'|'done'|'wip'|'pending'|'notStarted'|'review'|'cancelled'|'late'|'dueSoon'. */
-  const[statFilter,setStatFilter]=useState('all');
-  const[filtroExtra,setFiltroExtra]=useState({...FILTRO_VAZIO});
+  const[statFilter,setStatFilter]=useFiltroFixo('fluxo.stat','all');
+  const[filtroExtra,setFiltroExtra]=useFiltroFixo('fluxo.extra',{...FILTRO_VAZIO});
   const clearViewFilters=()=>{setViewFilterSectors([]);setViewFilterStatuses([]);setViewFilterPhases([]);setFlowSearch('');setStatFilter('all');setFiltroExtra({...FILTRO_VAZIO});};
   /* Fase/Setor/Status do painel de filtros ficam nos mesmos estados de antes (o
      resto do app — estatísticas, Gantt — já usa esses). */
@@ -20498,7 +20544,7 @@ function App({currentUser}){
     apiRef.current.addTask(fields.label,fields.taskType,fields.phase,fields.sector,fields.status,fields.notes,fields.startDate,fields.endDate,fields.clickupDate);
     setShowFlowAddModal(false);
   };
-  const openProject=id=>{setCurId(id);setEditMode(false);setViewMode('flow');setScreen('project');setLastProjectScreen('project');clearViewFilters();};
+  const openProject=id=>{setCurId(id);setEditMode(false);setViewMode('flow');setScreen('project');setLastProjectScreen('project');setFlowSearch('');}; /* 25/11: filtros ficam fixos ao trocar de projeto (só a busca zera) */
   /* Atalho Contrato → Tarefa: abre o empreendimento no Fluxograma (ou no
      Cronograma, se a tarefa não aparece no fluxo), centraliza a tarefa e
      abre o detalhe dela. */
