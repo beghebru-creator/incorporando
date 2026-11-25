@@ -9528,7 +9528,7 @@ function PagedPreviewModal({title, headBlock, headEveryPage, blocks, bodyNode, s
   );
 }
 /* Monta os blocos de um ofício para o documento paginado. */
-function buildOficioBlocks({cidade,dateStr,dest,assunto,corpo,rep,empresa}){
+function buildOficioBlocks({cidade,dateStr,dest,assunto,corpo,rep,empresa,linhaAss=true}){
   const blocks=[];
   blocks.push(<div style={{textAlign:'right',paddingBottom:'22pt'}}>{dataOficioExtenso(cidade,dateStr)}</div>);
   if(dest&&(dest.prefixo||dest.nome||dest.orgao)){
@@ -9540,10 +9540,10 @@ function buildOficioBlocks({cidade,dateStr,dest,assunto,corpo,rep,empresa}){
   }
   if(assunto) blocks.push(<div style={{fontWeight:700,paddingBottom:'20pt'}}>Assunto: {assunto}</div>);
   String(corpo||'').split(/\n{2,}/).forEach(p=>{ blocks.push(<div className="doc-body-p">{oficioBoldNodes(p, empresa)}</div>); });
-  blocks.push(<div style={{paddingTop:'10pt',paddingBottom:'42pt'}}>Atenciosamente,</div>);
+  blocks.push(<div style={{paddingTop:'10pt',paddingBottom:linhaAss?'42pt':'14pt'}}>Atenciosamente,</div>);
   const representacao=assinaturaRepresentacao(rep);
   blocks.push(<div style={{textAlign:'center'}}>
-    <div style={{width:260,borderTop:'1px solid #1b1e24',margin:'0 auto 4px'}}/>
+    {linhaAss&&<div style={{width:260,borderTop:'1px solid #1b1e24',margin:'0 auto 4px'}}/>}
     {(empresa||(rep&&rep.nome))&&<div style={{fontWeight:700}}>{empresa||rep.nome}</div>}
     {representacao&&<div style={{fontSize:'10pt',color:'#5b6270'}}>{representacao}</div>}
   </div>);
@@ -9552,7 +9552,7 @@ function buildOficioBlocks({cidade,dateStr,dest,assunto,corpo,rep,empresa}){
 
 /* Gera e baixa o ofício em Word (.doc), abrível no Microsoft Word. Usa um
    HTML com o cabeçalho da Word — simples e sem depender de biblioteca. */
-function baixarWord({cidade,dateStr,dest,assunto,corpo,rep,empresa}){
+function baixarWord({cidade,dateStr,dest,assunto,corpo,rep,empresa,linhaAss=true}){
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   /* Escapa e aplica NEGRITO no nome da empresa e no CNPJ. */
   const boldHtml=(text)=>{
@@ -9592,8 +9592,8 @@ function baixarWord({cidade,dateStr,dest,assunto,corpo,rep,empresa}){
     `<p style='text-align:right;margin:16pt 0 22pt 0'>${esc(place)}</p>`+
     to+subj+
     `<p style='text-align:justify;margin:0 0 28pt 0'>${bodyHtml}</p>`+
-    `<p style='margin:0 0 40pt 0'>Atenciosamente,</p>`+
-    `<p style='text-align:center;margin:0'>______________________________<br/><b>${esc(empresa||(rep?rep.nome:''))}</b>${representacao?('<br/>'+esc(representacao)):''}</p>`+
+    `<p style='margin:0 0 ${linhaAss?40:14}pt 0'>Atenciosamente,</p>`+
+    `<p style='text-align:center;margin:0'>${linhaAss?'______________________________<br/>':''}<b>${esc(empresa||(rep?rep.nome:''))}</b>${representacao?('<br/>'+esc(representacao)):''}</p>`+
     `</div></body></html>`;
   const blob=new Blob(['﻿'+html],{type:'application/msword'});
   const url=URL.createObjectURL(blob);
@@ -16966,6 +16966,7 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
   const[corpo,setCorpo]=useState(_od.corpo||'');
   const[corpoEdit,setCorpoEdit]=useState(!!_od.corpoEdit); /* usuário editou o texto à mão */
   const[showOficio,setShowOficio]=useState(false);
+  const[linhaAss,setLinhaAss]=useFiltroFixo('oficio.linhaAss',true); /* 25/11: linha para assinatura (opcional; fica a última escolha da pessoa) */
   /* Empresa/empreendimento avulso: dados digitados na hora, para uma empresa
      que não está cadastrada em Projetos. */
   const[avulso,setAvulso]=useState(_od.avulso||{name:'',city:'',oficioTexto:'',oficioMatricula:'',oficioEndereco:'',oficioIndicacao:''});
@@ -17097,7 +17098,7 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
   const empresa=empresaNomeLegal(selProj);
   /* Resolve variáveis ({matricula}, {endereco}, {empreendimento}…) no texto
      final, mesmo que a pessoa as tenha digitado à mão no corpo. */
-  const docProps={cidade:cidadeOficio, dateStr:dataStr, dest:{prefixo:destPrefixo,nome:destNome,orgao:destOrgao}, assunto:assunto?assunto.titulo:'', corpo:preencherVars(corpo, selProj, rep, dadosGerais), empresa, rep};
+  const docProps={cidade:cidadeOficio, dateStr:dataStr, dest:{prefixo:destPrefixo,nome:destNome,orgao:destOrgao}, assunto:assunto?assunto.titulo:'', corpo:preencherVars(corpo, selProj, rep, dadosGerais), empresa, rep, linhaAss:linhaAss!==false};
 
   /* Portal montado em Configurações → Portais: só as abas escolhidas. */
   const abasPortal=Array.isArray(abas)?abas:null;
@@ -17304,6 +17305,9 @@ function PortalDI({projects,representantes,setRepresentantes,assuntos,setAssunto
         </div>
 
         <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
+          <label style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,color:'var(--text2)',cursor:'pointer',marginRight:4}} title="Desmarque para o ofício terminar só com Atenciosamente e o nome, sem a linha para assinar">
+            <input type="checkbox" checked={linhaAss!==false} onChange={e=>setLinhaAss(e.target.checked)}/> Linha para assinatura
+          </label>
           <button className="pdi-btn" onClick={()=>setShowOficio(true)} disabled={!podeGerar} title="Ver o ofício pronto e gerar em PDF ou Word"><i className="ti ti-eye"/> Pré-visualizar</button>
           <button className="pdi-btn ghost" onClick={salvarRascunho} disabled={!uid||(!corpo.trim()&&!selProjId)} title={uid?'Salvar este ofício como rascunho (só você vê)':'Faça login para salvar rascunhos'}><i className="ti ti-device-floppy"/> Salvar rascunho</button>
           <button className="pdi-btn ghost" onClick={()=>setShowDrafts(v=>!v)} disabled={!uid} title="Meus rascunhos salvos"><i className="ti ti-folder"/> Rascunhos{oficioDrafts.length?` (${oficioDrafts.length})`:''}</button>
